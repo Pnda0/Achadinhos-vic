@@ -1,0 +1,2 @@
+# O script de entrada do Docker roda no Linux: com fim de linha do Windows (CRLF) o contêiner não sobe.
+*.sh text eol=lf

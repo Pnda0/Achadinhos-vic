@@ -125,6 +125,30 @@ test('loadCookies: aceita cookies.txt.txt e limpa prefixo/linhas coladas do F12'
   assert.equal(normalizeCookieText('"a=1; b=2"'), 'a=1; b=2');
 });
 
+test('loadCookies: ML_COOKIES novo (trocado no painel da nuvem) passa na frente do cookies.txt vencido', async () => {
+  const { loadCookies } = await import('../src/ml/affiliate.js');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mla-'));
+  const base = path.join(dir, 'cookies.txt');
+  const arqs = [base, base + '.txt'];
+  // 1º boot na nuvem: sem arquivo, vale o ML_COOKIES (e ele fica gravado)
+  assert.equal(loadCookies(arqs, 'ssid=env1'), 'ssid=env1');
+  // o bot renova os cookies no arquivo; o mesmo ML_COOKIES não desfaz a renovação
+  fs.writeFileSync(base, 'ssid=renovado\n');
+  assert.equal(loadCookies(arqs, 'ssid=env1'), 'ssid=renovado');
+  // sessão venceu e o dono colou cookies novos em ML_COOKIES: agora eles valem
+  assert.equal(loadCookies(arqs, 'cookie: ssid=env2'), 'ssid=env2');
+  assert.equal(fs.readFileSync(base, 'utf8').trim(), 'ssid=env2');
+  assert.equal(loadCookies(arqs, ''), 'ssid=env2');
+});
+
+test('loadCookies: no PC, o cookies.txt do login-ml não é trocado por um ML_COOKIES antigo do .env', async () => {
+  const { loadCookies } = await import('../src/ml/affiliate.js');
+  const base = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-')), 'cookies.txt');
+  fs.writeFileSync(base, 'ssid=login\n');
+  assert.equal(loadCookies([base, base + '.txt'], 'ssid=antigo'), 'ssid=login');
+  assert.equal(loadCookies([base, base + '.txt'], 'ssid=antigo'), 'ssid=login');
+});
+
 test('encontrarGrupo: por número, por nome sem acento/maiúscula, e ambíguo', () => {
   const lista = [{ nome: 'Família', jid: '1@g.us' }, { nome: 'Ofertas', jid: '2@g.us' }, { nome: 'Ofertas Fitness 💪', jid: '3@g.us' }];
   assert.equal(encontrarGrupo(lista, '2').grupo.jid, '2@g.us');
