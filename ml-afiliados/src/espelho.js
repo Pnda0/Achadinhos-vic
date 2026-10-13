@@ -12,7 +12,7 @@ import { extrairLinksML, resolverOferta, tipoLink, ErroVerificacao } from './ml/
 import { asinDeUrl, dadosDoTexto, extrairLinksAmazon, linkAfiliadoAmazon, resolverLinkAmazon } from './amazon-espelho.js';
 import { motivoRecusa } from './pipeline.js';
 import { encontrarGrupo } from './configfile.js';
-import { log, sleep } from './util.js';
+import { casaTermo, log, normalizar, sleep } from './util.js';
 
 const MIN = 60_000;
 
@@ -46,7 +46,7 @@ export class Espelho {
     this.resolver = resolver;
     this.agora = agora;
     this.esperar = esperar;
-    this.aceitasNaHora = [];
+    this.aceitasPorGrupo = new Map();
     this.pausadoAte = 0;
     this.ultimoRefresh = 0;
     this.rodando = false;
@@ -102,9 +102,35 @@ export class Espelho {
     }
   }
 
+  /** O grupo já recebeu o máximo de ofertas do espelho nesta hora? */
+  noLimite(grupo) {
+    const recentes = (this.aceitasPorGrupo.get(grupo) || []).filter((t) => this.agora() - t < 60 * MIN);
+    this.aceitasPorGrupo.set(grupo, recentes);
+    return recentes.length >= this.cfg.maxPorHora;
+  }
+
+  contar(grupo) {
+    this.aceitasPorGrupo.set(grupo, [...(this.aceitasPorGrupo.get(grupo) || []), this.agora()]);
+  }
+
   /** Oferta da Amazon: troca a etiqueta e usa o texto da mensagem (sem abrir a página da Amazon). */
   async processarAmazon(m, link, fonte, destino) {
     if (!this.amazonTag) return 'Amazon sem etiqueta (AMAZON_PARTNER_TAG)';
+    const d = dadosDoTexto(m.texto);
+    const nome = d.nome || 'Oferta na Amazon';
+
+    // Para onde vai: o destino da fonte ou, se ela tiver "destinos", cada grupo ligado cujas palavras casam com o produto.
+    const motivos = [];
+    const alvos = [];
+    for (const a of fonte.destinos?.length ? fonte.destinos : [{ grupo: destino.nome }]) {
+      const g = this.grupos.get(a.grupo);
+      if (!g || g.ativo === false) continue;
+      if (a.palavras?.length && !a.palavras.some((t) => casaTermo(normalizar(nome), t))) motivos.push('fora do nicho');
+      else if (this.noLimite(g.nome)) motivos.push('limite por hora');
+      else alvos.push(g);
+    }
+    if (!alvos.length) return motivos[0] || 'sem destino';
+
     let asin = asinDeUrl(link);
     if (!asin) {
       try {
@@ -114,35 +140,42 @@ export class Espelho {
       }
     }
     if (!asin) return 'link da Amazon sem produto';
-    const d = dadosDoTexto(m.texto);
     const linkAfiliado = linkAfiliadoAmazon(asin, this.amazonTag);
-    const produto = {
-      id: `AMZ-${asin}`,
-      asin,
-      loja: 'amazon',
-      origem: 'espelho',
-      grupo: destino.nome,
-      categoria: `Espelho: ${fonte.nomeWhats || fonte.nome}`,
-      nome: d.nome || 'Oferta na Amazon',
-      url: linkAfiliado,
-      linkAfiliado,
-      imagem: m.foto || null, // sem foto na mensagem, ela vem da prévia de link
-      precoAtual: d.precoAtual,
-      precoOriginal: d.precoOriginal,
-      precoObs: d.precoObs,
-      descontoPct: d.descontoPct,
-      cupom: d.cupom,
-      nota: null,
-      precoConsultadoEm: new Date((m.t || this.agora() / 1000) * 1000).toISOString(),
-    };
-    if (this.store.conhecido(produto.id, destino.nome)) return 'já está na fila';
-    const motivo = motivoRecusa(produto, this.filtros(fonte, destino), this.store, { descontoDesconhecidoPassa: true });
-    if (motivo) return motivo;
-    this.store.upsert(produto);
-    this.aceitasNaHora.push(this.agora());
-    this.ultimoAceito = { nome: produto.nome, link: linkAfiliado };
-    log(`🪞 [${destino.nome}] Amazon de "${fonte.nomeWhats || fonte.nome}": ${produto.nome.slice(0, 55)} — ${linkAfiliado}`);
-    return 'ok';
+    let aceitos = 0;
+    for (const g of alvos) {
+      const produto = {
+        id: `AMZ-${asin}`,
+        asin,
+        loja: 'amazon',
+        origem: 'espelho',
+        grupo: g.nome,
+        categoria: `Espelho: ${fonte.nomeWhats || fonte.nome}`,
+        nome,
+        url: linkAfiliado,
+        linkAfiliado,
+        imagem: m.foto || null, // sem foto na mensagem, ela vem da prévia de link
+        precoAtual: d.precoAtual,
+        precoOriginal: d.precoOriginal,
+        precoObs: d.precoObs,
+        descontoPct: d.descontoPct,
+        cupom: d.cupom,
+        nota: null,
+        precoConsultadoEm: new Date((m.t || this.agora() / 1000) * 1000).toISOString(),
+      };
+      const motivo = this.store.conhecido(produto.id, g.nome)
+        ? 'já está na fila'
+        : motivoRecusa(produto, this.filtros(fonte, g), this.store, { descontoDesconhecidoPassa: true });
+      if (motivo) {
+        motivos.push(motivo);
+        continue;
+      }
+      this.store.upsert(produto);
+      this.contar(g.nome);
+      aceitos++;
+      this.ultimoAceito = { nome, link: linkAfiliado };
+      log(`🪞 [${g.nome}] Amazon de "${fonte.nomeWhats || fonte.nome}": ${nome.slice(0, 55)} — ${linkAfiliado}`);
+    }
+    return aceitos ? 'ok' : motivos[0];
   }
 
   async processar(m) {
@@ -155,9 +188,8 @@ export class Espelho {
     const linksAmazon = links.length ? [] : extrairLinksAmazon(m.texto);
     if (!links.length && !linksAmazon.length) return 'sem link do ML/Amazon';
 
-    this.aceitasNaHora = this.aceitasNaHora.filter((t) => this.agora() - t < 60 * MIN);
-    if (this.aceitasNaHora.length >= this.cfg.maxPorHora) return 'limite por hora';
     if (linksAmazon.length) return this.processarAmazon(m, linksAmazon[0], fonte, destino);
+    if (this.noLimite(destino.nome)) return 'limite por hora';
 
     try {
       await this.esperar(this.cfg.pausaEntreConsultasSeg * 1000);
@@ -177,7 +209,7 @@ export class Espelho {
 
       this.store.upsert(produto);
       this.store.setLink(produto.url, link);
-      this.aceitasNaHora.push(this.agora());
+      this.contar(destino.nome);
       this.ultimoAceito = { nome: produto.nome, link };
       log(`🪞 [${destino.nome}] de "${fonte.nomeWhats || fonte.nome}": ${produto.nome.slice(0, 55)} — ${link}`);
       return 'ok';

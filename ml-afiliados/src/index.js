@@ -6,7 +6,7 @@
  *   CRON_RESUMO  -> manda o resumo do dia no WhatsApp do dono (AVISOS_DESTINO)
  */
 import cron from 'node-cron';
-import { loadFontes, loadGrupos, settings } from './config.js';
+import { loadFontes, loadGrupos, loadNichos, settings } from './config.js';
 import { Avisos } from './avisos.js';
 import { iniciarHeartbeat } from './heartbeat.js';
 import { Espelho, resolverFontes } from './espelho.js';
@@ -79,15 +79,18 @@ function iniciarCanais() {
   const destino = c.destino || cfg.destinoPadrao || 'Geral';
   const soAmazon = c.soAmazon !== false;
   if (soAmazon && !process.env.AMAZON_PARTNER_TAG?.trim()) return log('📡 Canais do Telegram desligados: falta AMAZON_PARTNER_TAG no .env.');
+  // Cada destino pode ter um nicho: a oferta só entra naquele grupo se o nome casar com as palavras dele.
+  const nichos = loadNichos();
+  const destinos = (c.destinos?.length ? c.destinos : [{ grupo: destino }]).map((d) => ({ grupo: d.grupo, palavras: d.nicho ? nichos[d.nicho]?.obrigatorias || [] : null }));
   const fontes = canais.map((n) => {
     const nome = `@${jidDoCanal(n).slice('canal:'.length)}`;
-    return { nome, nomeWhats: nome, jid: jidDoCanal(n), destino, soAmazon };
+    return { nome, nomeWhats: nome, jid: jidDoCanal(n), destino, destinos, soAmazon };
   });
   const maxPorHora = c.maxPorHora ?? 1;
   const espelho = new Espelho({ sender: new LeitorDeCanais(), store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), cfg: { ...cfg, maxPorHora }, avisos });
   const seg = Math.max(60, Number(c.intervaloSegundos) || 180);
   agendarEspelho(espelho, seg);
-  log(`📡 Canais do Telegram ligados (${soAmazon ? 'só Amazon' : 'Amazon e ML'}, até ${maxPorHora} por hora): ${fontes.map((f) => f.nome).join(', ')} — confere a cada ${seg}s.`);
+  log(`📡 Canais do Telegram ligados (${soAmazon ? 'só Amazon' : 'Amazon e ML'}, até ${maxPorHora} por hora em cada grupo) → ${destinos.map((d) => d.grupo).join(', ')}: ${fontes.map((f) => f.nome).join(', ')} — confere a cada ${seg}s.`);
 }
 
 /** Liga o espelho de grupos, se houver grupos-fonte em config/fontes.json. */

@@ -75,3 +75,38 @@ test('Canal público do Telegram: oferta da Amazon entra sozinha com a MINHA eti
   assert.equal(p.imagem, 'https://cdn1.telesco.pe/file/FOTO.jpg');
   assert.doesNotMatch(montarLegenda(p, { titulo: 'x' }), /urutelegram|link\.amazon|URUBU/);
 });
+
+test('Canal público do Telegram: a oferta vai para cada grupo ligado cujo nicho casa, com limite por grupo', async () => {
+  const agora = { t: Date.UTC(2027, 0, 15, 8, 5) };
+  const store = tmpStore();
+  const t = Math.floor(agora.t / 1000) - 60;
+  const msgs = [
+    { id: 'c1', jid: 'canal:x', t, texto: 'Creatina Monohidratada Dark Lab 1kg\nDe R$ 120 por R$ 60\nhttps://www.amazon.com.br/dp/B0CREATINA' },
+    { id: 'c2', jid: 'canal:x', t, texto: 'Perfume Club De Nuit Intense 105ml\nDe R$ 400 por R$ 200\nhttps://www.amazon.com.br/dp/B0PERFUME1' },
+    { id: 'c3', jid: 'canal:x', t, texto: 'Whey Protein Concentrado 900g\nDe R$ 200 por R$ 100\nhttps://www.amazon.com.br/dp/B0WHEY0001' },
+  ];
+  const espelho = new Espelho({
+    sender: { lerMensagens: async () => msgs },
+    store,
+    affiliate: {},
+    fontes: [{
+      nome: '@x', jid: 'canal:x', destino: 'Geral', soAmazon: true,
+      destinos: [{ grupo: 'Geral', palavras: null }, { grupo: 'Fitness', palavras: ['creatina', 'whey'] }, { grupo: 'Beleza', palavras: ['perfume'] }, { grupo: 'Casa', palavras: null }],
+    }],
+    grupos: [
+      { nome: 'Geral', ativo: true, filtros: {} },
+      { nome: 'Fitness', ativo: true, filtros: {} },
+      { nome: 'Beleza', ativo: true, filtros: {} },
+      { nome: 'Casa', ativo: false, filtros: {} }, // desligado: nunca recebe
+    ],
+    cfg: { maxPorHora: 1 },
+    agora: () => agora.t,
+    esperar: async () => {},
+    amazonTag: 'extra0306-20',
+  });
+  const r = await espelho.tick();
+  assert.equal(r.enfileiradas, 2); // a creatina e o perfume; o whey bate no limite de Geral e de Fitness
+  assert.deepEqual(r.ignoradas, { 'limite por hora': 1 });
+  const fila = store.list((p) => p.status === 'PRONTO').map((p) => `${p.grupo}:${p.asin}`).sort();
+  assert.deepEqual(fila, ['Beleza:B0PERFUME1', 'Fitness:B0CREATINA', 'Geral:B0CREATINA']); // o perfume não entrou no Geral (limite), mas entrou em Beleza
+});
