@@ -61,13 +61,3 @@ services:
         sync: false
       - key: LLM_API_KEY
         sync: false
-
-  # Site: página de entrada do grupo (grátis).
-  - type: web
-    name: achadinhos-vic
-    runtime: static
-    buildCommand: echo "sem build"
-    staticPublishPath: ./Vic Site
-    buildFilter:
-      paths:
-        - Vic Site/**

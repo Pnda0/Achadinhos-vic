@@ -160,7 +160,7 @@ O espelho de outros grupos só funciona no WhatsApp.
 
 ## 3.11 Rodar na nuvem (Render), postando no Telegram
 
-Assim o bot fica ligado sem depender do seu PC. O arquivo `render.yaml` (na raiz do repositório) já descreve tudo: o **bot** (worker em Docker, com um disco para a fila e a sessão do ML) e o **site** (página estática, grátis). O worker com disco exige plano pago do Render.
+Assim o bot fica ligado sem depender do seu PC. O arquivo `render.yaml` (na raiz do repositório) já descreve o **bot** (worker em Docker, com um disco para a fila e a sessão do ML). O site não vai para o Render. O worker com disco exige plano pago do Render.
 
 1. Tenha em mãos, do seu `.env`: `ML_AFFILIATE_TAG`, `TELEGRAM_BOT_TOKEN` e `AVISOS_DESTINO_TELEGRAM` (seção 3.10). `HEARTBEAT_URL` é opcional (seção 3.10, "Monitoramento externo").
 2. Pegue os cookies do ML pelo F12 (seção 3.2, "Jeito manual") — é o valor que vai em `ML_COOKIES`. Na nuvem não há janela para o `npm run login-ml`.
