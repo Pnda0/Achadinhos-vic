@@ -8,6 +8,7 @@
 import cron from 'node-cron';
 import { loadFontes, loadGrupos, settings } from './config.js';
 import { Avisos } from './avisos.js';
+import { iniciarHeartbeat } from './heartbeat.js';
 import { Espelho, resolverFontes } from './espelho.js';
 import { MLAffiliate } from './ml/affiliate.js';
 import { coletar, gerarLinks, enviarParaTodos, limpar } from './pipeline.js';
@@ -101,6 +102,7 @@ async function main() {
   cron.schedule(settings.avisos.resumoCron, () => avisos.resumoDiario(loadGrupos()).catch((e) => registrarErro('resumo', e)), opts);
   log(`⏰ Coleta: "${settings.cron.coleta}" | Envio: "${settings.cron.envio}" | Limpeza: "${settings.cron.limpeza}" | Resumo: "${settings.avisos.resumoCron}"`);
   await avisos.ligado({ grupos: loadGrupos() });
+  iniciarHeartbeat();
 
   await iniciarEspelho();
 

@@ -49,6 +49,10 @@ services:
         sync: false
       - key: AVISOS_DESTINO_TELEGRAM
         sync: false
+      - key: HEARTBEAT_URL
+        sync: false
+      - key: CRON_HEARTBEAT
+        value: "*/5 * * * *"
       - key: AMAZON_PARTNER_TAG
         sync: false
       - key: AMAZON_CREDENTIAL_ID

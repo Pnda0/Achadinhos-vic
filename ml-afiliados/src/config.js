@@ -82,6 +82,9 @@ export const settings = {
     limpeza: env.CRON_LIMPEZA || '0 0 * * *',
   },
   tz: env.TZ || 'America/Sao_Paulo',
+  // Monitoramento externo (dead man's switch): URL de check (healthchecks.io, UptimeRobot heartbeat, Better Stack...).
+  // O bot faz um GET nela de tempos em tempos; se os pings pararem, o serviço te avisa que o bot caiu.
+  heartbeat: { url: env.HEARTBEAT_URL?.trim() || '', cron: env.CRON_HEARTBEAT || '*/5 * * * *' },
   // Alertas e resumo diário: nome de um grupo do WhatsApp (ex.: "Avisos do bot") ou número com DDD (ex.: 5579999998888).
   avisos: {
     destino: (env.SENDER || '').toLowerCase() === 'telegram' ? env.AVISOS_DESTINO_TELEGRAM?.trim() || '' : env.AVISOS_DESTINO?.trim() || '',
