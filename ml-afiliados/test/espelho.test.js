@@ -246,3 +246,36 @@ test('legenda sem preço (Amazon sem preço na mensagem) não mostra "null"', ()
   assert.match(txt, /Confira o preço no link/);
   assert.doesNotMatch(txt, /null|undefined|⏱️/);
 });
+
+test('Caixa de entrada: oferta mandada pelo dono entra mesmo com desconto baixo, leva a foto e ele recebe a resposta', async () => {
+  const agora = { t: 1_800_000_000_000 };
+  const store = tmpStore();
+  const respostas = [];
+  const espelho = new Espelho({
+    sender: {
+      lerMensagens: async () => [
+        { id: 'tg-555-1', jid: '555', t: seg(agora, 1), texto: 'Mouse gamer Logitech G203\nde R$ 100 por R$ 95\nhttps://www.amazon.com.br/dp/B0MOUSE001?tag=outro-20', foto: 'FILE123' },
+        { id: 'tg-555-2', jid: '555', t: seg(agora, 1), texto: '/start', foto: null },
+        { id: 'tg-555-3', jid: '555', t: seg(agora, 0), texto: 'de novo https://www.amazon.com.br/dp/B0MOUSE001', foto: null },
+      ],
+      sendText: async (jid, texto) => respostas.push([jid, texto]),
+    },
+    store,
+    affiliate: { refresh: async () => {}, createLinks: async () => new Map() },
+    fontes: [{ nome: 'Caixa de entrada', jid: '555', destino: 'Geral', manual: true }],
+    grupos: [{ nome: 'Geral', jid: '-1001', filtros: { descontoMinimo: 20, precoMinimo: 150, diasSemRepetir: 5 } }],
+    cfg: { pausaEntreConsultasSeg: 0 },
+    agora: () => agora.t, esperar: async () => {},
+    amazonTag: 'extra0306-20',
+  });
+  const r = await espelho.tick();
+  assert.equal(r.enfileiradas, 1);
+  const p = store.proximo('Geral');
+  assert.equal(p.linkAfiliado, 'https://www.amazon.com.br/dp/B0MOUSE001?tag=extra0306-20');
+  assert.equal(p.imagem, 'FILE123');
+  assert.equal(respostas.length, 3);
+  assert.ok(respostas.every(([jid]) => jid === '555'));
+  assert.match(respostas[0][1], /✅ Entrou na fila: Mouse gamer Logitech G203\nhttps:\/\/www\.amazon\.com\.br\/dp\/B0MOUSE001\?tag=extra0306-20/);
+  assert.match(respostas[1][1], /Me mande/);
+  assert.match(respostas[2][1], /Não entrou na fila: já está na fila/);
+});

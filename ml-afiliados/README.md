@@ -144,6 +144,8 @@ A Amazon entra pela **Creators API** (a API oficial que substituiu a PA-API 5). 
 
 **Espelho da Amazon (funciona sem a API):** se um grupo-fonte do espelho postar link da Amazon (`amazon.com.br/...`, `amzn.to/...`), o bot pega o código do produto (ASIN), monta `https://www.amazon.com.br/dp/ASIN?tag=SUA-ETIQUETA` e posta no nosso formato usando o nome/preço/cupom escritos na mensagem — sem abrir a página da Amazon. A foto vem da prévia de link do WhatsApp. Precisa só de `AMAZON_PARTNER_TAG` no `.env`.
 
+**Sem a API, pelo Telegram (caixa de entrada):** com `SENDER=telegram`, `AVISOS_DESTINO_TELEGRAM` (o chat id da sua conversa privada com o bot) e `AMAZON_PARTNER_TAG`, mande ou encaminhe para o bot, no privado, qualquer oferta com link da Amazon (`amazon.com.br/...`, `amzn.to/...`). Ele troca pela sua etiqueta, usa o nome/preço/cupom que estiverem escritos na mensagem e a foto que vier junto, põe na frente da fila e responde confirmando (ou dizendo por que não entrou). Link do Mercado Livre também vale. Só a sua conversa é lida; mensagem de outras pessoas para o bot é ignorada. Mensagem com mais de 3 horas é descartada (o preço já pode ter mudado).
+
 A Amazon só libera a API para contas com vendas qualificadas recentes; sem isso ela responde 403 e o bot avisa no grupo "Avisos do bot" (o Mercado Livre segue normal). Toda oferta da Amazon sai com a hora em que o preço foi consultado e o aviso de que pode mudar, como a Amazon exige.
 
 ## 3.10 Testar pelo Telegram (sem WhatsApp)

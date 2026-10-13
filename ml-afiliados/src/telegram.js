@@ -9,6 +9,7 @@
  */
 import { log, sleep } from './util.js';
 
+const ATUALIZACOES = ['message', 'channel_post', 'my_chat_member', 'chat_member'];
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 /** Converte a formatação do WhatsApp (*negrito*, ~riscado~) para o HTML do Telegram. */
@@ -23,6 +24,8 @@ export class TelegramSender {
     this.tipo = 'telegram';
     this.token = token;
     this.fetch = fetchImpl;
+    this.chats = new Map();
+    this.offset = undefined;
   }
 
   async call(metodo, corpo = {}, tentativa = 0) {
@@ -74,17 +77,44 @@ export class TelegramSender {
     return { comImagem: false };
   }
 
+  anotarChat(u) {
+    const chat = (u.message || u.channel_post || u.my_chat_member || u.chat_member || u.edited_message || u.edited_channel_post)?.chat;
+    if (!chat) return;
+    const nome = chat.title || (chat.username ? `@${chat.username}` : [chat.first_name, chat.last_name].filter(Boolean).join(' ')) || String(chat.id);
+    this.chats.set(String(chat.id), { nome, jid: String(chat.id), tipo: chat.type });
+  }
+
   /** Canais, grupos e conversas privadas que o bot já "viu" (via getUpdates). */
   async listGroups() {
-    const updates = await this.call('getUpdates', { allowed_updates: ['message', 'channel_post', 'my_chat_member', 'chat_member'] });
-    const chats = new Map();
+    const updates = await this.call('getUpdates', { allowed_updates: ATUALIZACOES });
+    for (const u of updates) this.anotarChat(u);
+    return [...this.chats.values()];
+  }
+
+  /**
+   * Mensagens novas que chegaram nos chats informados (para a caixa de entrada do espelho).
+   * Devolve [{ id, jid, t (segundos), tipo, texto, foto }] — texto inclui os links "escondidos" atrás de
+   * palavras; foto = file_id da imagem da mensagem (dá para reenviar sem baixar).
+   */
+  async lerMensagens(chatIds) {
+    const updates = await this.call('getUpdates', { offset: this.offset, allowed_updates: ATUALIZACOES });
+    const saida = [];
     for (const u of updates) {
-      const chat = (u.message || u.channel_post || u.my_chat_member || u.chat_member || u.edited_message || u.edited_channel_post)?.chat;
-      if (!chat) continue;
-      const nome = chat.title || (chat.username ? `@${chat.username}` : [chat.first_name, chat.last_name].filter(Boolean).join(' ')) || String(chat.id);
-      chats.set(String(chat.id), { nome, jid: String(chat.id), tipo: chat.type });
+      this.offset = u.update_id + 1; // confirma: o Telegram não manda esta de novo
+      this.anotarChat(u);
+      const m = u.message;
+      if (!m || !chatIds.includes(String(m.chat.id))) continue;
+      const ocultos = [...(m.entities || []), ...(m.caption_entities || [])].map((e) => e.url).filter(Boolean);
+      saida.push({
+        id: `tg-${m.chat.id}-${m.message_id}`,
+        jid: String(m.chat.id),
+        t: Number(m.date) || 0,
+        tipo: m.photo ? 'image' : 'chat',
+        texto: [m.text || m.caption || '', ...ocultos].join('\n').slice(0, 4000),
+        foto: m.photo?.at(-1)?.file_id || null,
+      });
     }
-    return [...chats.values()];
+    return saida;
   }
 
   async close() {}

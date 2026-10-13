@@ -56,3 +56,17 @@ test('TelegramSender: lista os chats vistos e espera quando o Telegram pede (429
   assert.equal(n, 2, 'tentou de novo depois do 429');
   await assert.rejects(new TelegramSender({ token: '' }).init(), /TELEGRAM_BOT_TOKEN/);
 });
+
+test('TelegramSender.lerMensagens: só o chat pedido, com link escondido e foto, e confirma o que já leu', async () => {
+  const { tg, chamadas } = tgFalso((m, body) => ({ body: { ok: true, result: body.offset ? [] : [
+    { update_id: 10, message: { message_id: 1, date: 1_800_000_000, chat: { id: 555, first_name: 'Alan', type: 'private' }, caption: 'Fone JBL por R$ 199', caption_entities: [{ type: 'bold' }, { type: 'text_link', url: 'https://amzn.to/3AbCdEf' }], photo: [{ file_id: 'pequena' }, { file_id: 'GRANDE' }] } },
+    { update_id: 11, message: { message_id: 7, date: 1_800_000_001, chat: { id: 999, first_name: 'Estranho', type: 'private' }, text: 'https://amzn.to/golpe' } },
+    { update_id: 12, channel_post: { message_id: 3, chat: { id: -1001, title: 'Canal', type: 'channel' }, text: 'x' } },
+  ] } }));
+  assert.deepEqual(await tg.lerMensagens(['555']), [
+    { id: 'tg-555-1', jid: '555', t: 1_800_000_000, tipo: 'image', texto: 'Fone JBL por R$ 199\nhttps://amzn.to/3AbCdEf', foto: 'GRANDE' },
+  ]);
+  assert.deepEqual(await tg.lerMensagens(['555']), []);
+  assert.equal(chamadas[1].body.offset, 13);
+  assert.deepEqual((await tg.listGroups()).map((c) => c.jid), ['555', '999', '-1001']); // os chats lidos continuam na lista
+});

@@ -46,9 +46,33 @@ const cicloColeta = exclusivo('coleta', async () => {
   await gerarLinks(store);
 });
 
+function agendarEspelho(espelho, seg) {
+  setInterval(() => {
+    espelho.tick().catch((e) => {
+      registrarErro('espelho', e);
+      log(`❌ espelho: ${String(e.message).split('\n')[0]}`);
+    });
+  }, seg * 1000);
+}
+
+/**
+ * Telegram: a conversa privada do dono com o bot (AVISOS_DESTINO_TELEGRAM) vira uma caixa de entrada.
+ * Ele manda/encaminha uma oferta com link da Amazon ou do ML e o bot posta no canal com o link dele.
+ */
+function iniciarCaixaDeEntrada(cfg) {
+  const dono = avisos.jid;
+  if (!dono) return log('📥 Caixa de entrada desligada (preencha AVISOS_DESTINO_TELEGRAM com o chat id da sua conversa com o bot).');
+  if (loadGrupos().some((g) => g.jid === dono)) return log('📥 Caixa de entrada desligada: AVISOS_DESTINO_TELEGRAM é o próprio canal de envio.');
+  const destino = cfg.destinoPadrao || 'Geral';
+  const fontes = [{ nome: 'Caixa de entrada', nomeWhats: 'Caixa de entrada', jid: dono, destino, manual: true }];
+  agendarEspelho(new Espelho({ sender, store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), cfg: { ...cfg, janelaMinutos: 180 }, avisos }), 10);
+  log(`📥 Caixa de entrada ligada: mande um link da Amazon ou do Mercado Livre no privado do bot que ele entra na fila do grupo "${destino}".`);
+}
+
 /** Liga o espelho de grupos, se houver grupos-fonte em config/fontes.json. */
 async function iniciarEspelho() {
   const { ativo, fontes, cfg } = loadFontes();
+  if (ativo && sender.tipo === 'telegram') return iniciarCaixaDeEntrada(cfg);
   if (!ativo || !fontes.length) return log('🪞 Espelho desligado (nenhum grupo-fonte em config/fontes.json).');
   if (typeof sender.lerMensagens !== 'function') return log('🪞 Espelho só funciona com SENDER=wwebjs.');
   try {
@@ -62,12 +86,7 @@ async function iniciarEspelho() {
     if (!validas.length) return log('🪞 Espelho desligado: nenhum grupo-fonte válido.');
     const espelho = new Espelho({ sender, store, affiliate: new MLAffiliate(), fontes: validas, grupos: loadGrupos(), cfg, avisos });
     const seg = Math.max(30, Number(cfg.intervaloSegundos) || 60);
-    setInterval(() => {
-      espelho.tick().catch((e) => {
-        registrarErro('espelho', e);
-        log(`❌ espelho: ${String(e.message).split('\n')[0]}`);
-      });
-    }, seg * 1000);
+    agendarEspelho(espelho, seg);
     log(`🪞 Espelho ligado: ${validas.map((f) => `"${f.nomeWhats}"`).join(', ')} — confere a cada ${seg}s.`);
   } catch (e) {
     registrarErro('espelho', e);

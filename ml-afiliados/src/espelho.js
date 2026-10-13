@@ -68,6 +68,7 @@ export class Espelho {
         if (m.t < limiteT) continue; // antiga: só marca como vista
         resumo.novas++;
         const r = await this.processar(m);
+        if (this.fontes.get(m.jid)?.manual) await this.responder(m, r);
         if (r === 'ok') resumo.enfileiradas++;
         else resumo.ignoradas[r] = (resumo.ignoradas[r] || 0) + 1;
         if (this.agora() < this.pausadoAte) break;
@@ -78,6 +79,27 @@ export class Espelho {
       this.rodando = false;
     }
     return resumo;
+  }
+
+  /** Oferta escolhida a dedo pelo dono (caixa de entrada) só passa pelo "não repetir". */
+  filtros(fonte, destino) {
+    const f = destino.filtros || {};
+    return fonte.manual ? { diasSemRepetir: f.diasSemRepetir } : f;
+  }
+
+  /** Caixa de entrada: conta ao dono o que aconteceu com a mensagem que ele mandou. */
+  async responder(m, r) {
+    const texto =
+      r === 'ok'
+        ? `✅ Entrou na fila: ${this.ultimoAceito.nome.slice(0, 60)}\n${this.ultimoAceito.link}\nSai no próximo envio.`
+        : r === 'sem link do ML/Amazon'
+          ? 'Me mande (ou encaminhe) uma oferta com link da Amazon ou do Mercado Livre: eu troco pelo seu link e posto no canal.\nEscreva o nome do produto e o preço na mensagem (ex.: "de R$ 499 por R$ 299") para sair completo.'
+          : `⚠️ Não entrou na fila: ${r}.`;
+    try {
+      await this.sender.sendText(m.jid, texto);
+    } catch (e) {
+      log(`  🪞 não consegui responder na caixa de entrada (${String(e.message).split('\n')[0]})`);
+    }
   }
 
   /** Oferta da Amazon: troca a etiqueta e usa o texto da mensagem (sem abrir a página da Amazon). */
@@ -104,7 +126,7 @@ export class Espelho {
       nome: d.nome || 'Oferta na Amazon',
       url: linkAfiliado,
       linkAfiliado,
-      imagem: null, // a foto vem da prévia de link do WhatsApp
+      imagem: m.foto || null, // sem foto na mensagem, ela vem da prévia de link
       precoAtual: d.precoAtual,
       precoOriginal: d.precoOriginal,
       descontoPct: d.descontoPct,
@@ -113,10 +135,11 @@ export class Espelho {
       precoConsultadoEm: new Date((m.t || this.agora() / 1000) * 1000).toISOString(),
     };
     if (this.store.conhecido(produto.id, destino.nome)) return 'já está na fila';
-    const motivo = motivoRecusa(produto, destino.filtros || {}, this.store, { descontoDesconhecidoPassa: true });
+    const motivo = motivoRecusa(produto, this.filtros(fonte, destino), this.store, { descontoDesconhecidoPassa: true });
     if (motivo) return motivo;
     this.store.upsert(produto);
     this.aceitasNaHora.push(this.agora());
+    this.ultimoAceito = { nome: produto.nome, link: linkAfiliado };
     log(`🪞 [${destino.nome}] Amazon de "${fonte.nomeWhats || fonte.nome}": ${produto.nome.slice(0, 55)} — ${linkAfiliado}`);
     return 'ok';
   }
@@ -139,7 +162,7 @@ export class Espelho {
       const produto = { ...(await this.resolver(links[0])), grupo: destino.nome, categoria: `Espelho: ${fonte.nomeWhats || fonte.nome}`, origem: 'espelho' };
 
       if (this.store.conhecido(produto.id, destino.nome)) return 'já está na fila';
-      const motivo = motivoRecusa(produto, destino.filtros || {}, this.store, { descontoDesconhecidoPassa: true });
+      const motivo = motivoRecusa(produto, this.filtros(fonte, destino), this.store, { descontoDesconhecidoPassa: true });
       if (motivo) return motivo;
 
       if (this.agora() - this.ultimoRefresh > 30 * MIN) {
@@ -153,6 +176,7 @@ export class Espelho {
       this.store.upsert(produto);
       this.store.setLink(produto.url, link);
       this.aceitasNaHora.push(this.agora());
+      this.ultimoAceito = { nome: produto.nome, link };
       log(`🪞 [${destino.nome}] de "${fonte.nomeWhats || fonte.nome}": ${produto.nome.slice(0, 55)} — ${link}`);
       return 'ok';
     } catch (e) {
