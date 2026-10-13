@@ -5,5 +5,13 @@
   "intervaloSegundos": 60,
   "janelaMinutos": 20,
   "maxPorHora": 15,
-  "fontes": []
+  "fontes": [],
+  "_comentarioCanais": "CANAIS DO TELEGRAM: canais PÚBLICOS de ofertas que o bot acompanha sozinho (lê a página t.me/s/<canal>). Em 'canais', só o nome do canal, sem @. 'soAmazon': true = pega de lá só as ofertas da Amazon (o Mercado Livre já tem a busca própria). 'maxPorHora' = quantas ofertas desses canais entram por hora (elas passam na frente da fila).",
+  "canaisTelegram": {
+    "ativo": true,
+    "soAmazon": true,
+    "maxPorHora": 1,
+    "intervaloSegundos": 180,
+    "canais": ["urubupromo", "xetdaspromocoes", "promobit"]
+  }
 }

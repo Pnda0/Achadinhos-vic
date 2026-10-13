@@ -1,0 +1,77 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { parseCanal, jidDoCanal, LeitorDeCanais } from '../src/telegram-canais.js';
+import { resolverLinkAmazon } from '../src/amazon-espelho.js';
+import { Espelho } from '../src/espelho.js';
+import { montarLegenda } from '../src/caption.js';
+import { Store } from '../src/store.js';
+
+const tmpStore = () => new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-')), 'db.json'));
+
+const PAGINA = `<section>
+<div class="tgme_widget_message_wrap js-widget_message_wrap"><div class="tgme_widget_message" data-post="urubupromo/901">
+<a class="tgme_widget_message_photo_wrap 1 2" href="https://t.me/urubupromo/901" style="width:800px;background-image:url('https://cdn1.telesco.pe/file/FOTO.jpg')"></a>
+<div class="tgme_widget_message_text js-message_text" dir="auto"><b>URUBU NA COZINHA</b><br/><br/>Processador de Alimentos Philco 420W<br/><br/>De R$ 199 por R$ 123,25 &amp; frete gr&#225;tis<br/><a href="https://link.amazon/B04nIB5MB" target="_blank">https://link.amazon/B04nIB5MB</a></div>
+<div class="tgme_widget_message_footer"><a class="tgme_widget_message_date" href="https://t.me/urubupromo/901"><time datetime="2027-01-15T08:00:00+00:00" class="time">08:00</time></a></div></div></div>
+<div class="tgme_widget_message_wrap js-widget_message_wrap"><div class="tgme_widget_message" data-post="urubupromo/902">
+<div class="tgme_widget_message_text js-message_text" dir="auto">Tênis <a href="https://meli.la/abc">aqui</a></div>
+<a class="tgme_widget_message_date" href="x"><time datetime="2027-01-15T08:01:00+00:00" class="time">08:01</time></a></div></div>
+<div class="tgme_widget_message_wrap"><div class="tgme_widget_message" data-post="urubupromo/903">só um vídeo, sem texto</div></div>
+</section>`;
+
+test('Canal público do Telegram: lê texto, links, foto e hora da página t.me/s', () => {
+  const msgs = parseCanal(PAGINA, 'urubupromo');
+  assert.deepEqual(msgs.map((m) => m.id), ['tgc-urubupromo/901', 'tgc-urubupromo/902']);
+  assert.deepEqual(msgs[0], {
+    id: 'tgc-urubupromo/901',
+    jid: 'canal:urubupromo',
+    t: Date.UTC(2027, 0, 15, 8) / 1000,
+    tipo: 'image',
+    texto: 'URUBU NA COZINHA\n\nProcessador de Alimentos Philco 420W\n\nDe R$ 199 por R$ 123,25 & frete grátis\nhttps://link.amazon/B04nIB5MB\nhttps://link.amazon/B04nIB5MB',
+    foto: 'https://cdn1.telesco.pe/file/FOTO.jpg',
+  });
+  assert.match(msgs[1].texto, /https:\/\/meli\.la\/abc/); // link escondido atrás de uma palavra
+  assert.equal(jidDoCanal('https://t.me/s/urubupromo'), 'canal:urubupromo');
+  assert.equal(jidDoCanal('@urubupromo'), 'canal:urubupromo');
+});
+
+test('Canal público do Telegram: oferta da Amazon entra sozinha com a MINHA etiqueta; ML do canal é ignorado', async () => {
+  const agora = { t: Date.UTC(2027, 0, 15, 8, 5) };
+  const store = tmpStore();
+  const pedidos = [];
+  const leitor = new LeitorDeCanais({ fetchImpl: async (u) => (u.includes('fora') ? { ok: false, status: 404 } : { ok: true, text: async () => PAGINA }) });
+  const fetchImpl = async (u, o) => {
+    pedidos.push(`${o.method} ${u}`);
+    let destino = 'https://www.amazon.com.br/Processador/dp/B0F3ZMZ45P?tag=urutelegram-20';
+    if (u.includes('link.amazon')) destino = o.method === 'HEAD' ? null : 'https://amzlinks.in/B04nIB5MB';
+    return { headers: { get: () => destino } };
+  };
+  const espelho = new Espelho({
+    sender: leitor,
+    store,
+    affiliate: { refresh: async () => {}, createLinks: async () => new Map() },
+    fontes: [
+      { nome: '@urubupromo', jid: 'canal:urubupromo', destino: 'Geral', soAmazon: true },
+      { nome: '@fora', jid: 'canal:fora', destino: 'Geral', soAmazon: true },
+    ],
+    grupos: [{ nome: 'Geral', jid: '-1001', filtros: { descontoMinimo: 20, diasSemRepetir: 5 } }],
+    cfg: { pausaEntreConsultasSeg: 0 },
+    agora: () => agora.t,
+    esperar: async () => {},
+    amazonTag: 'extra0306-20',
+    resolverAmazon: (link) => resolverLinkAmazon(link, { fetchImpl }),
+  });
+  const r = await espelho.tick();
+  assert.deepEqual({ enfileiradas: r.enfileiradas, ignoradas: r.ignoradas }, { enfileiradas: 1, ignoradas: { 'sem link do ML/Amazon': 1 } });
+  // só redirecionamentos, nunca a página do produto
+  assert.deepEqual(pedidos, ['HEAD https://link.amazon/B04nIB5MB', 'GET https://link.amazon/B04nIB5MB', 'HEAD https://amzlinks.in/B04nIB5MB']);
+  const p = store.proximo('Geral');
+  assert.equal(p.linkAfiliado, 'https://www.amazon.com.br/dp/B0F3ZMZ45P?tag=extra0306-20');
+  assert.equal(p.nome, 'Processador de Alimentos Philco 420W');
+  assert.equal(p.precoAtual, 123.25);
+  assert.equal(p.imagem, 'https://cdn1.telesco.pe/file/FOTO.jpg');
+  assert.doesNotMatch(montarLegenda(p, { titulo: 'x' }), /urutelegram|link\.amazon|URUBU/);
+});

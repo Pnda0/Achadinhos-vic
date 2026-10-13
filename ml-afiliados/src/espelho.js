@@ -129,6 +129,7 @@ export class Espelho {
       imagem: m.foto || null, // sem foto na mensagem, ela vem da prévia de link
       precoAtual: d.precoAtual,
       precoOriginal: d.precoOriginal,
+      precoObs: d.precoObs,
       descontoPct: d.descontoPct,
       cupom: d.cupom,
       nota: null,
@@ -149,7 +150,8 @@ export class Espelho {
     const destino = this.grupos.get(fonte?.destino || this.cfg.destinoPadrao);
     if (!fonte || !destino) return 'sem destino';
 
-    const links = extrairLinksML(m.texto).filter((l) => tipoLink(l) !== 'outro');
+    // Fonte "soAmazon": dali só interessam as ofertas da Amazon (o ML já tem a busca própria).
+    const links = fonte.soAmazon ? [] : extrairLinksML(m.texto).filter((l) => tipoLink(l) !== 'outro');
     const linksAmazon = links.length ? [] : extrairLinksAmazon(m.texto);
     if (!links.length && !linksAmazon.length) return 'sem link do ML/Amazon';
 

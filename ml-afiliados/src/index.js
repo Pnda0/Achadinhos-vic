@@ -10,6 +10,7 @@ import { loadFontes, loadGrupos, settings } from './config.js';
 import { Avisos } from './avisos.js';
 import { iniciarHeartbeat } from './heartbeat.js';
 import { Espelho, resolverFontes } from './espelho.js';
+import { LeitorDeCanais, jidDoCanal } from './telegram-canais.js';
 import { MLAffiliate } from './ml/affiliate.js';
 import { coletar, gerarLinks, enviarParaTodos, limpar } from './pipeline.js';
 import { createSender } from './senders.js';
@@ -69,6 +70,26 @@ function iniciarCaixaDeEntrada(cfg) {
   log(`📥 Caixa de entrada ligada: mande um link da Amazon ou do Mercado Livre no privado do bot que ele entra na fila do grupo "${destino}".`);
 }
 
+/** Canais públicos do Telegram (config/fontes.json > canaisTelegram): as ofertas de lá entram sozinhas com o link do dono. */
+function iniciarCanais() {
+  const { cfg } = loadFontes();
+  const c = cfg.canaisTelegram || {};
+  const canais = (c.canais || []).filter(Boolean);
+  if (c.ativo === false || !canais.length) return;
+  const destino = c.destino || cfg.destinoPadrao || 'Geral';
+  const soAmazon = c.soAmazon !== false;
+  if (soAmazon && !process.env.AMAZON_PARTNER_TAG?.trim()) return log('📡 Canais do Telegram desligados: falta AMAZON_PARTNER_TAG no .env.');
+  const fontes = canais.map((n) => {
+    const nome = `@${jidDoCanal(n).slice('canal:'.length)}`;
+    return { nome, nomeWhats: nome, jid: jidDoCanal(n), destino, soAmazon };
+  });
+  const maxPorHora = c.maxPorHora ?? 1;
+  const espelho = new Espelho({ sender: new LeitorDeCanais(), store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), cfg: { ...cfg, maxPorHora }, avisos });
+  const seg = Math.max(60, Number(c.intervaloSegundos) || 180);
+  agendarEspelho(espelho, seg);
+  log(`📡 Canais do Telegram ligados (${soAmazon ? 'só Amazon' : 'Amazon e ML'}, até ${maxPorHora} por hora): ${fontes.map((f) => f.nome).join(', ')} — confere a cada ${seg}s.`);
+}
+
 /** Liga o espelho de grupos, se houver grupos-fonte em config/fontes.json. */
 async function iniciarEspelho() {
   const { ativo, fontes, cfg } = loadFontes();
@@ -123,6 +144,7 @@ async function main() {
   await avisos.ligado({ grupos: loadGrupos() });
   iniciarHeartbeat();
 
+  iniciarCanais();
   await iniciarEspelho();
 
   // Se não há nada na fila dos grupos ATIVOS ao ligar, já faz uma coleta.

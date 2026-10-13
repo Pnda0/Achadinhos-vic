@@ -194,7 +194,10 @@ test('Amazon: lê nome, preços, desconto e cupom do texto da mensagem', () => {
   const d = dadosDoTexto(
     '🔥 *BAIXOU DEMAIS* 🔥\n\nFritadeira Air Fryer Mondial 4L Preta\n\n~De R$ 499,90~\n✅ Por R$ 299,90 à vista\n🎟️ Use o cupom: *AMZ10*\n\n🛒 https://amzn.to/3AbCdEf\n\nEntre no grupo: https://chat.whatsapp.com/XYZ'
   );
-  assert.deepEqual(d, { nome: 'Fritadeira Air Fryer Mondial 4L Preta', precoAtual: 299.9, precoOriginal: 499.9, descontoPct: 40, cupom: 'AMZ10' });
+  assert.deepEqual(d, { nome: 'Fritadeira Air Fryer Mondial 4L Preta', precoAtual: 299.9, precoOriginal: 499.9, descontoPct: 40, cupom: 'AMZ10', precoObs: null });
+  const d3 = dadosDoTexto('🥈 SEU BUMBUM MERECE\n\nPersonal Papel Higiênico Vip Folha Tripla Com 12 Rolos De 20M\n\n💡 selecione "Programe e Poupe"\npor 15,10 à vista\nhttps://link.amazon/x');
+  assert.deepEqual([d3.nome, d3.precoAtual, d3.precoObs], ['Personal Papel Higiênico Vip Folha Tripla Com 12 Rolos De 20M', 15.1, 'no Programe e Poupe']);
+  assert.equal(dadosDoTexto('Kit com 8 Potes Herméticos Electrolux\nDe R$ 89 por R$ 51 no Pix').precoObs, 'no Pix');
   const d2 = dadosDoTexto('Echo Dot 5ª geração Smart Speaker\nde R$ 449 por R$ 284 (37% OFF)\nhttps://amzn.to/x');
   assert.equal(d2.precoAtual, 284);
   assert.equal(d2.precoOriginal, 449);
