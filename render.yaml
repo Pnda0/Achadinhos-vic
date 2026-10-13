@@ -28,7 +28,7 @@ services:
       - key: CRON_COLETA
         value: "0 7,12,17 * * *"
       - key: CRON_ENVIO
-        value: "*/20 8-21 * * *"
+        value: "*/10 8-21 * * *"
       - key: CRON_LIMPEZA
         value: "0 0 * * *"
       - key: CRON_RESUMO
