@@ -9,6 +9,7 @@
  *
  * Não é uma API oficial/documentada: se o ML mudar algo, é aqui que vai quebrar.
  */
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { DATA_DIR, settings } from '../config.js';
@@ -78,15 +79,38 @@ export function normalizeCookieText(text) {
 /**
  * Cookies salvos: data/cookies.txt (ou "cookies.txt.txt" — o Bloco de Notas do Windows
  * costuma acrescentar um .txt escondido) e, por último, ML_COOKIES do .env.
+ *
+ * Na nuvem (Render) não dá para editar o cookies.txt: renovar a sessão é colar os cookies novos
+ * em ML_COOKIES. Por isso guardamos a "impressão digital" do ML_COOKIES já usado — quando ele
+ * muda, o valor novo passa na frente do cookies.txt (que ficou com a sessão vencida).
  */
-export function loadCookies(arquivos = [COOKIE_FILE, COOKIE_FILE + '.txt']) {
+export function loadCookies(arquivos = [COOKIE_FILE, COOKIE_FILE + '.txt'], doEnv = settings.cookiesEnv) {
+  let salvo = '';
   for (const arq of arquivos) {
     try {
-      const f = normalizeCookieText(fs.readFileSync(arq, 'utf8'));
-      if (f) return f;
+      salvo = normalizeCookieText(fs.readFileSync(arq, 'utf8'));
+      if (salvo) break;
     } catch {}
   }
-  return normalizeCookieText(settings.cookiesEnv);
+  const env = normalizeCookieText(doEnv);
+  if (!env) return salvo;
+
+  const arqMarca = path.join(path.dirname(arquivos[0]), 'ml-cookies-env.sha256');
+  const marca = crypto.createHash('sha256').update(env).digest('hex');
+  let anterior = null;
+  try {
+    anterior = fs.readFileSync(arqMarca, 'utf8').trim();
+  } catch {}
+  if (anterior === marca) return salvo || env;
+  try {
+    fs.writeFileSync(arqMarca, marca + '\n', 'utf8');
+  } catch {}
+  // 1ª vez com um cookies.txt já salvo (login-ml ou renovação): ele é mais novo que o do .env.
+  if (anterior === null && salvo) return salvo;
+  try {
+    fs.writeFileSync(arquivos[0], env + '\n', 'utf8');
+  } catch {}
+  return env;
 }
 
 function saveCookies(str) {

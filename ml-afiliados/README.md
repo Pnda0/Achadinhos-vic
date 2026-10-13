@@ -146,6 +146,23 @@ A Amazon só libera a API para contas com vendas qualificadas recentes; sem isso
 
 O espelho de outros grupos só funciona no WhatsApp.
 
+## 3.11 Rodar na nuvem (Render), postando no Telegram
+
+Assim o bot fica ligado sem depender do seu PC. O arquivo `render.yaml` (na raiz do repositório) já descreve tudo: o **bot** (worker em Docker, com um disco para a fila e a sessão do ML) e o **site** (página estática, grátis). O worker com disco exige plano pago do Render.
+
+1. Tenha em mãos, do seu `.env`: `ML_AFFILIATE_TAG`, `TELEGRAM_BOT_TOKEN` e `AVISOS_DESTINO_TELEGRAM` (seção 3.10).
+2. Pegue os cookies do ML pelo F12 (seção 3.2, "Jeito manual") — é o valor que vai em `ML_COOKIES`. Na nuvem não há janela para o `npm run login-ml`.
+3. No Render: **Dashboard > New > Blueprint** > escolha este repositório. Ele lê o `render.yaml` e pede os segredos; cole os valores. Amazon (`AMAZON_*`) e `LLM_API_KEY` são opcionais.
+4. Acompanhe em **Logs** do serviço `achadinhos-vic-bot`: deve aparecer `✅ Telegram conectado`, a primeira busca e os links gerados. O aviso **"Bot ligado"** chega no seu Telegram.
+
+No dia a dia:
+
+- **Sessão do ML expirou** (o bot avisa no Telegram): pegue os cookies de novo pelo F12, cole em **Environment > `ML_COOKIES`** e salve. O Render reinicia o bot e o valor novo passa a valer.
+- **Mudar categorias, grupos ou filtros**: edite os arquivos em `config/`, faça commit e push — o Render publica sozinho.
+- **Ver a fila ou o log**: aba **Shell** do serviço > `npm run status` ou `tail -n 50 data/bot.log`.
+
+Atenção: os servidores do Render ficam fora do Brasil. Se o Mercado Livre pedir verificação ou recusar a sessão vinda de lá, o bot avisa (`busca não trouxe nenhum produto` / `sessão expirou`) em vez de falhar calado — nesse caso, o caminho é rodar no seu PC (seção 2) ou num servidor no Brasil.
+
 ## 4. Uso
 
 Cada etapa também roda separada:

@@ -125,7 +125,7 @@ export class Avisos {
     if (/Sessão do Mercado Livre expirada|HTTP 401|login/i.test(msg)) {
       return this.avisar(
         'sessao-ml',
-        '*Sessão do Mercado Livre expirou* ⚠️\nSem ela o bot não gera links de afiliado.\nCopie os cookies de novo (F12 no site do ML, como da primeira vez), salve em data/cookies.txt e reinicie o bot.'
+        '*Sessão do Mercado Livre expirou* ⚠️\nSem ela o bot não gera links de afiliado.\nCopie os cookies de novo (F12 no site do ML, como da primeira vez), salve em data/cookies.txt e reinicie o bot.\nNa nuvem (Render): cole os cookies novos em ML_COOKIES (aba Environment) e salve — o bot reinicia sozinho.'
       );
     }
     return this.avisar(`erro-${nome}`, `*Erro na ${nome}* ❌\n${msg}`);

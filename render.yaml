@@ -1,5 +1,6 @@
 # Blueprint do Render: Dashboard > New > Blueprint > escolha este repositório.
 # Os valores marcados com "sync: false" são segredos: o Render pede no painel (copie do seu .env).
+# Passo a passo: ml-afiliados/README.md, seção 3.11.
 services:
   # Bot: fica ligado o tempo todo e posta no canal do Telegram.
   # Precisa de plano pago (worker + disco): a fila, a sessão do Mercado Livre e o log ficam em /app/data.
@@ -8,7 +9,7 @@ services:
     runtime: docker
     dockerfilePath: ./ml-afiliados/Dockerfile
     dockerContext: ./ml-afiliados
-    plan: starter
+    plan: 0.5c-512mb
     region: virginia
     buildFilter:
       paths:
@@ -61,7 +62,7 @@ services:
   - type: web
     name: achadinhos-vic
     runtime: static
-    buildCommand: ""
+    buildCommand: echo "sem build"
     staticPublishPath: ./Vic Site
     buildFilter:
       paths:
