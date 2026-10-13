@@ -30,11 +30,12 @@ export class TelegramSender {
 
   async call(metodo, corpo = {}, tentativa = 0) {
     if (!this.token) throw new Error('Preencha TELEGRAM_BOT_TOKEN no .env (token do @BotFather).');
+    const arquivo = corpo instanceof FormData; // upload de arquivo: o fetch monta o multipart sozinho
     const res = await this.fetch(`https://api.telegram.org/bot${this.token}/${metodo}`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(corpo),
-      signal: AbortSignal.timeout(30_000),
+      headers: arquivo ? {} : { 'content-type': 'application/json' },
+      body: arquivo ? corpo : JSON.stringify(corpo),
+      signal: AbortSignal.timeout(arquivo ? 60_000 : 30_000),
     });
     const json = await res.json().catch(() => ({}));
     if (json.ok) return json.result;
@@ -62,7 +63,23 @@ export class TelegramSender {
     await this.call('sendMessage', { chat_id: chatId, text: paraHTML(texto), parse_mode: 'HTML', link_preview_options: { is_disabled: false } });
   }
 
-  /** Foto pela URL (o Telegram baixa). Legenda > 1024 caracteres ou foto recusada: vai como texto com prévia. */
+  /** Baixa a foto aqui e envia o arquivo (para quando o Telegram não consegue baixar a URL sozinho). */
+  async enviarFotoBaixada(chatId, imageUrl, html) {
+    const res = await this.fetch(imageUrl, { headers: { 'user-agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) throw new Error(`imagem HTTP ${res.status}`);
+    const form = new FormData();
+    form.set('chat_id', String(chatId));
+    form.set('caption', html);
+    form.set('parse_mode', 'HTML');
+    form.set('photo', new Blob([await res.arrayBuffer()]), 'oferta.jpg');
+    await this.call('sendPhoto', form);
+  }
+
+  /**
+   * Foto pela URL (o Telegram baixa) ou por file_id. Se o Telegram não conseguir baixar a URL (acontece com as
+   * fotos dos canais públicos), baixamos e enviamos o arquivo. Legenda > 1024 caracteres ou foto que não foi de
+   * jeito nenhum: vai como texto com prévia.
+   */
   async sendImage(chatId, imageUrl, legenda) {
     const html = paraHTML(legenda);
     if (imageUrl && html.length <= 1024) {
@@ -70,7 +87,13 @@ export class TelegramSender {
         await this.call('sendPhoto', { chat_id: chatId, photo: imageUrl, caption: html, parse_mode: 'HTML' });
         return { comImagem: true };
       } catch (e) {
-        log(`  ↪ foto não foi (${String(e.message).split('\n')[0]}) — enviando só o texto.`);
+        try {
+          if (!/^https?:\/\//.test(imageUrl)) throw e;
+          await this.enviarFotoBaixada(chatId, imageUrl, html);
+          return { comImagem: true };
+        } catch (e2) {
+          log(`  ↪ foto não foi (${String(e2.message).split('\n')[0]}) — enviando só o texto.`);
+        }
       }
     }
     await this.sendText(chatId, legenda);

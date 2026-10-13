@@ -36,6 +36,21 @@ test('TelegramSender: manda foto com legenda em HTML; se a foto falhar, manda o 
   assert.match(chamadas[0].url, /api\.telegram\.org\/bot123:ABC\/sendPhoto$/);
 });
 
+test('TelegramSender: se o Telegram não baixa a URL da foto, o bot baixa e envia o arquivo', async () => {
+  const chamadas = [];
+  const fetchImpl = async (url, opts) => {
+    if (url === 'https://cdn1.telesco.pe/file/FOTO.jpg') return { ok: true, arrayBuffer: async () => new Uint8Array([0xff, 0xd8, 1, 2]).buffer };
+    const arquivo = opts.body instanceof FormData;
+    chamadas.push({ metodo: url.split('/').pop(), arquivo, body: opts.body });
+    return arquivo ? { status: 200, json: async () => ({ ok: true, result: {} }) } : { status: 400, json: async () => ({ ok: false, description: 'Bad Request: failed to get HTTP URL content' }) };
+  };
+  const tg = new TelegramSender({ token: '123:ABC', fetchImpl });
+  assert.deepEqual(await tg.sendImage('-100123', 'https://cdn1.telesco.pe/file/FOTO.jpg', '*OFERTA*'), { comImagem: true });
+  assert.deepEqual(chamadas.map((c) => [c.metodo, c.arquivo]), [['sendPhoto', false], ['sendPhoto', true]]);
+  const form = chamadas[1].body;
+  assert.deepEqual([form.get('chat_id'), form.get('caption'), form.get('parse_mode'), form.get('photo').size], ['-100123', '<b>OFERTA</b>', 'HTML', 4]);
+});
+
 test('TelegramSender: lista os chats vistos e espera quando o Telegram pede (429)', async () => {
   let n = 0;
   const { tg } = tgFalso((m) => {
