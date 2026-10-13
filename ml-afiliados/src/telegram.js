@@ -124,7 +124,13 @@ export class TelegramSender {
     const saida = [];
     for (const u of updates) {
       this.offset = u.update_id + 1; // confirma: o Telegram não manda esta de novo
+      const antes = this.chats.size;
       this.anotarChat(u);
+      // Canal/grupo novo (ex.: o bot acabou de virar administrador): mostra o chat id para pôr em config/grupos.json.
+      if (this.chats.size > antes) {
+        const c = [...this.chats.values()].at(-1);
+        if (c.tipo !== 'private') log(`📋 Chat novo do Telegram: ${c.nome} [${c.tipo}] = ${c.jid}`);
+      }
       const m = u.message;
       if (!m || !chatIds.includes(String(m.chat.id))) continue;
       const ocultos = [...(m.entities || []), ...(m.caption_entities || [])].map((e) => e.url).filter(Boolean);

@@ -1,5 +1,5 @@
 {
-  "_comentario": "Cada grupo recebe as ofertas das categorias com o mesmo nome em 'grupo' (config/categorias.json). 'nicho' liga o grupo a uma lista de palavras de config/nichos.json. Hoje o grupo 'Geral' está ativo (ofertas de tudo) e o 'Fitness' está desligado.",
+  "_comentario": "Cada grupo recebe as ofertas das categorias com o mesmo nome em 'grupo' (config/categorias.json). 'nicho' liga o grupo a uma lista de palavras de config/nichos.json. 'telegram' = chat id do canal daquele grupo. Para ligar um grupo: preencha 'telegram', ponha 'ativo': true aqui e nas categorias dele. Hoje só o 'Geral' está ativo; 'Fitness' e 'Beleza' estão prontos, esperando o canal.",
   "filtrosPadrao": {
     "descontoMinimo": 20,
     "precoMinimo": 15,
@@ -30,6 +30,35 @@
         "descontoMinimo": 15
       },
       "nicho": "fitness",
+      "telegram": ""
+    },
+    {
+      "nome": "Beleza",
+      "jid": "",
+      "ativo": false,
+      "mensagemAdicional": "",
+      "filtros": {},
+      "tema": "beleza, perfumes, maquiagem, cabelo e cuidados pessoais",
+      "titulos": {
+        "alto": [
+          "BELEZA PELA METADE 😱",
+          "CORRE, MIGA 🏃‍♀️",
+          "PREÇO DE AMOSTRA 💸",
+          "BUGOU O PREÇO 🤯"
+        ],
+        "medio": [
+          "ACHADINHO DE BELEZA 💄",
+          "AUTOCUIDADO EM PROMO ✨",
+          "NECESSAIRE AGRADECE 💅",
+          "BAIXOU O PREÇO 📉"
+        ],
+        "baixo": [
+          "OLHA ESSE MIMO 👇",
+          "DESCONTINHO ESPERTO 😉",
+          "PRA SE CUIDAR 🧴",
+          "ACHADO DO DIA 🛒"
+        ]
+      },
       "telegram": ""
     }
   ]

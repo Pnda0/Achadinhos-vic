@@ -82,5 +82,19 @@
     "url": "https://www.mercadolivre.com.br/ofertas?container_id=MLB779362-1&promotion_type=lightning",
     "ativo": false,
     "paginas": 3
+  },
+  {
+    "grupo": "Beleza",
+    "nome": "Beleza e Cuidado Pessoal",
+    "url": "https://www.mercadolivre.com.br/ofertas?category=MLB1246&container_id=MLB779362-1",
+    "ativo": false,
+    "paginas": 2
+  },
+  {
+    "grupo": "Beleza",
+    "nome": "Beleza (relâmpago)",
+    "url": "https://www.mercadolivre.com.br/ofertas?category=MLB1246&container_id=MLB779362-1&promotion_type=lightning",
+    "ativo": false,
+    "paginas": 1
   }
 ]
