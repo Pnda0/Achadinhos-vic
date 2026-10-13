@@ -123,6 +123,16 @@ Cada tipo de alerta sai no máximo 1 vez a cada 3 horas. Às 22h (`CRON_RESUMO`)
 
 Destino recomendado: crie um grupo **"Avisos do bot"** só com você e o número do bot e ponha `AVISOS_DESTINO=Avisos do bot`. Também aceita o seu número (`5579999998888`). Se o WhatsApp do bot cair, ele não consegue avisar por lá — nesse caso só o log (`data/bot.log`) registra.
 
+### Monitoramento externo: ser avisado se o bot cair
+
+Os avisos acima saem do próprio bot — se o processo morrer (deploy quebrado, Render fora do ar, sessão do WhatsApp presa), ele não consegue avisar. Para isso serve o `HEARTBEAT_URL`: o bot faz um GET nessa URL a cada 5 min (`CRON_HEARTBEAT`), e se os pings pararem um serviço externo te avisa.
+
+1. Crie uma conta grátis em https://healthchecks.io (ou use o "heartbeat monitor" do UptimeRobot / Better Stack) e crie um check com **período de 5 min** e **tolerância de uns 10 min**.
+2. Configure nele para onde quer ser avisado (e-mail, Telegram, etc.).
+3. Copie a URL de ping (`https://hc-ping.com/<uuid>`) e cole em `HEARTBEAT_URL` — no `.env` local e nas variáveis de ambiente do serviço no Render.
+
+Sem `HEARTBEAT_URL` o bot funciona normalmente, só não tem esse monitoramento.
+
 ## 3.9 Amazon (API oficial)
 
 A Amazon entra pela **Creators API** (a API oficial que substituiu a PA-API 5). Não raspamos o site da Amazon: o contrato do Associados proíbe robôs no site e só permite mostrar preço vindo da API — raspando, a conta pode ser encerrada e as comissões retidas.
@@ -150,7 +160,7 @@ O espelho de outros grupos só funciona no WhatsApp.
 
 Assim o bot fica ligado sem depender do seu PC. O arquivo `render.yaml` (na raiz do repositório) já descreve tudo: o **bot** (worker em Docker, com um disco para a fila e a sessão do ML) e o **site** (página estática, grátis). O worker com disco exige plano pago do Render.
 
-1. Tenha em mãos, do seu `.env`: `ML_AFFILIATE_TAG`, `TELEGRAM_BOT_TOKEN` e `AVISOS_DESTINO_TELEGRAM` (seção 3.10).
+1. Tenha em mãos, do seu `.env`: `ML_AFFILIATE_TAG`, `TELEGRAM_BOT_TOKEN` e `AVISOS_DESTINO_TELEGRAM` (seção 3.10). `HEARTBEAT_URL` é opcional (seção 3.10, "Monitoramento externo").
 2. Pegue os cookies do ML pelo F12 (seção 3.2, "Jeito manual") — é o valor que vai em `ML_COOKIES`. Na nuvem não há janela para o `npm run login-ml`.
 3. No Render: **Dashboard > New > Blueprint** > escolha este repositório. Ele lê o `render.yaml` e pede os segredos; cole os valores. Amazon (`AMAZON_*`) e `LLM_API_KEY` são opcionais.
 4. Acompanhe em **Logs** do serviço `achadinhos-vic-bot`: deve aparecer `✅ Telegram conectado`, a primeira busca e os links gerados. O aviso **"Bot ligado"** chega no seu Telegram.
@@ -186,6 +196,7 @@ Agenda padrão (edite no `.env`, formato cron):
 - **coleta + links**: 7h, 12h e 17h
 - **envio**: a cada 8 min, das 8h às 21h59
 - **limpeza**: meia-noite
+- **heartbeat** (se `HEARTBEAT_URL` estiver preenchido): a cada 5 min
 
 O bot só funciona com o computador ligado e a janela do `3-iniciar.bat` aberta. Para subir junto com o Windows: `Win+R` → `shell:startup` → cole ali um **atalho** do `3-iniciar.bat`.
 
