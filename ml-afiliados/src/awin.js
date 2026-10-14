@@ -264,20 +264,29 @@ export class Awin {
     // dele é desconhecido e a comissão poderia ir para outra pessoa. Quem chama resolve até a página da loja antes.
     if (url && (HOST_CURTO.test(hostDe(url)) || HOST_AWIN.test(hostDe(url)))) throw new Error('link já encurtado/de afiliado: resolva até a página da loja antes');
     const longo = linkAwin(anunciante.id, id, url);
-    if (!this.cfg.token || !this.config.linkCurto || !url) return longo;
+    if (!this.cfg.token || !this.config.linkCurto || !url || this.semLinkCurto) return longo;
     const chave = `${anunciante.id}|${url}`;
     const cache = this.lerCacheLinks();
-    if (cache[chave]) return cache[chave];
+    const guardado = cache[chave];
+    if (typeof guardado === 'string') return guardado;
+    if (guardado?.falhaEm && this.agora() - guardado.falhaEm < 24 * 3_600_000) return longo; // falhou há pouco: não insiste
+    let motivo;
     try {
       const r = await this.chamar('POST', `/publishers/${id}/linkbuilder/generate`, { advertiserId: anunciante.id, destinationUrl: url, shorten: true });
       if (r?.shortUrl && (await this.linkCurtoEhNosso(r.shortUrl, id))) {
         this.gravarCacheLinks({ ...cache, [chave]: r.shortUrl });
         return r.shortUrl;
       }
-      log(`  Awin: o link curto não confirmou o nosso id de afiliado — usando o link longo.`);
+      motivo = 'o link curto não confirmou o nosso id de afiliado';
     } catch (e) {
-      log(`  Awin: link curto não saiu (${String(e.message).split('\n')[0].slice(0, 120)}) — usando o link longo.`);
+      motivo = String(e.message).split('\n')[0].slice(0, 120);
+      if (e.status === 401 || e.status === 403) {
+        this.semLinkCurto = true; // a conta não tem o gerador de links: não tenta mais até o bot religar
+        log(`  Awin: gerador de link curto indisponível para a conta (${motivo}) — usando o link longo até o bot religar.`);
+      }
     }
+    this.gravarCacheLinks({ ...cache, [chave]: { falhaEm: this.agora() } });
+    if (!this.semLinkCurto) log(`  Awin: link curto não saiu (${motivo}) — usando o link longo (tento de novo em 24h).`);
     return longo;
   }
 
@@ -286,14 +295,18 @@ export class Awin {
    * awin1.com, onde o clique é registrado). Roda uma vez por link novo — o resultado bom fica no cache.
    */
   async linkCurtoEhNosso(curto, publisherId) {
-    try {
-      const res = await this.fetch(curto, { method: 'HEAD', redirect: 'manual', signal: AbortSignal.timeout(5_000) });
-      const destino = res.headers?.get?.('location') || '';
-      const u = new URL(destino, curto);
-      return HOST_AWIN.test(u.hostname) && u.searchParams.get('awinaffid') === String(publisherId);
-    } catch {
-      return false;
+    // HEAD primeiro; se o encurtador não responder o redirecionamento a um HEAD, GET — também sem seguir.
+    for (const method of ['HEAD', 'GET']) {
+      try {
+        const res = await this.fetch(curto, { method, redirect: 'manual', signal: AbortSignal.timeout(5_000) });
+        res.body?.cancel?.().catch(() => {});
+        const destino = res.headers?.get?.('location');
+        if (!destino) continue;
+        const u = new URL(destino, curto);
+        return HOST_AWIN.test(u.hostname) && u.searchParams.get('awinaffid') === String(publisherId);
+      } catch {}
     }
+    return false;
   }
 
   lerCacheLinks() {

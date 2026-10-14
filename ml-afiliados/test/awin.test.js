@@ -68,7 +68,7 @@ function apiFalsa(extra = {}) {
         { id: 55555, name: 'Loja Nova BR', displayUrl: 'www.lojanova.com.br', validDomains: [] },
       ]);
     }
-    if (u.pathname.endsWith('/linkbuilder/generate')) return extra.semLinkCurto ? json({ description: 'Unknown error! Please try again later!' }, 400) : json({ url: 'https://www.awin1.com/cread.php?longo', shortUrl: 'https://tidd.ly/MEU' });
+    if (u.pathname.endsWith('/linkbuilder/generate')) return extra.semLinkCurto ? json({ description: 'Unknown error! Please try again later!' }, extra.status403 ? 403 : 400) : json({ url: 'https://www.awin1.com/cread.php?longo', shortUrl: 'https://tidd.ly/MEU' });
     if (u.pathname === '/publisher/123456/promotions') return json({ data: extra.promos || [] });
     return json({ error: 'nao sei' }, 404);
   };
@@ -97,10 +97,21 @@ test('Awin API: descobre o id de afiliado, lista as lojas aprovadas (com cache) 
   assert.equal(chamadas.length, antes);
 
   // o link curto leva para OUTRO id de afiliado, ou a conferência não responde: fica o link longo (sempre nosso)
+  const LONGO = 'https://www.awin1.com/cread.php?awinmid=79926&awinaffid=123456&ued=https%3A%2F%2Fwww.adidas.com.br%2Ft';
   for (const extra of [{ destinoCurto: 'https://www.awin1.com/cread.php?awinmid=79926&awinaffid=999&ued=x' }, { curtoSemResposta: true }, { destinoCurto: '' }]) {
     const c = apiFalsa(extra);
-    assert.equal(await c.api.gerarLink({ id: 79926 }, 'https://www.adidas.com.br/t'), 'https://www.awin1.com/cread.php?awinmid=79926&awinaffid=123456&ued=https%3A%2F%2Fwww.adidas.com.br%2Ft', JSON.stringify(extra));
+    assert.equal(await c.api.gerarLink({ id: 79926 }, 'https://www.adidas.com.br/t'), LONGO, JSON.stringify(extra));
+    // a falha fica guardada por 24h: a próxima coleta não chama a API de novo para a mesma página
+    const n = c.chamadas.length;
+    assert.equal(await c.api.gerarLink({ id: 79926 }, 'https://www.adidas.com.br/t'), LONGO);
+    assert.equal(c.chamadas.length, n);
   }
+  // conta sem o gerador (403): para de tentar até religar, para qualquer página
+  const semGerador = apiFalsa({ semLinkCurto: true, status403: true });
+  assert.equal(await semGerador.api.gerarLink({ id: 79926 }, 'https://www.adidas.com.br/t'), LONGO);
+  const n403 = semGerador.chamadas.length;
+  assert.match(await semGerador.api.gerarLink({ id: 79926 }, 'https://www.adidas.com.br/outra'), /awinaffid=123456/);
+  assert.equal(semGerador.chamadas.length, n403);
 
   // a loja não deixa usar o gerador: cai no link longo, que funciona do mesmo jeito
   const b = apiFalsa({ semLinkCurto: true });
