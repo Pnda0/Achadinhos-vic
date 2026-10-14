@@ -282,17 +282,24 @@ Tênis Masculino Feminino Kappa Park 2.0
 
 ~De R$ 169,99~
 🔥 *Por R$ 69,34* no Pix (59% OFF)
+💰 Economia de R$ 100,65
 
 🎟️ R$ 15 OFF com cupom
 🚚 Frete grátis ⚡FULL
-⭐ 4.7 · +250mil vendidos
+⭐ 4,7 · +250 mil vendidos
 ⏳ Oferta relâmpago — acaba hoje!
 
-🏬 Mercado Livre:
-🛒 https://meli.la/xxxxx
+🛒 Ver oferta no Mercado Livre:
+https://meli.la/xxxxx
 
 🔗 Convide um amigo para o grupo: https://chat.whatsapp.com/...
 ```
+
+Regras da copy (`src/caption.js`), sempre com dado real, nunca inventado:
+- **Economia em R$** só quando ela for de R$ 30 ou mais; abaixo disso o % basta (e o % aparece uma vez só).
+- **Preço com cupom** só quando o cupom é em reais e o preço não tem condição (sem "no Pix"); senão, só a linha do cupom.
+- **Prova social** (nota e/ou vendas) aparece mesmo com só um dos dois; **urgência** só na oferta relâmpago de verdade.
+- Código de cupom vai em `código`: no Telegram, um toque copia.
 
 ---
 

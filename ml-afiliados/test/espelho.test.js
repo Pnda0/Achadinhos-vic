@@ -250,7 +250,7 @@ test('Espelho: link da Amazon vira oferta PRONTA com a MINHA etiqueta, sem abrir
   assert.equal(p.nome, 'Fone Bluetooth JBL Tune 520BT Preto');
   assert.equal(p.descontoPct, 50);
   const legenda = montarLegenda(p, { titulo: 'x' });
-  assert.match(legenda, /🏬 Amazon:\n🛒 https:\/\/www\.amazon\.com\.br\/dp\/B0FONE0001\?tag=extra0306-20/);
+  assert.match(legenda, /🛒 Ver oferta na Amazon:\nhttps:\/\/www\.amazon\.com\.br\/dp\/B0FONE0001\?tag=extra0306-20/);
   assert.match(legenda, /⏱️ Preço da Amazon às/);
   assert.doesNotMatch(legenda, /amzn\.to|outro-20|CORRE/);
 

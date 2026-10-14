@@ -13,6 +13,15 @@ test('paraHTML: negrito e riscado do WhatsApp viram HTML do Telegram, sem quebra
   assert.match(html, /https:\/\/meli\.la\/a_b\*c/);
 });
 
+test('paraHTML: código do cupom vira <code> (um toque copia) e o preço com cupom fica em negrito', () => {
+  const cupom = paraHTML(montarLegenda({ tipo: 'cupom', loja: 'awin', lojaNome: 'Granado', nome: '15% OFF', cupom: 'VIC15', linkAfiliado: 'https://tidd.ly/a' }));
+  assert.match(cupom, /🎟️ Cupom: <code>VIC15<\/code> \(toque para copiar\)/);
+  const ml = paraHTML(montarLegenda({ nome: 'Whey', precoAtual: 99.9, cupom: 'R$ 10 OFF com Cupom', linkAfiliado: 'https://meli.la/a' }, { titulo: 'x' }));
+  assert.match(ml, /🎟️ <b>R\$ 89,90<\/b> com o cupom de R\$ 10/);
+  assert.equal(paraHTML('Cupom: `A&B<10` ok'), 'Cupom: <code>A&amp;B&lt;10</code> ok');
+  assert.equal(paraHTML('https://x.com/a`b`c'), 'https://x.com/a`b`c'); // crase no meio de link não vira <code>
+});
+
 function tgFalso(respostas) {
   const chamadas = [];
   const fetchImpl = async (url, opts) => {

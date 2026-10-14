@@ -63,11 +63,30 @@ test('legenda tem título, preço riscado, cupom, frete, link e mensagem adicion
   assert.match(l, /^\*PISANTE BARATO 👟\*/);
   assert.match(l, /~De R\$ 169,99~/);
   assert.match(l, /\*Por R\$ 69,34\* no Pix \(59% OFF\)/);
-  assert.match(l, /🎟️ R\$ 15 OFF com cupom/);
+  assert.match(l, /💰 Economia de R\$ 100,65\n/);
+  assert.match(l, /🎟️ R\$ 15 OFF com cupom\n/); // preço "no Pix": não dá para garantir que o cupom acumula
+  assert.match(montarLegenda({ ...produto, precoObs: null }, { titulo: 'x' }), /🎟️ \*R\$ 54,34\* com o cupom de R\$ 15\n/);
   assert.match(l, /🚚 Frete grátis ⚡FULL/);
-  assert.match(l, /https:\/\/meli\.la\/abc/);
+  assert.match(l, /⭐ 4,7 · \+250 mil vendidos/);
+  assert.match(l, /🛒 Ver oferta no Mercado Livre:\nhttps:\/\/meli\.la\/abc/);
   assert.match(l, /Convide um amigo$/);
+  assert.equal((l.match(/% OFF/g) || []).length, 1); // o % aparece uma vez só
   assert.equal(nomeCurto(produto.nome), 'Tênis Masculino Feminino Kappa Park 2.0');
+});
+
+test('legenda: economia em R$ só quando pesa; cupom só vira preço final quando é em reais', () => {
+  const barato = montarLegenda({ ...produto, precoAtual: 39.9, precoOriginal: 54.9, descontoPct: 27, cupom: null }, { titulo: 'x' });
+  assert.doesNotMatch(barato, /Economia/); // R$ 15 de economia: o % já diz tudo
+  const pct = montarLegenda({ ...produto, cupom: '10% OFF com Cupom' }, { titulo: 'x' });
+  assert.match(pct, /🎟️ 10% OFF com cupom/); // cupom em % pode ter teto: não calcula
+  const maiorQuePreco = montarLegenda({ ...produto, cupom: 'R$ 80 OFF com Cupom' }, { titulo: 'x' });
+  assert.match(maiorQuePreco, /🎟️ R\$ 80 OFF com cupom/);
+});
+
+test('legenda: prova social com só a nota ou só as vendas (produto sem avaliação)', () => {
+  assert.match(montarLegenda({ ...produto, nota: null, vendidos: '+100 vendidos' }, { titulo: 'x' }), /🛍️ \+100 vendidos/);
+  assert.match(montarLegenda({ ...produto, nota: 4.5, vendidos: null }, { titulo: 'x' }), /⭐ 4,5\n/);
+  assert.doesNotMatch(montarLegenda({ ...produto, nota: null, vendidos: null }, { titulo: 'x' }), /⭐|🛍️/);
 });
 
 test('filtros dos grupos', () => {

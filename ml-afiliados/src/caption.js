@@ -100,18 +100,56 @@ export function tituloCupom(p) {
 
 const diaMes = (iso) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: settings.tz });
 
+/** Onde clicar: "🛒 Ver oferta no Mercado Livre:" + link. Loja parceira vira "na loja X" (o gênero do nome varia). */
+function chamada(p, acao = 'Ver oferta') {
+  const onde = p.loja === 'amazon' ? 'na Amazon' : p.loja === 'awin' ? `na loja ${nomeLoja(p)}` : 'no Mercado Livre';
+  return `🛒 ${acao} ${onde}:\n${p.linkAfiliado}`;
+}
+
+/** Código de cupom em `monospace`: no Telegram, um toque copia. */
+const linhaCodigo = (cupom) => `🎟️ Cupom: \`${cupom}\` (toque para copiar)`;
+
 /** Cupom ou promoção de loja (Awin): o que é, o código, até quando vale e o link. */
 function legendaCupom(p, { titulo, mensagemAdicional }) {
   return [
     `*${(titulo || tituloCupom(p)).toUpperCase()}*`,
     p.nome.slice(0, 140),
     p.descricao,
-    [p.cupom && `🎟️ Cupom: *${p.cupom}*`, p.validade && `⏳ Vale até ${diaMes(p.validade)}`].filter(Boolean).join('\n'),
-    `🏬 ${nomeLoja(p)}:\n🛒 ${p.linkAfiliado}`,
+    [p.cupom && linhaCodigo(p.cupom), p.validade && `⏳ Vale até ${diaMes(p.validade)}`].filter(Boolean).join('\n'),
+    chamada(p, p.cupom ? 'Usar o cupom' : 'Ver promoção'),
     mensagemAdicional,
   ]
     .filter((s) => s && s.trim())
     .join('\n\n');
+}
+
+/** Economia em reais só quando pesa (R$ 30 ou mais); abaixo disso o % já diz tudo. */
+export const ECONOMIA_MINIMA = 30;
+
+const centavos = (n) => Math.round(n * 100) / 100;
+
+/** Valor de um cupom do ML em reais ("R$ 15 OFF com Cupom" -> 15). Cupom em % fica de fora: pode ter teto. */
+export function valorCupomReais(cupom) {
+  const m = String(cupom || '').match(/^R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?)\s*OFF/i);
+  return m ? Number(m[1].replace(/\./g, '').replace(',', '.')) : null;
+}
+
+/** "⭐ 4,7 · +250 mil vendidos" — funciona com só a nota ou só as vendas. */
+function linhaProva(p) {
+  const nota = p.nota && p.nota >= 4 ? p.nota.toFixed(1).replace('.', ',') : null;
+  const vendidos = p.vendidos ? p.vendidos.replace(/(\d)mil\b/i, '$1 mil') : null;
+  if (nota) return `⭐ ${[nota, vendidos].filter(Boolean).join(' · ')}`;
+  return vendidos && `🛍️ ${vendidos}`;
+}
+
+/**
+ * Cupom do ML em reais já com a conta feita ("R$ 54,34 com o cupom de R$ 15"); se não der para ter certeza, só o cupom.
+ * Preço com condição ("no Pix") fica sem conta: não dá para garantir que o cupom acumula com ela.
+ */
+function linhaCupomML(p) {
+  const v = p.precoObs ? null : valorCupomReais(p.cupom);
+  const final = v && p.precoAtual > v ? centavos(p.precoAtual - v) : null;
+  return final ? `🎟️ *${formatBRL(final)}* com o cupom de ${formatBRL(v)}` : `🎟️ ${p.cupom.replace(/ com Cupom$/i, '')} com cupom`;
 }
 
 export function montarLegenda(p, { titulo, mensagemAdicional = '' } = {}) {
@@ -122,24 +160,24 @@ export function montarLegenda(p, { titulo, mensagemAdicional = '' } = {}) {
     linhasPreco.push(
       `🔥 *Por ${formatBRL(p.precoAtual)}*${p.precoObs ? ` ${p.precoObs}` : ''}${p.descontoPct ? ` (${p.descontoPct}% OFF)` : ''}`
     );
+    const economia = p.precoOriginal ? centavos(p.precoOriginal - p.precoAtual) : 0;
+    if (economia >= ECONOMIA_MINIMA) linhasPreco.push(`💰 Economia de ${formatBRL(economia)}`);
   } else {
     linhasPreco.push(`🔥 *Confira o preço no link*${p.descontoPct ? ` (${p.descontoPct}% OFF)` : ''}`);
   }
 
   const extras = [];
-  if (p.cupom) extras.push(p.loja === 'amazon' || p.loja === 'awin' ? `🎟️ Cupom: *${p.cupom}*` : `🎟️ ${p.cupom.replace(/ com Cupom$/i, '')} com cupom`);
+  if (p.cupom) extras.push(p.loja === 'amazon' || p.loja === 'awin' ? linhaCodigo(p.cupom) : linhaCupomML(p));
   if (p.frete) extras.push(`🚚 ${p.frete}${p.full ? ' ⚡FULL' : ''}`);
-  if (p.nota && p.nota >= 4) extras.push(`⭐ ${p.nota.toFixed(1)}${p.vendidos ? ` · ${p.vendidos}` : ''}`);
+  extras.push(linhaProva(p));
   if (p.fimRelampago) extras.push('⏳ Oferta relâmpago — acaba hoje!');
 
   return [
     `*${(titulo || tituloPronto(p)).toUpperCase()}*`,
     nomeCurto(p.nome),
     linhasPreco.join('\n'),
-    extras.join('\n'),
-    p.loja === 'amazon'
-      ? `🏬 Amazon:\n🛒 ${p.linkAfiliado}${p.precoAtual ? `\n\n⏱️ Preço da Amazon às ${horaConsulta(p)} — pode mudar.` : ''}`
-      : `🏬 ${nomeLoja(p)}:\n🛒 ${p.linkAfiliado}`,
+    extras.filter(Boolean).join('\n'),
+    chamada(p) + (p.loja === 'amazon' && p.precoAtual ? `\n\n⏱️ Preço da Amazon às ${horaConsulta(p)} — pode mudar.` : ''),
     mensagemAdicional,
   ]
     .filter((s) => s && s.trim())

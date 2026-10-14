@@ -12,11 +12,12 @@ import { log, sleep } from './util.js';
 const ATUALIZACOES = ['message', 'channel_post', 'my_chat_member', 'chat_member'];
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-/** Converte a formatação do WhatsApp (*negrito*, ~riscado~) para o HTML do Telegram. */
+/** Converte a formatação do WhatsApp (*negrito*, ~riscado~, `código`) para o HTML do Telegram. */
 export function paraHTML(texto) {
   return esc(texto)
     .replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,!?:]|$)/gm, '$1<b>$2</b>')
-    .replace(/(^|[\s(])~([^~\n]+)~(?=[\s).,!?:]|$)/gm, '$1<s>$2</s>');
+    .replace(/(^|[\s(])~([^~\n]+)~(?=[\s).,!?:]|$)/gm, '$1<s>$2</s>')
+    .replace(/(^|[\s(])`([^`\n]+)`(?=[\s).,!?:]|$)/gm, '$1<code>$2</code>');
 }
 
 export class TelegramSender {

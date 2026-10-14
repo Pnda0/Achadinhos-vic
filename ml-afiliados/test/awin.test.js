@@ -136,7 +136,7 @@ test('Awin cupons: cada loja manda para os grupos dela e para o Geral, com limit
   assert.deepEqual({ loja: cupom.loja, lojaNome: cupom.lojaNome, tipo: cupom.tipo, cupom: cupom.cupom, descontoPct: cupom.descontoPct, linkAfiliado: cupom.linkAfiliado }, { loja: 'awin', lojaNome: 'adidas', tipo: 'cupom', cupom: 'CORRE15', descontoPct: 15, linkAfiliado: 'https://tidd.ly/MEU' });
   assert.equal(r.produtos.find((p) => p.id === 'AWP-4').linkAfiliado, PROMOS[3].urlTracking);
   const legenda = montarLegenda(cupom, { titulo: tituloCupom(cupom) });
-  assert.match(legenda, /^\*CUPOM ADIDAS 🎟️\*\n\n15% OFF em tênis de corrida\n\nVálido para a linha Adizero\.\n\n🎟️ Cupom: \*CORRE15\*\n⏳ Vale até 3[01]\/12\n\n🏬 adidas:\n🛒 https:\/\/tidd\.ly\/MEU/);
+  assert.match(legenda, /^\*CUPOM ADIDAS 🎟️\*\n\n15% OFF em tênis de corrida\n\nVálido para a linha Adizero\.\n\n🎟️ Cupom: `CORRE15` \(toque para copiar\)\n⏳ Vale até 3[01]\/12\n\n🛒 Usar o cupom na loja adidas:\nhttps:\/\/tidd\.ly\/MEU/);
   assert.equal(tituloCupom(r.produtos.find((p) => p.id === 'AWP-2')), 'PROMO ADIDAS 🔥');
   assert.equal(ofertaDeCupom({ promotionId: 9, title: 'Sem link' }, LOJAS[0], 'Geral'), null);
 
@@ -164,7 +164,7 @@ test('Awin de ponta a ponta: cupom → link curto conferido → fila → publica
   const sender = { typing: async () => {}, sendText: async (j, t) => postados.push(t), sendImage: async (j, i, t) => (postados.push(t), { comImagem: true }) };
   const p = await enviarProximo(sender, { nome: 'Fitness', jid: '-100', mensagemAdicional: '', filtros: { diasSemRepetir: 7 } }, s);
   assert.equal(p.status, 'ENVIADO');
-  assert.match(postados[0], /🛒 https:\/\/tidd\.ly\/MEU/);
+  assert.match(postados[0], /\nhttps:\/\/tidd\.ly\/MEU/);
 });
 
 test('Fila: cupom passa na frente, mas nunca dois seguidos', () => {
@@ -215,8 +215,8 @@ test('Espelho: link de loja parceira num canal entra com o MEU link da Awin e o 
   const p = fila[0];
   assert.deepEqual({ loja: p.loja, lojaNome: p.lojaNome, linkAfiliado: p.linkAfiliado, precoAtual: p.precoAtual, precoOriginal: p.precoOriginal, cupom: p.cupom }, { loja: 'awin', lojaNome: 'adidas', linkAfiliado: 'https://tidd.ly/79926', precoAtual: 199, precoOriginal: 399, cupom: 'CORRE15' });
   const legenda = montarLegenda(p, { titulo: 'x' });
-  assert.match(legenda, /🏬 adidas:\n🛒 https:\/\/tidd\.ly\/79926/);
-  assert.match(legenda, /🎟️ Cupom: \*CORRE15\*/);
+  assert.match(legenda, /🛒 Ver oferta na loja adidas:\nhttps:\/\/tidd\.ly\/79926/);
+  assert.match(legenda, /🎟️ Cupom: `CORRE15` \(toque para copiar\)/);
   assert.doesNotMatch(legenda, /utm_source|Preço da Amazon/);
 });
 
