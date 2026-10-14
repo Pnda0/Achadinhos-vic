@@ -15,11 +15,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DATA_DIR, ROOT } from './config.js';
-import { log, sleep } from './util.js';
+import { casaTermo, log, normalizar, sleep } from './util.js';
 
 const env = process.env;
 export const awinCfg = () => ({
-  token: env.AWIN_API_TOKEN?.trim() || '',
+  token: (env.AWIN_API_TOKEN || env.API_KEY_AWIN)?.trim() || '', // API_KEY_AWIN: nome que o dono usou no .env
   publisherId: env.AWIN_PUBLISHER_ID?.trim() || '',
   apiUrl: (env.AWIN_API_URL?.trim() || 'https://api.awin.com').replace(/\/$/, ''),
 });
@@ -338,10 +338,17 @@ export async function buscarCuponsAwin({ api = new Awin(), grupos = [], jaTem = 
   const produtos = [];
   const porGrupo = {};
   const max = Number(cfg.cupons.maxPorColeta) || 2;
+  // Grupo de nicho também recebe cupom de qualquer loja quando o texto do cupom é do tema dele
+  // (ex.: "Perfumes com 20% OFF" de uma loja de moda vai para o grupo Perfumes).
+  const nichos = grupos.filter((g) => g.ativo && g.filtros?.palavrasObrigatorias?.length);
+  const doTema = (texto) =>
+    nichos.filter((g) => g.filtros.palavrasObrigatorias.some((t) => casaTermo(texto, t)) && !(g.filtros.palavrasBloqueadas || []).some((t) => casaTermo(texto, t))).map((g) => g.nome);
   for (const promo of promos) {
     const loja = porId.get(Number(promo.advertiser?.id));
     if (!loja) continue;
-    for (const grupo of new Set([...(loja.grupos || []), cfg.grupoGeral].filter((g) => g && ativos.has(g)))) {
+    // Só o título, e sem as ressalvas: "10% OFF - não aplica em perfumes" NÃO é cupom de perfume.
+    const texto = normalizar(promo.title).replace(/\b(nao|exceto|exclu\w*|menos|salvo|fora)\b.*$/, '');
+    for (const grupo of new Set([...(loja.grupos || []), ...doTema(texto), cfg.grupoGeral].filter((g) => g && ativos.has(g)))) {
       if ((porGrupo[grupo] || 0) >= max) continue;
       const p = ofertaDeCupom(promo, loja, grupo);
       if (!p || jaTem(p)) continue;

@@ -9,6 +9,10 @@
     "diasSemRepetir": 7
   },
   "anunciantes": [
+    { "id": 17648, "nome": "C&A", "dominios": ["cea.com.br"], "grupos": [], "pf": "?", "obs": "Aprovada. Moda: cupom vai ao Geral e, se o texto for do tema (esportivo, perfume, maquiagem...), ao grupo do nicho." },
+    { "id": 20946, "nome": "StudioZ", "dominios": [], "grupos": ["Fitness"], "pf": "?", "obs": "Aprovada. Tênis e streetwear." },
+    { "id": 70694, "nome": "Renner", "dominios": [], "grupos": [], "pf": "?", "obs": "Aprovada (Favoritos Renner + Ashua). Moda." },
+    { "id": 86587, "nome": "Riachuelo", "dominios": [], "grupos": [], "pf": "?", "obs": "Aprovada. Moda." },
     { "id": 79926, "nome": "adidas", "dominios": ["adidas.com.br"], "grupos": ["Fitness"], "pf": "sim", "obs": "Paga 7% para grupos de ofertas no WhatsApp/Telegram. Cupom que não veio da Awin zera a comissão." },
     { "id": 65354, "nome": "Soldiers Nutrition", "dominios": ["soldiersnutrition.com.br"], "grupos": ["Fitness"], "pf": "sim", "obs": "Suplementos. 7,5%." },
     { "id": 17697, "nome": "Dafiti", "dominios": ["dafiti.com.br"], "grupos": ["Fitness"], "pf": "sim", "obs": "Moda e esportivo. 6% para pessoa física." },

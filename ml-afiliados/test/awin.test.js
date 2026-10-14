@@ -105,6 +105,14 @@ test('Awin cupons: cada loja manda para os grupos dela e para o Geral, com limit
   assert.equal(tituloCupom(r.produtos.find((p) => p.id === 'AWP-2')), 'PROMO ADIDAS 🔥');
   assert.equal(ofertaDeCupom({ promotionId: 9, title: 'Sem link' }, LOJAS[0], 'Geral'), null);
 
+  // cupom de loja de moda cujo texto é do tema vai também ao grupo do nicho
+  const moda = apiFalsa({ promos: [{ promotionId: 7, advertiser: { id: 55555 }, title: 'Perfumes importados com 20% OFF', endDate: '2099-12-31T00:00:00.000', urlTracking: 'https://www.awin1.com/cread.php?o=7', voucher: { code: 'CHEIRO20' } }] });
+  const nicho = [{ nome: 'Geral', ativo: true, filtros: {} }, { nome: 'Perfumes', ativo: true, filtros: { palavrasObrigatorias: ['perfume'], palavrasBloqueadas: ['automotivo'] } }, { nome: 'Fitness', ativo: true, filtros: { palavrasObrigatorias: ['whey'] } }];
+  assert.deepEqual((await buscarCuponsAwin({ api: moda.api, grupos: nicho })).produtos.map((p) => p.grupo).sort(), ['Geral', 'Perfumes']);
+  // ressalva não conta como tema (cupom real da Riachuelo, out/2026)
+  const ressalva = apiFalsa({ promos: [{ promotionId: 8, advertiser: { id: 55555 }, title: '10% DE DESCONTO (NÃO APLICA EM DEMARCADOS) - não aplicado em perfumes, marketplace', endDate: '2099-12-31T00:00:00.000', urlTracking: 'https://www.awin1.com/cread.php?o=8', voucher: { code: 'GANHE10' } }] });
+  assert.deepEqual((await buscarCuponsAwin({ api: ressalva.api, grupos: nicho })).produtos.map((p) => p.grupo), ['Geral']);
+
   // o que já está na fila ou saiu há pouco não volta
   const deNovo = await buscarCuponsAwin({ api, grupos, jaTem: (p) => p.id === 'AWP-1' });
   assert.ok(!deNovo.produtos.some((p) => p.id === 'AWP-1'));
