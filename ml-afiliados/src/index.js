@@ -20,6 +20,7 @@ import { Store } from './store.js';
 import { diaLocal, log } from './util.js';
 import { instalarLogEmArquivo, registrarErro } from './logfile.js';
 import { gerarDia, porEmDia } from './analytics/dia.js';
+import { membrosDoDia, registrarMembros } from './analytics/membros.js';
 import { MSG_OUTRA_COPIA, travarInstancia } from './instancia.js';
 
 instalarLogEmArquivo('iniciar');
@@ -193,7 +194,7 @@ async function main() {
   // Resumo dos dias que ficaram sem o arquivo fechado (o PC desliga às 22h): ANTES de descartar a fila de ontem,
   // que diz quanto sobrou no fim do dia.
   analytics('pôr em dia', () => {
-    const gerados = porEmDia({ store });
+    const gerados = porEmDia({ store, membrosDoDia: (dia) => membrosDoDia(dia) });
     if (gerados.length) log(`📊 Resumo guardado dos dias: ${gerados.join(', ')}`);
   });
   // Ligou num dia novo (o PC ficou desligado e a limpeza da meia-noite não rodou): a fila de ontem já venceu.
@@ -230,8 +231,21 @@ async function main() {
     }),
     opts
   );
-  // Resumo parcial de hoje (o PC desliga às 22h; o fechado sai ao ligar no dia seguinte). Fora do "exclusivo": só lê.
-  cron.schedule('55 21 * * *', () => analytics('hoje', () => gerarDia(diaLocal(new Date(), settings.tz), { store, parcial: true })), opts);
+  // O PC desliga às 22h: o resumo fechado de hoje sai ao ligar no dia seguinte (porEmDia).
+  // Membros de cada canal e o resumo parcial de hoje (21h55). Fora do "exclusivo": não mexem na fila.
+  // Membros: 12h30 e 21h50, e ao ligar (o PC pode estar desligado num desses horários); fica a última leitura do dia.
+  const contarMembros = () => registrarMembros({ sender, grupos: loadGrupos() }).catch((e) => registrarErro('analytics-membros', e));
+  cron.schedule('30 12 * * *', contarMembros, opts);
+  cron.schedule('50 21 * * *', contarMembros, opts);
+  contarMembros();
+  cron.schedule(
+    '55 21 * * *',
+    () => analytics('hoje', () => {
+      const hoje = diaLocal(new Date(), settings.tz);
+      gerarDia(hoje, { store, parcial: true, membros: membrosDoDia(hoje) });
+    }),
+    opts
+  );
   // O resumo não usa o "exclusivo": só lê a fila, pode sair mesmo com uma coleta em andamento.
   cron.schedule(settings.avisos.resumoCron, () => avisos.resumoDiario(loadGrupos()).catch((e) => registrarErro('resumo', e)), opts);
   log(`⏰ Coleta: "${settings.cron.coleta}" | Envio: "${settings.cron.envio}" | Limpeza: "${settings.cron.limpeza}" | Resumo: "${settings.avisos.resumoCron}"`);
