@@ -21,7 +21,8 @@ import { coletar, gerarLinks, enviarParaTodos, enviarProximo, limpar } from './p
 import { createSender } from './senders.js';
 import { loadGrupos } from './config.js';
 import { MLAffiliate } from './ml/affiliate.js';
-import { loginML } from './ml/login.js';
+import { loginML, loginMLNavegadorComum } from './ml/login.js';
+import { setEnvVar } from './configfile.js';
 import { resolverOferta } from './ml/resolver.js';
 import { montarLegenda, tituloPronto } from './caption.js';
 import { setFontes } from './configfile.js';
@@ -39,9 +40,15 @@ const [cmd, arg, ...resto] = process.argv.slice(2);
 
 async function main() {
   switch (cmd) {
-    case 'login-ml':
-      await loginML();
+    case 'login-ml': {
+      // Navegador comum (o ML bloqueia login em janela de automação); "-- automacao" usa o jeito antigo.
+      const { tags } = arg === 'automacao' ? await loginML() : await loginMLNavegadorComum();
+      if (!process.env.ML_AFFILIATE_TAG?.trim() && tags.length) {
+        setEnvVar('ML_AFFILIATE_TAG', tags[0]);
+        log(`🏷️  Etiqueta "${tags[0]}" gravada em ML_AFFILIATE_TAG no .env${tags.length > 1 ? ` (a conta tem ${tags.length}: ${tags.join(', ')} — troque lá se quiser outra)` : ''}.`);
+      }
       break;
+    }
     case 'coletar':
       await coletar();
       break;

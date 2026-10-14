@@ -9,7 +9,7 @@ import { stdin, stdout } from 'node:process';
 import { loadGrupos, settings } from './config.js';
 import { findBrowserPath } from './browser.js';
 import { MLAffiliate, loadCookies } from './ml/affiliate.js';
-import { loginML } from './ml/login.js';
+import { loginMLNavegadorComum } from './ml/login.js';
 import { coletar, gerarLinks, enviarProximo } from './pipeline.js';
 import { estiloDoProduto, montarLegenda, tituloPronto } from './caption.js';
 import { createSender } from './senders.js';
@@ -49,7 +49,7 @@ async function passoML() {
     console.log('(Sua senha é digitada direto no site do ML — o bot não a vê nem guarda.)');
     console.log('Use e-mail + senha/código. O botão "Continuar com o Google" não funciona nessa janela.');
     await perguntar('Aperte ENTER para abrir a janela...');
-    ({ tags } = await loginML());
+    ({ tags } = await loginMLNavegadorComum());
   }
 
   // Etiqueta

@@ -114,6 +114,18 @@ test('loginML: janela fechada antes do login vira erro claro', async () => {
   await assert.rejects(loginML({ abrir: async () => browser, esperar: async () => {} }), /janela foi fechada/);
 });
 
+test('cookiesParaHost: só os cookies que o navegador mandaria para o ML', async () => {
+  const { cookiesParaHost } = await import('../src/ml/login.js');
+  const cookies = [
+    { name: 'ssid', value: 's1', domain: '.mercadolivre.com.br' },
+    { name: '_csrf', value: 'c', domain: 'www.mercadolivre.com.br' },
+    { name: 'outro', value: 'x', domain: '.mercadolivre.com' }, // domínio do login, não vai para o .com.br
+    { name: 'g', value: 'y', domain: '.google.com' },
+    { name: 'falso', value: 'z', domain: 'golpe-mercadolivre.com.br' },
+  ];
+  assert.equal(cookiesParaHost(cookies), 'ssid=s1; _csrf=c');
+});
+
 test('loadCookies: aceita cookies.txt.txt e limpa prefixo/linhas coladas do F12', async () => {
   const { loadCookies, normalizeCookieText } = await import('../src/ml/affiliate.js');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mla-'));
