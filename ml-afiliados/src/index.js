@@ -19,12 +19,14 @@ import { createSender } from './senders.js';
 import { Store } from './store.js';
 import { log } from './util.js';
 import { instalarLogEmArquivo, registrarErro } from './logfile.js';
+import { MSG_OUTRA_COPIA, travarInstancia } from './instancia.js';
 
 instalarLogEmArquivo('iniciar');
 
-const store = new Store();
-const sender = createSender();
-const avisos = new Avisos({ sender, store });
+// Criados no main(), DEPOIS da trava de cópia única: uma 2ª cópia não pode nem abrir o db.json.
+let store;
+let sender;
+let avisos;
 let ocupado = false;
 
 /** Evita que duas tarefas rodem ao mesmo tempo (ex.: coleta demorada + envio). */
@@ -149,6 +151,15 @@ async function iniciarEspelho() {
 }
 
 async function main() {
+  const trava = await travarInstancia();
+  if (!trava.ok) {
+    log(`❌ ${MSG_OUTRA_COPIA}`);
+    process.exit(1);
+  }
+  if (trava.semTrava) log(`⚠️  Não consegui usar a trava de cópia única (${trava.semTrava}). Cuidado para não abrir o bot duas vezes.`);
+  store = new Store();
+  sender = createSender();
+  avisos = new Avisos({ sender, store });
   log(`🚀 ml-afiliados iniciando (envio via "${settings.sender}")`);
   // Ligou num dia novo (o PC ficou desligado e a limpeza da meia-noite não rodou): a fila de ontem já venceu.
   // Fica antes de tudo: a caixa de entrada e o espelho, que ligam depois, já podem pôr ofertas de hoje na fila.

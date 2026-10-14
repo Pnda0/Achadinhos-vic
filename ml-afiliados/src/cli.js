@@ -33,12 +33,19 @@ import { AmazonAPI, loadBuscasAmazon } from './amazon.js';
 import { Awin, buscarCuponsAwin, loadAwin, resolverLinkLoja } from './awin.js';
 import { log } from './util.js';
 import { instalarLogEmArquivo, registrarErro } from './logfile.js';
+import { travarInstancia } from './instancia.js';
 
 instalarLogEmArquivo(`cli ${process.argv.slice(2).join(' ')}`);
 
 const [cmd, arg, ...resto] = process.argv.slice(2);
 
+// Comandos que gravam na fila (data/db.json) não podem rodar junto com o bot: um apagaria o que o outro gravou.
+const GRAVAM_NA_FILA = new Set(['coletar', 'links', 'enviar', 'limpar']);
+
 async function main() {
+  if (GRAVAM_NA_FILA.has(cmd) && !(await travarInstancia()).ok) {
+    throw new Error('O bot está rodando (janela do 3-iniciar.bat). Use o bot ou feche a janela dele antes de rodar este comando.');
+  }
   switch (cmd) {
     case 'login-ml': {
       // Navegador comum (o ML bloqueia login em janela de automação); "-- automacao" usa o jeito antigo.

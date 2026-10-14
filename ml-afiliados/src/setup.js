@@ -10,6 +10,7 @@ import { loadGrupos, settings } from './config.js';
 import { findBrowserPath } from './browser.js';
 import { MLAffiliate, loadCookies } from './ml/affiliate.js';
 import { loginMLNavegadorComum } from './ml/login.js';
+import { travarInstancia } from './instancia.js';
 import { coletar, gerarLinks, enviarProximo } from './pipeline.js';
 import { estiloDoProduto, montarLegenda, tituloPronto } from './caption.js';
 import { createSender } from './senders.js';
@@ -155,6 +156,8 @@ async function passoWhatsApp(store) {
 
 async function main() {
   console.log('\n🛒 ml-afiliados — assistente de configuração\n');
+  // O assistente busca ofertas e grava a fila: não pode rodar com o bot ligado (um apagaria o que o outro gravou).
+  if (!(await travarInstancia()).ok) throw new Error('O bot está rodando (janela do 3-iniciar.bat). Feche a janela dele antes de rodar o assistente.');
 
   titulo(1, 'Navegador');
   const nav = findBrowserPath();
