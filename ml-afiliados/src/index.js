@@ -21,6 +21,7 @@ import { diaLocal, log } from './util.js';
 import { instalarLogEmArquivo, registrarErro } from './logfile.js';
 import { gerarDia, porEmDia } from './analytics/dia.js';
 import { membrosDoDia, registrarMembros } from './analytics/membros.js';
+import { registrarAwin } from './analytics/ganhos.js';
 import { MSG_OUTRA_COPIA, travarInstancia } from './instancia.js';
 
 instalarLogEmArquivo('iniciar');
@@ -237,6 +238,12 @@ async function main() {
   const contarMembros = () => registrarMembros({ sender, grupos: loadGrupos() }).catch((e) => registrarErro('analytics-membros', e));
   cron.schedule('30 12 * * *', contarMembros, opts);
   cron.schedule('50 21 * * *', contarMembros, opts);
+  // Relatório da Awin (cliques, vendas, comissão pendente x aprovada): ao ligar, 12h30 e 21h52; só leitura, pela fila
+  // de 20 chamadas/min (cada rodada busca hoje e ontem e preenche os dias que faltam).
+  const relatorioAwin = () => registrarAwin({ awin }).catch((e) => registrarErro('analytics-awin', e));
+  cron.schedule('30 12 * * *', relatorioAwin, opts);
+  cron.schedule('52 21 * * *', relatorioAwin, opts);
+  setTimeout(relatorioAwin, 2 * 60_000).unref(); // ao ligar, depois da coleta inicial começar (o PC pode dormir às 21h52)
   contarMembros();
   cron.schedule(
     '55 21 * * *',
