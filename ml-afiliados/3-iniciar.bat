@@ -7,6 +7,12 @@ if not exist "node_modules" (
   pause
   exit /b 1
 )
+rem Pega as mudancas que foram para o GitHub (feitas de outro PC). Sem internet ou sem git, segue com a versao atual.
+where git >nul 2>nul || goto :ligar
+echo Atualizando o bot pelo GitHub...
+git pull --ff-only --quiet || echo Nao consegui atualizar - seguindo com a versao que ja esta aqui.
+call npm install --no-audit --no-fund --silent >nul 2>nul
+:ligar
 echo O bot fica rodando enquanto esta janela estiver aberta.
 echo Para parar: feche a janela ou aperte Ctrl+C.
 echo.
