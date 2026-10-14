@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Achadinhos da Vic</title>
-<meta name="description" content="Grupos gratuitos de ofertas: os melhores achadinhos de Mercado Livre, Amazon e Shopee, filtrados. Escolha o seu e entre.">
+<meta name="description" content="Grupos gratuitos de ofertas de fitness, beleza e perfumes: achadinhos do Mercado Livre, da Amazon e de outras lojas, filtrados. Escolha o seu e entre.">
 <meta name="theme-color" content="#7a1712">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Achadinhos da Vic · Escolha o seu grupo de ofertas">
-<meta property="og:description" content="Achadinhos de Mercado Livre, Amazon e Shopee, filtrados. 100% grátis.">
+<meta property="og:description" content="Fitness, beleza e perfumes com desconto de verdade, filtrados. 100% grátis.">
 <meta property="og:url" content="https://achadinhos-vic.pages.dev/">
 <meta property="og:image" content="https://achadinhos-vic.pages.dev/og.png">
 <meta property="og:image:width" content="1200">
@@ -250,8 +250,8 @@
   <main>
     <h1 class="sr-only">Achadinhos da Vic</h1>
     <div class="poster"><img src="Victoria%20Logo.PNG" alt="Achadinhos da Vic" width="1210" height="1748"></div>
-    <p class="sub">Os melhores achadinhos de <b>Mercado Livre, Amazon e Shopee</b>, filtrados e direto no seu
-      <span id="app">Telegram</span>.</p>
+    <p class="sub">Achadinhos de <b>fitness, beleza e perfumes</b> no Mercado Livre, na Amazon e em outras lojas,
+      filtrados e direto no seu <span id="app">Telegram</span>.</p>
     <p class="trust">100% grátis<span>·</span>Sem spam<span>·</span>Saia quando quiser</p>
 
     <h2>Escolha o seu grupo de ofertas</h2>
@@ -268,20 +268,19 @@
 
     <ul class="grupos" id="grupos"></ul>
 
-    <footer>Os links dos grupos são de afiliado: o grupo recebe uma comissão das lojas e o preço para você é o mesmo. Como
-      associado da Amazon, recebemos por compras qualificadas.</footer>
+    <footer>Os links dos grupos são de afiliado (Mercado Livre, Amazon e lojas parceiras da Awin): o grupo recebe uma
+      comissão das lojas e o preço para você é o mesmo. Como associado da Amazon, recebemos por compras qualificadas.</footer>
   </main>
 
 <script>
   // Grupos da página. Para ligar um grupo, cole o link de convite em "whatsapp" (https://chat.whatsapp.com/...)
   // ou "telegram" (https://t.me/...). Sem link, o grupo aparece como "Em breve" naquele aplicativo.
+  // São os três grupos de nicho do bot (config/grupos.json). O canal "Geral" existe, mas não é divulgado aqui.
+  // No Telegram, o bot manda o convite no privado do dono quando o canal é ligado (README do bot, seção 3.12).
   const GRUPOS = [
-    { nome: 'Todas as ofertas', desc: 'De tudo um pouco, num grupo só.', icone: '🛍️', destaque: true, whatsapp: '', telegram: 'https://t.me/+snWM1HJKcP01NjUx' },
-    { nome: 'Beleza', desc: 'Perfume, maquiagem e cuidados pessoais.', icone: '💄', whatsapp: '', telegram: '' },
-    { nome: 'Fitness', desc: 'Suplemento, equipamento e roupa esportiva.', icone: '💪', whatsapp: '', telegram: '' },
-    { nome: 'Casa', desc: 'Eletrodoméstico, decoração e utilidades.', icone: '🏠', whatsapp: '', telegram: '' },
-    { nome: 'Moda', desc: 'Roupa, calçado e acessório.', icone: '👗', whatsapp: '', telegram: '' },
-    { nome: 'Tech', desc: 'Celular, notebook, TV e áudio.', icone: '📱', whatsapp: '', telegram: '' },
+    { nome: 'Fitness', desc: 'Suplemento, roupa de treino, tênis e equipamento.', icone: '💪', whatsapp: '', telegram: '' },
+    { nome: 'Beleza', desc: 'Maquiagem, skincare e cabelo.', icone: '💄', whatsapp: '', telegram: '' },
+    { nome: 'Perfumes', desc: 'Importados, árabes e nacionais.', icone: '🌸', whatsapp: '', telegram: '' },
   ];
 
   const LINK = { whatsapp: /^https:\/\/chat\.whatsapp\.com\/\S+$/, telegram: /^https:\/\/t\.me\/\S+$/ };
