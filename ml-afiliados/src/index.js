@@ -17,8 +17,9 @@ import { MLAffiliate } from './ml/affiliate.js';
 import { coletar, filaDeOutroDia, gerarLinks, enviarParaTodos, limpar } from './pipeline.js';
 import { createSender } from './senders.js';
 import { Store } from './store.js';
-import { log } from './util.js';
+import { diaLocal, log } from './util.js';
 import { instalarLogEmArquivo, registrarErro } from './logfile.js';
+import { gerarDia, porEmDia } from './analytics/dia.js';
 import { MSG_OUTRA_COPIA, travarInstancia } from './instancia.js';
 
 instalarLogEmArquivo('iniciar');
@@ -53,6 +54,16 @@ const cicloColeta = exclusivo('coleta', async () => {
   if (r.awinErro) await avisos.avisar('awin', `*Awin fora do ar no bot* ⚠️\n${r.awinErro}`);
   await gerarLinks(store);
 });
+
+/** Analytics (data/analytics/): só lê e grava arquivos de relatório; uma falha aqui nunca derruba o bot. */
+function analytics(nome, fn) {
+  try {
+    return fn();
+  } catch (e) {
+    registrarErro(`analytics-${nome}`, e);
+    log(`⚠️  analytics (${nome}): ${String(e.message).split('\n')[0]}`);
+  }
+}
 
 // Lojas parceiras da Awin: uma instância só, para a lista de lojas aprovadas ficar em memória.
 const awin = new Awin();
@@ -179,6 +190,12 @@ async function main() {
     store.save();
     log(`⚠️  ${incertos.length} oferta(s) estavam sendo enviadas quando o bot parou: podem ter saído, não vou repetir.`);
   }
+  // Resumo dos dias que ficaram sem o arquivo fechado (o PC desliga às 22h): ANTES de descartar a fila de ontem,
+  // que diz quanto sobrou no fim do dia.
+  analytics('pôr em dia', () => {
+    const gerados = porEmDia({ store });
+    if (gerados.length) log(`📊 Resumo guardado dos dias: ${gerados.join(', ')}`);
+  });
   // Ligou num dia novo (o PC ficou desligado e a limpeza da meia-noite não rodou): a fila de ontem já venceu.
   // Fica antes de tudo: a caixa de entrada e o espelho, que ligam depois, já podem pôr ofertas de hoje na fila.
   if (filaDeOutroDia(store)) {
@@ -205,7 +222,16 @@ async function main() {
   const opts = { timezone: settings.tz };
   cron.schedule(settings.cron.coleta, cicloColeta, opts);
   cron.schedule(settings.cron.envio, exclusivo('envio', () => enviarParaTodos(sender, store, avisos)), opts);
-  cron.schedule(settings.cron.limpeza, exclusivo('limpeza', async () => limpar(store)), opts);
+  cron.schedule(
+    settings.cron.limpeza,
+    exclusivo('limpeza', async () => {
+      analytics('fim do dia', () => gerarDia(diaLocal(new Date(Date.now() - 60_000), settings.tz), { store })); // o dia que acabou, antes de esvaziar a fila
+      limpar(store);
+    }),
+    opts
+  );
+  // Resumo parcial de hoje (o PC desliga às 22h; o fechado sai ao ligar no dia seguinte). Fora do "exclusivo": só lê.
+  cron.schedule('55 21 * * *', () => analytics('hoje', () => gerarDia(diaLocal(new Date(), settings.tz), { store, parcial: true })), opts);
   // O resumo não usa o "exclusivo": só lê a fila, pode sair mesmo com uma coleta em andamento.
   cron.schedule(settings.avisos.resumoCron, () => avisos.resumoDiario(loadGrupos()).catch((e) => registrarErro('resumo', e)), opts);
   log(`⏰ Coleta: "${settings.cron.coleta}" | Envio: "${settings.cron.envio}" | Limpeza: "${settings.cron.limpeza}" | Resumo: "${settings.avisos.resumoCron}"`);
