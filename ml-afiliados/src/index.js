@@ -162,6 +162,14 @@ async function main() {
   store = new Store();
   sender = createSender();
   avisos = new Avisos({ sender, store });
+  // Logo no começo: a partida (listar chats, coleta inicial) pode levar minutos, e um Ctrl+C nela não pode sumir sem rastro.
+  const sair = async () => {
+    log('Encerrando (Ctrl+C ou janela fechada)...');
+    await sender?.close();
+    process.exit(0);
+  };
+  process.on('SIGINT', sair);
+  process.on('SIGTERM', sair);
   log(`🚀 ml-afiliados iniciando (envio via "${settings.sender}")`);
   // Envio que ficou pela metade quando o bot parou: pode ter saído — vira INCERTO e entra no histórico (antes de limpar).
   const incertos = store.recuperarEnvios();
@@ -209,14 +217,6 @@ async function main() {
   // Se não há nada na fila dos grupos ATIVOS ao ligar, já faz uma coleta.
   const ativos = new Set(loadGrupos().filter((g) => g.ativo).map((g) => g.nome));
   if (!store.list((p) => ativos.has(p.grupo) && (p.status === 'PRONTO' || p.status === 'PENDENTE')).length) await cicloColeta();
-
-  const sair = async () => {
-    log('Encerrando...');
-    await sender.close();
-    process.exit(0);
-  };
-  process.on('SIGINT', sair);
-  process.on('SIGTERM', sair);
 }
 
 main().catch((e) => {
