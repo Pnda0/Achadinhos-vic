@@ -14,7 +14,7 @@ import { iniciarHeartbeat } from './heartbeat.js';
 import { Espelho, resolverFontes } from './espelho.js';
 import { LeitorDeCanais, jidDoCanal } from './telegram-canais.js';
 import { MLAffiliate } from './ml/affiliate.js';
-import { coletar, gerarLinks, enviarParaTodos, limpar } from './pipeline.js';
+import { coletar, filaDeOutroDia, gerarLinks, enviarParaTodos, limpar } from './pipeline.js';
 import { createSender } from './senders.js';
 import { Store } from './store.js';
 import { log } from './util.js';
@@ -179,6 +179,12 @@ async function main() {
 
   iniciarCanais();
   await iniciarEspelho();
+
+  // Ligou num dia novo (o PC ficou desligado e a limpeza da meia-noite não rodou): a fila de ontem já venceu.
+  if (filaDeOutroDia(store)) {
+    log('🌅 A fila é de outro dia (o bot ficou desligado): descartando e buscando ofertas novas.');
+    limpar(store);
+  }
 
   // Se não há nada na fila dos grupos ATIVOS ao ligar, já faz uma coleta.
   const ativos = new Set(loadGrupos().filter((g) => g.ativo).map((g) => g.nome));

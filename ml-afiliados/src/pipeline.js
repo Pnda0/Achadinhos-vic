@@ -12,7 +12,7 @@ import { buscarCuponsAwin, loadAwin } from './awin.js';
 import { BrowserSession, sessaoNavegador } from './browser.js';
 import { estiloDoProduto, gerarTitulo, montarLegenda, tituloCupom } from './caption.js';
 import { Store } from './store.js';
-import { casaTermo, chunk, log, normalizar, randomDelay, shuffle, sleep } from './util.js';
+import { casaTermo, chunk, diaLocal, log, normalizar, randomDelay, shuffle, sleep } from './util.js';
 
 /** Aplica os filtros do grupo. Retorna o motivo da recusa ou null se passou. */
 export function motivoRecusa(p, f, store, { descontoDesconhecidoPassa = false } = {}) {
@@ -235,6 +235,12 @@ export async function enviarParaTodos(sender, store = new Store(), avisos = null
     if (!p) await avisos.filaVazia(g.nome);
     else if (p.status === 'ERRO') await avisos.falhaEnvio(g.nome, p);
   }
+}
+
+/** A fila (o que ainda não saiu) foi montada em outro dia? Acontece quando o bot fica desligado na virada do dia. */
+export function filaDeOutroDia(store, agora = new Date()) {
+  const hoje = diaLocal(agora, settings.tz);
+  return store.list((p) => p.status === 'PRONTO' || p.status === 'PENDENTE').some((p) => p.coletadoEm && diaLocal(new Date(p.coletadoEm), settings.tz) !== hoje);
 }
 
 export function limpar(store = new Store()) {

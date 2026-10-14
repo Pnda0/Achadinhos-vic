@@ -100,6 +100,18 @@ test('Store: fila PENDENTE -> PRONTO -> ENVIADO e não repete', () => {
   assert.equal(s2.enviadoRecentemente('MLB1', 'Geral', 5), true);
 });
 
+test('filaDeOutroDia: fila montada ontem (bot desligado na virada) é reconhecida', async () => {
+  const { filaDeOutroDia } = await import('../src/pipeline.js');
+  const s = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-')), 'db.json'));
+  assert.equal(filaDeOutroDia(s), false); // fila vazia
+  s.upsert(produto);
+  assert.equal(filaDeOutroDia(s), false); // coletado agora
+  s.list()[0].coletadoEm = new Date(Date.now() - 30 * 3_600_000).toISOString();
+  assert.equal(filaDeOutroDia(s), true);
+  s.setStatus(s.list()[0], 'ENVIADO');
+  assert.equal(filaDeOutroDia(s), false); // o que já saiu não conta
+});
+
 test('Store.reabrirErros devolve para a fila só quem tem link', () => {
   const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-')), 'db.json');
   const s = new Store(file);
