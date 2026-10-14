@@ -146,6 +146,7 @@ export class Espelho {
       const produto = {
         ...base,
         origem: 'espelho',
+        manual: !!fonte.manual, // caixa de entrada: a regra de vendas não vale (nem na hora de postar)
         grupo: g.nome,
         categoria: `Espelho: ${fonte.nomeWhats || fonte.nome}`,
         imagem: m.foto || null, // sem foto na mensagem, ela vem da prévia de link
@@ -254,7 +255,7 @@ export class Espelho {
 
     try {
       await this.esperar(this.cfg.pausaEntreConsultasSeg * 1000);
-      const produto = { ...(await this.resolver(links[0])), grupo: destino.nome, categoria: `Espelho: ${fonte.nomeWhats || fonte.nome}`, origem: 'espelho' };
+      const produto = { ...(await this.resolver(links[0])), grupo: destino.nome, categoria: `Espelho: ${fonte.nomeWhats || fonte.nome}`, origem: 'espelho', manual: !!fonte.manual };
 
       if (this.store.conhecido(produto.id, destino.nome)) return 'já está na fila';
       const motivo = motivoRecusa(produto, this.filtros(fonte, destino), this.store, { descontoDesconhecidoPassa: true, exigirVendas: !fonte.manual });

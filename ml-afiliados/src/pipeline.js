@@ -10,7 +10,7 @@ import { MLAffiliate } from './ml/affiliate.js';
 import { buscarOfertasAmazon } from './amazon.js';
 import { buscarCuponsAwin, loadAwin } from './awin.js';
 import { VENDAS_MINIMAS, motivoVendas } from './ml/vendas.js';
-import { evento } from './eventos.js';
+import { evento, origemDe } from './eventos.js';
 import { BrowserSession, sessaoNavegador } from './browser.js';
 import { estiloDoProduto, gerarTitulo, montarLegenda, tituloCupom } from './caption.js';
 import { Store } from './store.js';
@@ -246,6 +246,15 @@ async function simularDigitando(sender, jid) {
 }
 
 /**
+ * A regra de vendas vale de novo na hora de postar: a fila pode ter ofertas de antes da regra (ou de antes de uma
+ * mudança nela). A caixa de entrada do dono fica de fora, como na coleta.
+ */
+function vendasNoEnvio(p, grupo) {
+  if (p.manual || origemDe(p) === 'caixa') return null;
+  return motivoVendas(p, grupo.filtros?.vendasMinimas ?? VENDAS_MINIMAS);
+}
+
+/**
  * Publica a próxima oferta do grupo, com a última checagem contra repetição logo antes de postar.
  * O status ENVIANDO é gravado em disco ANTES de chamar o Telegram/WhatsApp: se o bot cair no meio, ao religar
  * a oferta vira INCERTO e não é repetida. Sem resposta do destino = INCERTO (não repete); recusa clara = ERRO
@@ -263,11 +272,13 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
     if (!candidato) break;
     const repetido = store.jaPublicado(candidato, dias);
     const linkRuim = !repetido && motivoLinkInvalido(candidato);
-    if (!repetido && !linkRuim) p = candidato;
+    const vendas = !repetido && !linkRuim && vendasNoEnvio(candidato, grupo);
+    if (!repetido && !linkRuim && !vendas) p = candidato;
     else {
-      store.setStatus(candidato, repetido ? 'DUPLICADO' : 'REJEITADO', { erro: repetido || linkRuim });
-      evento(repetido ? 'duplicado' : 'link_invalido', candidato, repetido || linkRuim);
-      log(`  ⏭️  [${grupo.nome}] ${repetido || linkRuim} — pulando: ${candidato.nome.slice(0, 55)}`);
+      const motivo = repetido || linkRuim || vendas;
+      store.setStatus(candidato, repetido ? 'DUPLICADO' : 'REJEITADO', { erro: motivo });
+      evento(repetido ? 'duplicado' : linkRuim ? 'link_invalido' : 'recusado', candidato, motivo);
+      log(`  ⏭️  [${grupo.nome}] ${motivo} — pulando: ${candidato.nome.slice(0, 55)}`);
     }
   }
   if (!p) {

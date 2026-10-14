@@ -9,7 +9,7 @@
  *   INCERTO   -> o envio não teve resposta (timeout/queda): PODE ter saído. Conta como enviado e não é repetido.
  *   ERRO      -> falhou com resposta clara de "não foi" (pode tentar de novo, até 3 vezes)
  *   DUPLICADO -> barrado na hora de postar: o mesmo produto (ou o mesmo nome) já saiu no grupo
- *   REJEITADO -> barrado na hora de postar: link de afiliado inválido
+ *   REJEITADO -> barrado na hora de postar: link de afiliado inválido, ou ML sem mais de 50 vendas (fila antiga)
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -28,6 +28,11 @@ export class Store {
     this.file = file;
     this.data = { produtos: {}, historico: {}, nomes: {}, vistos: {}, stats: {} };
     this.recuperacao = null; // preenchido se o db.json não pôde ser lido (o index avisa o dono)
+    this.carregar(file);
+    this.anotarNomesAntigos();
+  }
+
+  carregar(file) {
     const lido = this.ler(file);
     if (lido) {
       this.data = { ...this.data, ...lido };
@@ -138,6 +143,18 @@ export class Store {
     Object.assign(this.data.produtos[`${p.grupo}:${p.id}`], { status, ...extra });
     // INCERTO também vai para o histórico: melhor não repostar do que postar duas vezes.
     if (status === 'ENVIADO' || status === 'INCERTO') this.anotarPublicado(p);
+  }
+
+  /**
+   * db.json de antes do bloqueio por nome (sem `nomes`): os enviados que ainda estão em `produtos` ganham a
+   * entrada pelo nome, com a hora em que saíram. Os de dias anteriores já foram limpos e só têm a chave por id.
+   */
+  anotarNomesAntigos() {
+    const nomes = (this.data.nomes ??= {});
+    for (const p of this.list((x) => (x.status === 'ENVIADO' || x.status === 'INCERTO') && x.nome)) {
+      const chave = `${p.grupo}:${chaveNome(p)}`;
+      if (!nomes[chave]) nomes[chave] = p.enviadoEm || this.data.historico[`${p.grupo}:${p.id}`] || new Date().toISOString();
+    }
   }
 
   anotarPublicado(p) {

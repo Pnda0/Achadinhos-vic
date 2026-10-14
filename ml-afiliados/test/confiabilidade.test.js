@@ -79,6 +79,45 @@ test('db.json antigo (sem os campos novos) carrega e funciona', () => {
   s.save();
 });
 
+test('db.json antigo (sem `nomes`): o nome do que já saiu hoje passa a bloquear outro anúncio igual', () => {
+  const file = path.join(pasta(), 'db.json');
+  const saiu = new Date(Date.now() - 3_600_000).toISOString();
+  fs.writeFileSync(file, JSON.stringify({
+    produtos: {
+      'Geral:MLB1': { ...oferta('MLB1'), status: 'ENVIADO', enviadoEm: saiu },
+      'Geral:MLB2': { ...oferta('MLB2'), status: 'INCERTO' },
+      'Geral:MLB3': { ...oferta('MLB3'), status: 'PRONTO' },
+    },
+    historico: { 'Geral:MLB1': saiu, 'Geral:MLB2': saiu }, vistos: {}, stats: {},
+  }));
+  const s = new Store(file);
+  assert.equal(s.data.nomes[`Geral:${'fone bluetooth modelo mlb1'}`], saiu);
+  assert.equal(s.jaPublicado(oferta('MLB99', { nome: 'Fone Bluetooth Modelo MLB1' }), 5), 'mesmo produto já publicado (outro anúncio)');
+  assert.ok(s.jaPublicado(oferta('MLB98', { nome: 'Fone Bluetooth Modelo MLB2' }), 5), 'INCERTO também conta');
+  assert.equal(s.jaPublicado(oferta('MLB97', { nome: 'Fone Bluetooth Modelo MLB3' }), 5), null, 'PRONTO não conta');
+});
+
+test('fila antiga: oferta do ML sem mais de 50 vendas é barrada na hora de postar; caixa de entrada e outras lojas passam', async () => {
+  const s = novoStore();
+  s.upsert(oferta('MLB1', { vendidos: undefined, descontoPct: 90 })); // de antes da regra: sem rótulo
+  s.upsert(oferta('MLB2', { vendidos: '50 vendidos', descontoPct: 80 })); // exatamente 50: fora ("+50" = mais de 50 passaria)
+  const d = destino();
+  assert.equal(await enviarProximo(d, GRUPO, s), null);
+  assert.equal(d.postados.length, 0);
+  assert.equal(s.list().find((p) => p.id === 'MLB1').status, 'REJEITADO');
+  assert.equal(s.list().find((p) => p.id === 'MLB1').erro, 'sem dado de vendas');
+  assert.equal(s.list().find((p) => p.id === 'MLB2').erro, 'até 50 vendas');
+
+  const c = novoStore();
+  c.upsert(oferta('MLB3', { vendidos: undefined, origem: 'espelho', categoria: 'Espelho: Caixa de entrada' })); // fila antiga, sem `manual`
+  c.upsert(oferta('MLB4', { vendidos: undefined, origem: 'espelho', manual: true }));
+  c.upsert(oferta('AMZ-1', { vendidos: undefined, loja: 'amazon', linkAfiliado: 'https://www.amazon.com.br/dp/B0X?tag=vic-20' }));
+  const d2 = destino();
+  for (let i = 0; i < 3; i++) assert.ok(await enviarProximo(d2, GRUPO, c));
+  assert.equal(d2.postados.length, 3);
+  assert.deepEqual(c.list().map((p) => p.status), ['ENVIADO', 'ENVIADO', 'ENVIADO']);
+});
+
 // ---------------------------------------------------------------------------- deduplicação
 
 test('deduplicação: produto novo passa; o mesmo id ou o mesmo produto com outro id não sai de novo, nem depois de religar', async () => {
