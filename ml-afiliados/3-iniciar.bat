@@ -8,10 +8,21 @@ if not exist "node_modules" (
   exit /b 1
 )
 rem Pega as mudancas que foram para o GitHub (feitas de outro PC). Sem internet ou sem git, segue com a versao atual.
+rem O "git pull" pode trocar ESTE arquivo enquanto ele roda: por isso o pull e o salto ficam na mesma linha,
+rem e o "goto" acha o rotulo :depois_pull de novo no arquivo novo. Nao mude o nome dos rotulos.
 where git >nul 2>nul || goto :ligar
 echo Atualizando o bot pelo GitHub...
-git pull --ff-only --quiet || echo Nao consegui atualizar - seguindo com a versao que ja esta aqui.
-call npm install --no-audit --no-fund --silent >nul 2>nul
+git checkout -- package-lock.json 2>nul
+set ANTES=
+for /f %%h in ('git rev-parse HEAD 2^>nul') do set ANTES=%%h
+git pull --ff-only --quiet || echo Nao consegui atualizar - seguindo com a versao que ja esta aqui.& goto :depois_pull
+:depois_pull
+set DEPOIS=
+for /f %%h in ('git rev-parse HEAD 2^>nul') do set DEPOIS=%%h
+if not "%ANTES%"=="%DEPOIS%" (
+  echo Instalando o que mudou...
+  call npm install --no-audit --no-fund --silent || echo Falha no npm install - veja acima.
+)
 :ligar
 echo O bot fica rodando enquanto esta janela estiver aberta.
 echo Para parar: feche a janela ou aperte Ctrl+C.

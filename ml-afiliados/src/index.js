@@ -1,7 +1,7 @@
 /**
  * Modo automático (npm start): faz o papel dos gatilhos agendados do n8n.
  *   CRON_COLETA  -> coleta ofertas e já gera os links
- *   CRON_ENVIO   -> envia 1 oferta por grupo (padrão: a cada 8 min das 8h às 21h59, como no curso)
+ *   CRON_ENVIO   -> envia 1 oferta por grupo (padrão do código: a cada 8 min das 8h às 21h59; no PC de casa o .env usa 5 min)
  *   CRON_LIMPEZA -> esvazia a fila à meia-noite
  *   CRON_RESUMO  -> manda o resumo do dia no WhatsApp do dono (AVISOS_DESTINO)
  */
@@ -150,6 +150,12 @@ async function iniciarEspelho() {
 
 async function main() {
   log(`🚀 ml-afiliados iniciando (envio via "${settings.sender}")`);
+  // Ligou num dia novo (o PC ficou desligado e a limpeza da meia-noite não rodou): a fila de ontem já venceu.
+  // Fica antes de tudo: a caixa de entrada e o espelho, que ligam depois, já podem pôr ofertas de hoje na fila.
+  if (filaDeOutroDia(store)) {
+    log('🌅 A fila é de outro dia (o bot ficou desligado): descartando e buscando ofertas novas.');
+    limpar(store);
+  }
   const reabertas = store.reabrirErros();
   if (reabertas) {
     store.save();
@@ -179,12 +185,6 @@ async function main() {
 
   iniciarCanais();
   await iniciarEspelho();
-
-  // Ligou num dia novo (o PC ficou desligado e a limpeza da meia-noite não rodou): a fila de ontem já venceu.
-  if (filaDeOutroDia(store)) {
-    log('🌅 A fila é de outro dia (o bot ficou desligado): descartando e buscando ofertas novas.');
-    limpar(store);
-  }
 
   // Se não há nada na fila dos grupos ATIVOS ao ligar, já faz uma coleta.
   const ativos = new Set(loadGrupos().filter((g) => g.ativo).map((g) => g.nome));
