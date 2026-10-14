@@ -1,5 +1,5 @@
 {
-  "_comentario": "Cada grupo recebe as ofertas das categorias com o mesmo nome em 'grupo' (config/categorias.json). 'nicho' liga o grupo a uma lista de palavras de config/nichos.json. 'telegram' = chat id do canal daquele grupo; 'jid' = grupo do WhatsApp. Grupo ligado ('ativo': true) mas SEM canal fica em espera: o bot não busca nem posta nada para ele. No Telegram o canal se liga sozinho: crie o canal com o nome do grupo no título (ex.: 'Achadinhos da Vic · Fitness') e ponha o bot como administrador — veja o README, seção 3.12. O 'Geral' é o canal de tudo (não aparece no site).",
+  "_comentario": "Canais do Telegram (13/10/2026): Geral, 'Achadinhos Vic - Fitness', '- Beleza' e '- Perfumes'. Cada grupo recebe as ofertas das categorias com o mesmo nome em 'grupo' (config/categorias.json). 'nicho' liga o grupo a uma lista de palavras de config/nichos.json. 'telegram' = chat id do canal daquele grupo; 'jid' = grupo do WhatsApp. Grupo ligado ('ativo': true) mas SEM canal fica em espera: o bot não busca nem posta nada para ele. No Telegram o canal se liga sozinho: crie o canal com o nome do grupo no título (ex.: 'Achadinhos da Vic · Fitness') e ponha o bot como administrador — veja o README, seção 3.12. O 'Geral' é o canal de tudo (não aparece no site).",
   "filtrosPadrao": {
     "descontoMinimo": 20,
     "precoMinimo": 15,
@@ -30,7 +30,7 @@
         "descontoMinimo": 15
       },
       "nicho": "fitness",
-      "telegram": ""
+      "telegram": "-1004454980210"
     },
     {
       "nome": "Beleza",
@@ -39,7 +39,7 @@
       "mensagemAdicional": "",
       "filtros": {},
       "nicho": "beleza",
-      "telegram": ""
+      "telegram": "-1004455813335"
     },
     {
       "nome": "Perfumes",
@@ -50,7 +50,7 @@
         "precoMinimo": 25
       },
       "nicho": "perfumes",
-      "telegram": ""
+      "telegram": "-1004316376505"
     }
   ]
 }
