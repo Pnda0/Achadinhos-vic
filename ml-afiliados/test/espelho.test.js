@@ -7,6 +7,8 @@ import { extrairLinksML, tipoLink, parseSocialPage, parseProductPage, resolverOf
 import { Espelho, resolverFontes } from '../src/espelho.js';
 import { montarLegenda } from '../src/caption.js';
 import { Store } from '../src/store.js';
+import { enviarProximo } from '../src/pipeline.js';
+import { fontesDosCanais } from '../src/telegram-canais.js';
 
 const fx = (f) => fs.readFileSync(new URL(`./fixtures/${f}`, import.meta.url), 'utf8');
 const tmpStore = () => new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-')), 'db.json'));
@@ -137,6 +139,37 @@ test('Espelho: oferta do ML sem rótulo de vendas não entra (automático); na c
   const dono = montar({ msgs: () => msg, agora, resolver: semRotulo, manual: true });
   dono.espelho.responder = async () => {};
   assert.equal((await dono.espelho.tick()).enfileiradas, 1);
+});
+
+test('Canal liberado pelo dono ("exigirVendas": false): ML sem rótulo entra e passa na conferência antes de postar; os outros filtros continuam', async () => {
+  const agora = { t: 1_800_000_000_000 };
+  const msg = [{ id: 'l1', jid: 'A@g.us', t: seg(agora, 1), tipo: 'image', texto: 'oferta https://meli.la/1JC7ZMh', foto: 'https://cdn.telesco.pe/file/ambiente.jpg' }];
+  const semRotulo = async () => parseSocialPage(fx('social-meli-la.html'));
+  const liberado = montar({ msgs: () => msg, agora, resolver: semRotulo });
+  Object.assign(liberado.espelho.fontes.get('A@g.us'), { exigirVendas: false, fotoDoCanal: true });
+  assert.equal((await liberado.espelho.tick()).enfileiradas, 1);
+  const p = liberado.store.proximo('Geral');
+  assert.equal(p.semRegraVendas, true);
+  assert.equal(p.imagem, 'https://cdn.telesco.pe/file/ambiente.jpg'); // a foto do canal, não a de fundo branco do anúncio
+  const postados = [];
+  const destino = { sendImage: async (jid, img, texto) => (postados.push(texto), { comImagem: true }), sendText: async (jid, t) => postados.push(t) };
+  assert.ok(await enviarProximo(destino, { nome: 'Geral', jid: 'MEU@g.us', filtros: { diasSemRepetir: 5 } }, liberado.store));
+  assert.equal(postados.length, 1);
+
+  // continua barrando o resto (aqui: palavra bloqueada)
+  const bloqueado = montar({ msgs: () => msg, agora, resolver: async () => ({ ...(await semRotulo()), nome: 'Perfume usado 100ml' }) });
+  bloqueado.espelho.fontes.get('A@g.us').exigirVendas = false;
+  assert.deepEqual((await bloqueado.espelho.tick()).ignoradas, { 'palavra bloqueada': 1 });
+});
+
+test('fontesDosCanais: canal com opções próprias (destino, ML, sem regra de vendas); os outros seguem o bloco', () => {
+  const nichos = { perfumes: { obrigatorias: ['perfume'] } };
+  const c = { soAmazon: true, destinos: [{ grupo: 'Geral' }, { grupo: 'Perfumes', nicho: 'perfumes' }], canais: ['urubupromo', { canal: '@promobigodeperfumes', destino: 'Perfumes', soAmazon: false, exigirVendas: false }] };
+  const [a, b] = fontesDosCanais(c, { nichos, lojasParceiras: true });
+  assert.deepEqual([a.nome, a.soAmazon, a.exigirVendas, a.destinos.map((d) => d.grupo)], ['@urubupromo', true, true, ['Geral', 'Perfumes']]);
+  assert.deepEqual([b.nome, b.jid, b.destino, b.soAmazon, b.exigirVendas, b.destinos.map((d) => d.grupo)], ['@promobigodeperfumes', 'canal:promobigodeperfumes', 'Perfumes', false, false, ['Perfumes']]);
+  // sem etiqueta da Amazon e sem Awin, o canal "só Amazon" não aproveita nada e sai; o de ML fica
+  assert.deepEqual(fontesDosCanais(c, { nichos }).map((f) => f.nome), ['@promobigodeperfumes']);
 });
 
 test('Espelho: respeita filtros, repetidos e limite por hora', async () => {

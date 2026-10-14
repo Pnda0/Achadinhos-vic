@@ -12,7 +12,7 @@ import { Awin } from './awin.js';
 import { grupoDoTitulo } from './telegram.js';
 import { iniciarHeartbeat } from './heartbeat.js';
 import { Espelho, resolverFontes } from './espelho.js';
-import { LeitorDeCanais, jidDoCanal } from './telegram-canais.js';
+import { LeitorDeCanais, fontesDosCanais } from './telegram-canais.js';
 import { MLAffiliate } from './ml/affiliate.js';
 import { coletar, filaDeOutroDia, gerarLinks, enviarParaTodos, limpar } from './pipeline.js';
 import { createSender } from './senders.js';
@@ -107,24 +107,17 @@ function iniciarCaixaDeEntrada(cfg) {
 function iniciarCanais() {
   const { cfg } = loadFontes();
   const c = cfg.canaisTelegram || {};
-  const canais = (c.canais || []).filter(Boolean);
-  if (c.ativo === false || !canais.length) return;
-  const destino = c.destino || cfg.destinoPadrao || 'Geral';
-  const soAmazon = c.soAmazon !== false;
+  if (c.ativo === false || !(c.canais || []).length) return;
   const lojasParceiras = c.lojasParceiras !== false && awin.ligada();
-  if (soAmazon && !lojasParceiras && !process.env.AMAZON_PARTNER_TAG?.trim()) return log('📡 Canais do Telegram desligados: falta AMAZON_PARTNER_TAG no .env.');
-  // Cada destino pode ter um nicho: a oferta só entra naquele grupo se o nome casar com as palavras dele.
-  const nichos = loadNichos();
-  const destinos = (c.destinos?.length ? c.destinos : [{ grupo: destino }]).map((d) => ({ grupo: d.grupo, palavras: d.nicho ? nichos[d.nicho]?.obrigatorias || [] : null }));
-  const fontes = canais.map((n) => {
-    const nome = `@${jidDoCanal(n).slice('canal:'.length)}`;
-    return { nome, nomeWhats: nome, jid: jidDoCanal(n), destino, destinos, soAmazon, lojasParceiras };
-  });
+  const fontes = fontesDosCanais(c, { destinoPadrao: cfg.destinoPadrao, nichos: loadNichos(), lojasParceiras, amazonTag: process.env.AMAZON_PARTNER_TAG?.trim() });
+  if (!fontes.length) return log('📡 Canais do Telegram desligados: falta AMAZON_PARTNER_TAG no .env.');
   const maxPorHora = c.maxPorHora ?? 1;
   const espelho = new Espelho({ sender: new LeitorDeCanais(), store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), carregarGrupos: loadGrupos, cfg: { ...cfg, maxPorHora }, avisos, awin });
   const seg = Math.max(60, Number(c.intervaloSegundos) || 180);
   agendarEspelho(espelho, seg);
-  log(`📡 Canais do Telegram ligados (${soAmazon ? 'só Amazon' : 'Amazon e ML'}${lojasParceiras ? ' + lojas da Awin' : ''}, até ${maxPorHora} por hora em cada grupo) → ${destinos.map((d) => d.grupo).join(', ')}: ${fontes.map((f) => f.nome).join(', ')} — confere a cada ${seg}s.`);
+  const descricao = (f) =>
+    `${f.nome} (${f.soAmazon ? 'só Amazon' : 'Amazon e ML'}${lojasParceiras ? ' + lojas da Awin' : ''}${f.exigirVendas ? '' : ', sem a regra de vendas'} → ${f.destinos.map((d) => d.grupo).join(', ')})`;
+  log(`📡 Canais do Telegram ligados (até ${maxPorHora} por hora em cada grupo; confere a cada ${seg}s): ${fontes.map(descricao).join(' | ')}`);
 }
 
 /** Liga o espelho de grupos, se houver grupos-fonte em config/fontes.json. */

@@ -255,12 +255,17 @@ export class Espelho {
 
     try {
       await this.esperar(this.cfg.pausaEntreConsultasSeg * 1000);
-      const produto = { ...(await this.resolver(links[0])), grupo: destino.nome, categoria: `Espelho: ${fonte.nomeWhats || fonte.nome}`, origem: 'espelho', manual: !!fonte.manual };
+      // semRegraVendas: canal que o dono liberou da regra de vendas (fontes.json, "exigirVendas": false) — vale também
+      // na conferência final antes de postar (pipeline.js).
+      const semRegraVendas = fonte.exigirVendas === false;
+      const produto = { ...(await this.resolver(links[0])), grupo: destino.nome, categoria: `Espelho: ${fonte.nomeWhats || fonte.nome}`, origem: 'espelho', manual: !!fonte.manual, semRegraVendas };
+      // "fotoDoCanal": usa a foto da mensagem (ex.: perfume num ambiente) no lugar da foto de fundo branco do ML.
+      if (fonte.fotoDoCanal && m.foto) produto.imagem = m.foto;
 
       if (this.store.conhecido(produto.id, destino.nome)) return 'já está na fila';
-      const motivo = motivoRecusa(produto, this.filtros(fonte, destino), this.store, { descontoDesconhecidoPassa: true, exigirVendas: !fonte.manual });
+      const motivo = motivoRecusa(produto, this.filtros(fonte, destino), this.store, { descontoDesconhecidoPassa: true, exigirVendas: !fonte.manual && !semRegraVendas });
       // A página do link (perfil social do outro afiliado) não mostra as vendas: oferta do ML vinda do espelho
-      // automático é recusada de propósito (regra de >50 vendas). Não é bug — ver README, seção 3.7.
+      // automático é recusada de propósito (regra de >50 vendas), salvo canal liberado pelo dono. Ver README, seção 3.7.
       if (motivo) {
         const explicado = motivo === 'sem dado de vendas' ? 'ML sem dado de vendas (o espelho não lê as vendas)' : motivo;
         evento('recusado', produto, explicado);

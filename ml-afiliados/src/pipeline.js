@@ -247,10 +247,10 @@ async function simularDigitando(sender, jid) {
 
 /**
  * A regra de vendas vale de novo na hora de postar: a fila pode ter ofertas de antes da regra (ou de antes de uma
- * mudança nela). A caixa de entrada do dono fica de fora, como na coleta.
+ * mudança nela). A caixa de entrada do dono e os canais que ele liberou da regra ficam de fora, como na coleta.
  */
 function vendasNoEnvio(p, grupo) {
-  if (p.manual || origemDe(p) === 'caixa') return null;
+  if (p.manual || p.semRegraVendas || origemDe(p) === 'caixa') return null;
   return motivoVendas(p, grupo.filtros?.vendasMinimas ?? VENDAS_MINIMAS);
 }
 
