@@ -112,9 +112,10 @@ export class Avisos {
 
   ligado({ grupos = [] } = {}) {
     const ativos = grupos.filter((g) => g.ativo).map((g) => g.nome).join(', ') || 'nenhum';
+    const espera = grupos.filter((g) => g.emEspera).map((g) => g.nome).join(', ');
     return this.avisar(
       'ligado',
-      `*Bot ligado* ✅\nGrupos ativos: ${ativos}\nBuscas: ${settings.cron.coleta} | Envios: ${settings.cron.envio}`,
+      `*Bot ligado* ✅\nGrupos ativos: ${ativos}${espera ? `\nEsperando canal: ${espera}` : ''}\nBuscas: ${settings.cron.coleta} | Envios: ${settings.cron.envio}`,
       { sempre: true }
     );
   }

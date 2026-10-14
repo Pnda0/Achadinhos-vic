@@ -1,5 +1,5 @@
 {
-  "_comentario": "AMAZON (API oficial Creators API). Cada busca = 1 chamada por página. 'keywords' = o que procurar; 'searchIndex' = departamento (All, Electronics, Computers, HomeAndKitchen, Beauty, Toys, VideoGames, ToolsAndHomeImprovement, HealthPersonalCare, PetSupplies, SportsAndOutdoors, Fashion...). 'minSavingPercent' = desconto mínimo pedido à Amazon. As credenciais ficam no .env (AMAZON_CREDENTIAL_ID, AMAZON_CREDENTIAL_SECRET, AMAZON_PARTNER_TAG). Depois de mexer aqui, reinicie o bot.",
+  "_comentario": "AMAZON (API oficial Creators API). Cada busca = 1 chamada por página. 'keywords' = o que procurar; 'searchIndex' = departamento (All, Electronics, Computers, HomeAndKitchen, Beauty, Toys, VideoGames, ToolsAndHomeImprovement, HealthPersonalCare, PetSupplies, SportsAndOutdoors, Fashion...). 'minSavingPercent' = desconto mínimo pedido à Amazon. 'grupo' numa busca = para qual grupo ela vai (sem isso, vai para o 'grupo' lá de cima); busca de grupo sem canal é pulada. As credenciais ficam no .env (AMAZON_CREDENTIAL_ID, AMAZON_CREDENTIAL_SECRET, AMAZON_PARTNER_TAG). Depois de mexer aqui, reinicie o bot.",
   "ativo": true,
   "grupo": "Geral",
   "minSavingPercent": 20,
@@ -99,6 +99,15 @@
       "itemCount": 10,
       "paginas": 1,
       "ativo": true
-    }
+    },
+    { "nome": "Perfume importado", "keywords": "perfume importado", "searchIndex": "Beauty", "itemCount": 10, "paginas": 1, "ativo": true, "grupo": "Perfumes" },
+    { "nome": "Perfume árabe", "keywords": "perfume árabe", "searchIndex": "Beauty", "itemCount": 10, "paginas": 1, "ativo": true, "grupo": "Perfumes" },
+    { "nome": "Body splash", "keywords": "body splash", "searchIndex": "Beauty", "itemCount": 10, "paginas": 1, "ativo": true, "grupo": "Perfumes" },
+    { "nome": "Maquiagem", "keywords": "maquiagem", "searchIndex": "Beauty", "itemCount": 10, "paginas": 1, "ativo": true, "grupo": "Beleza" },
+    { "nome": "Skincare", "keywords": "sérum facial", "searchIndex": "Beauty", "itemCount": 10, "paginas": 1, "ativo": true, "grupo": "Beleza" },
+    { "nome": "Cabelo", "keywords": "máscara capilar", "searchIndex": "Beauty", "itemCount": 10, "paginas": 1, "ativo": true, "grupo": "Beleza" },
+    { "nome": "Whey e creatina", "keywords": "whey protein", "searchIndex": "HealthPersonalCare", "itemCount": 10, "paginas": 1, "ativo": true, "grupo": "Fitness" },
+    { "nome": "Creatina", "keywords": "creatina", "searchIndex": "HealthPersonalCare", "itemCount": 10, "paginas": 1, "ativo": true, "grupo": "Fitness" },
+    { "nome": "Treino em casa", "keywords": "halter", "searchIndex": "SportsAndOutdoors", "itemCount": 10, "paginas": 1, "ativo": true, "grupo": "Fitness" }
   ]
 }

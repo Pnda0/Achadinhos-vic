@@ -14,6 +14,8 @@
  *   npm run testar-espelho -- <link>       -> mostra como ficaria a oferta a partir de um link de outro grupo
  *   npm run testar-amazon [-- "air fryer"] -> testa as credenciais da Amazon e mostra 5 ofertas
  *   npm run telegram                       -> (SENDER=telegram) mostra os chats que o bot já viu, com o chat id
+ *   npm run awin                           -> testa o token da Awin e mostra as lojas aprovadas, pendentes e os cupons
+ *   npm run awin -- link <url>             -> gera o seu link de afiliado da Awin para uma página de loja parceira
  */
 import { coletar, gerarLinks, enviarParaTodos, enviarProximo, limpar } from './pipeline.js';
 import { createSender } from './senders.js';
@@ -27,6 +29,7 @@ import { loadFontes } from './config.js';
 import { Store } from './store.js';
 import { montarResumo } from './avisos.js';
 import { AmazonAPI, loadBuscasAmazon } from './amazon.js';
+import { Awin, buscarCuponsAwin, loadAwin, resolverLinkLoja } from './awin.js';
 import { log } from './util.js';
 import { instalarLogEmArquivo, registrarErro } from './logfile.js';
 
@@ -91,6 +94,35 @@ async function main() {
       }
       break;
     }
+    case 'awin': {
+      const api = new Awin();
+      if (!api.cfg.token) throw new Error('Preencha AWIN_API_TOKEN no .env (crie o token em https://ui.awin.com/awin-api).');
+      log(`✅ Token da Awin aceito. Seu id de afiliado (publisher): ${await api.publisher()}`);
+      if (arg === 'link') {
+        const url = resto[0];
+        if (!url) throw new Error('Informe o link: npm run awin -- link https://www.loja.com.br/produto');
+        const achado = await resolverLinkLoja(url, await api.anunciantes());
+        if (!achado?.url) throw new Error('Esse link não é de uma loja em que a sua conta da Awin foi aprovada.');
+        console.log(`\n${achado.anunciante.nome}: ${await api.gerarLink(achado.anunciante, achado.url)}\n`);
+        break;
+      }
+      const cfg = loadAwin();
+      const doArquivo = new Map(cfg.anunciantes.map((a) => [Number(a.id), a]));
+      const aprovadas = await api.programas('joined');
+      const pendentes = await api.programas('pending').catch(() => []);
+      console.log(`\nLojas APROVADAS (${aprovadas.length}) — o bot já usa:`);
+      for (const p of aprovadas) console.log(`  ✅ ${p.nome} [${p.id}] → ${doArquivo.get(p.id)?.grupos?.join(', ') || `só no ${cfg.grupoGeral} (para pôr num grupo de nicho, acrescente em config/awin.json)`}`);
+      console.log(`\nPedidos EM ANÁLISE (${pendentes.length}):`);
+      for (const p of pendentes) console.log(`  ⏳ ${p.nome} [${p.id}]`);
+      const vistas = new Set([...aprovadas, ...pendentes].map((p) => p.id));
+      const faltam = cfg.anunciantes.filter((a) => !vistas.has(Number(a.id)));
+      console.log(`\nRecomendadas em que você AINDA NÃO pediu para entrar (${faltam.length}):`);
+      for (const a of faltam) console.log(`  ➕ ${a.nome} (${a.grupos.join(', ')}) — https://ui.awin.com/merchant-profile/${a.id}${a.pf === 'nao' ? '  [só com CNPJ]' : ''}`);
+      const r = await buscarCuponsAwin({ api, grupos: loadGrupos() });
+      console.log(`\nCupons e promoções: ${r.motivo || `${r.produtos.length} prontos para os grupos (de ${Object.values(r.categorias)[0]?.encontrados ?? 0} ativos na Awin).`}`);
+      for (const p of (r.produtos || []).slice(0, 3)) console.log(`\n[${p.grupo}]\n${montarLegenda(p)}`);
+      break;
+    }
     case 'resumo':
       console.log(montarResumo(new Store(), { dia: arg || undefined, grupos: loadGrupos() }));
       break;
@@ -135,7 +167,7 @@ async function main() {
       break;
     }
     default:
-      console.log('Comandos: fontes [nomes] | testar-espelho <link> | testar-amazon [termo] | telegram | login-ml | coletar | links | enviar [grupo] | status | resumo [AAAA-MM-DD] | grupos | testar-afiliado [url] | limpar');
+      console.log('Comandos: fontes [nomes] | testar-espelho <link> | testar-amazon [termo] | awin [link <url>] | telegram | login-ml | coletar | links | enviar [grupo] | status | resumo [AAAA-MM-DD] | grupos | testar-afiliado [url] | limpar');
       process.exitCode = 1;
   }
 }

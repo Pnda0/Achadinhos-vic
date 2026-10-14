@@ -8,8 +8,9 @@ import { loadCategorias, loadGrupos, settings } from './config.js';
 import { scrapeCategoria } from './ml/scraper.js';
 import { MLAffiliate } from './ml/affiliate.js';
 import { buscarOfertasAmazon } from './amazon.js';
+import { buscarCuponsAwin, loadAwin } from './awin.js';
 import { BrowserSession, sessaoNavegador } from './browser.js';
-import { estiloDoProduto, gerarTitulo, montarLegenda } from './caption.js';
+import { estiloDoProduto, gerarTitulo, montarLegenda, tituloCupom } from './caption.js';
 import { Store } from './store.js';
 import { casaTermo, chunk, log, normalizar, randomDelay, shuffle, sleep } from './util.js';
 
@@ -19,7 +20,7 @@ export function motivoRecusa(p, f, store, { descontoDesconhecidoPassa = false } 
   const semDesconto = p.descontoPct === null || p.descontoPct === undefined;
   // Nicho: o nome precisa casar com pelo menos uma das palavras obrigatórias (ex.: fitness).
   if (f.palavrasObrigatorias?.length && !f.palavrasObrigatorias.some((t) => casaTermo(nome, t))) return 'fora do nicho';
-  if ((f.palavrasBloqueadas || []).some((w) => (w.includes('+') ? casaTermo(nome, w) : nome.includes(normalizar(w))))) return 'palavra bloqueada';
+  if ((f.palavrasBloqueadas || []).some((w) => casaTermo(nome, w))) return 'palavra bloqueada';
   if (f.descontoMinimo && !(semDesconto && descontoDesconhecidoPassa) && (p.descontoPct || 0) < f.descontoMinimo) return 'desconto baixo';
   if (f.precoMinimo && p.precoAtual != null && p.precoAtual < f.precoMinimo) return 'preço baixo';
   if (f.precoMaximo && p.precoAtual != null && p.precoAtual > f.precoMaximo) return 'preço alto';
@@ -28,22 +29,32 @@ export function motivoRecusa(p, f, store, { descontoDesconhecidoPassa = false } 
   return null;
 }
 
-export async function coletar(store = new Store(), { amazon = buscarOfertasAmazon, categoriasML = null } = {}) {
-  const grupos = Object.fromEntries(loadGrupos().map((g) => [g.nome, g]));
-  const categorias = shuffle((categoriasML ?? loadCategorias()).filter((c) => c.ativo));
+export async function coletar(store = new Store(), { amazon = buscarOfertasAmazon, awin = buscarCuponsAwin, categoriasML = null, raspar = scrapeCategoria, esperar = randomDelay } = {}) {
+  const lista = loadGrupos();
+  const grupos = Object.fromEntries(lista.map((g) => [g.nome, g]));
+  const emEspera = lista.filter((g) => g.emEspera).map((g) => g.nome);
+  if (emEspera.length) log(`⏸️  Em espera (ligado, mas sem canal): ${emEspera.join(', ')} — nada é buscado para ele(s).`);
+  const categorias = shuffle((categoriasML ?? loadCategorias()).filter((c) => c.ativo && grupos[c.grupo]?.ativo !== false));
   log(`🔎 Coletando ${categorias.length} categoria(s) ativa(s)...`);
   let novos = 0;
   let encontrados = 0;
   const recusas = {};
   const porCategoria = {};
+  const paginas = new Map(); // a mesma página de ofertas serve a mais de um grupo: baixa uma vez só
   for (const cat of categorias) {
     const grupo = grupos[cat.grupo];
     if (!grupo) {
       log(`  ⚠️  Categoria "${cat.nome}" aponta para o grupo "${cat.grupo}", que não existe em grupos.json`);
       continue;
     }
-    const c = (porCategoria[cat.nome] = { encontrados: 0, aceitos: 0 });
-    for (const p of await scrapeCategoria(cat)) {
+    const c = (porCategoria[cat.nome] ??= { encontrados: 0, aceitos: 0 });
+    const antes = c.encontrados;
+    const chave = `${cat.url}|${cat.paginas || 1}`;
+    const jaBaixada = paginas.has(chave);
+    if (!jaBaixada) paginas.set(chave, await raspar(cat));
+    else log(`  ${cat.nome} (${cat.grupo}): reaproveitando a página já baixada.`);
+    for (const bruto of paginas.get(chave)) {
+      const p = { ...bruto, grupo: cat.grupo, categoria: cat.nome };
       c.encontrados++;
       const motivo = motivoRecusa(p, grupo.filtros, store);
       if (motivo) {
@@ -53,16 +64,16 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
       c.aceitos++;
       if (store.upsert(p)) novos++;
     }
-    encontrados += c.encontrados;
+    encontrados += c.encontrados - antes;
     store.save();
-    await randomDelay(5, 15); // pausa entre categorias (Wait1 do curso)
+    if (!jaBaixada) await esperar(5, 15); // pausa entre categorias (Wait1 do curso)
   }
   await sessaoNavegador.close();
 
   // Amazon (API oficial). Só roda com config/amazon.json ativo e credenciais no .env.
   let amazonErro = null;
   try {
-    const az = await amazon();
+    const az = await amazon(undefined, undefined, { gruposAtivos: new Set(lista.filter((g) => g.ativo).map((g) => g.nome)) });
     if (az.motivo) {
       if (!/desligada/.test(az.motivo)) log(`🛒 Amazon: ${az.motivo}`);
     } else {
@@ -72,7 +83,7 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
     for (const p of az.produtos || []) {
       encontrados++;
       const grupo = grupos[p.grupo];
-      if (!grupo) continue;
+      if (!grupo?.ativo) continue;
       const motivo = motivoRecusa(p, grupo.filtros, store);
       if (motivo) {
         recusas[motivo] = (recusas[motivo] || 0) + 1;
@@ -86,9 +97,31 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
     log(`❌ Amazon: ${amazonErro}`);
   }
 
+  // Awin (API oficial): cupons e promoções das lojas em que a conta foi aprovada. Já vêm com o link de afiliado.
+  let awinErro = null;
+  try {
+    const dias = loadAwin().cupons.diasSemRepetir || 7;
+    const aw = await awin({ grupos: lista, jaTem: (p) => store.conhecido(p.id, p.grupo) || store.enviadoRecentemente(p.id, p.grupo, dias) });
+    if (aw.motivo) {
+      if (!/desligada|falta AWIN/.test(aw.motivo)) log(`🎟️ Awin: ${aw.motivo}`);
+    } else {
+      log(`🎟️ Awin: ${aw.produtos.length} cupom(ns)/promoção(ões) novo(s) para os grupos.`);
+    }
+    for (const [nome, c] of Object.entries(aw.categorias || {})) porCategoria[nome] = c;
+    for (const p of aw.produtos || []) {
+      encontrados++;
+      const c = Object.values(aw.categorias || {})[0];
+      if (c) c.aceitos++;
+      if (store.upsert(p)) novos++;
+    }
+  } catch (e) {
+    awinErro = String(e.message).split('\n')[0];
+    log(`❌ Awin: ${awinErro}`);
+  }
+
   log(`✅ Coleta: ${encontrados} visto(s), ${novos} novo(s). Recusados: ${JSON.stringify(recusas)}`);
   log(`   Por categoria (vistos → aprovados): ${Object.entries(porCategoria).map(([n, x]) => `${n} ${x.encontrados}→${x.aceitos}`).join(' | ')}`);
-  const resultado = { encontrados, novos, recusas, categorias: porCategoria, amazonErro };
+  const resultado = { encontrados, novos, recusas, categorias: porCategoria, amazonErro, awinErro };
   store.registrarColeta(resultado);
   store.save();
   return resultado;
@@ -172,7 +205,7 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
     return null;
   }
   try {
-    const titulo = await gerarTitulo(p, estiloDoProduto(p, grupo));
+    const titulo = p.tipo === 'cupom' ? tituloCupom(p) : await gerarTitulo(p, estiloDoProduto(p, grupo));
     const legenda = montarLegenda(p, { titulo, mensagemAdicional: grupo.mensagemAdicional });
     if (settings.simularDigitando && settings.sender !== 'console') await simularDigitando(sender, grupo.jid);
     const r = p.imagem

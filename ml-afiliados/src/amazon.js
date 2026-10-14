@@ -190,15 +190,17 @@ export class AmazonAPI {
 }
 
 /** Uma rodada de coleta na Amazon. Devolve { encontrados, categorias } no formato das estatísticas do ML. */
-export async function buscarOfertasAmazon(api = new AmazonAPI(), cfg = loadBuscasAmazon()) {
+export async function buscarOfertasAmazon(api = new AmazonAPI(), cfg = loadBuscasAmazon(), { gruposAtivos = null } = {}) {
   if (!cfg.ativo) return { produtos: [], categorias: {}, motivo: 'desligada em config/amazon.json' };
   if (!api.configurada()) return { produtos: [], categorias: {}, motivo: 'faltam AMAZON_CREDENTIAL_ID, AMAZON_CREDENTIAL_SECRET ou AMAZON_PARTNER_TAG no .env' };
   const produtos = [];
   const categorias = {};
   for (const busca of cfg.buscas) {
     const nome = `Amazon: ${busca.nome || busca.keywords}`;
+    const grupo = busca.grupo || cfg.grupo || 'Geral';
+    if (gruposAtivos && !gruposAtivos.has(grupo)) continue; // grupo desligado ou ainda sem canal: não gasta chamada
     try {
-      const achados = await api.buscar(busca, { grupo: busca.grupo || cfg.grupo || 'Geral', minSavingPercent: cfg.minSavingPercent });
+      const achados = await api.buscar(busca, { grupo, minSavingPercent: cfg.minSavingPercent });
       categorias[nome] = { encontrados: achados.length, aceitos: 0 };
       produtos.push(...achados);
     } catch (e) {

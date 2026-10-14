@@ -110,7 +110,7 @@ async function passoWhatsApp(store) {
     console.log('\nSeus grupos:');
     lista.forEach((g, i) => console.log(`  ${String(i + 1).padStart(3)}) ${g.nome}`));
 
-    for (const g of loadGrupos().filter((x) => x.ativo)) {
+    for (const g of loadGrupos().filter((x) => x.ativo || x.emEspera)) {
       const atual = jidConfigurado(g) ? ` (atual: ${lista.find((x) => x.jid === g.jid)?.nome || g.jid})` : '';
       console.log(`\nQual grupo do WhatsApp recebe as ofertas "${g.nome}"?${atual}`);
       for (let tentativa = 0; tentativa < 5; tentativa++) {

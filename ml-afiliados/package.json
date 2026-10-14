@@ -23,7 +23,8 @@
     "test": "node --test",
     "resumo": "node src/cli.js resumo",
     "testar-amazon": "node src/cli.js testar-amazon",
-    "telegram": "node src/cli.js telegram"
+    "telegram": "node src/cli.js telegram",
+    "awin": "node src/cli.js awin"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

@@ -80,14 +80,22 @@ Com `LLM_API_KEY` vazio, ele usa títulos prontos por faixa de desconto. Com cha
 
 ---
 
-## 3.6b Nichos — grupo só de um tema (ex.: fitness)
+## 3.6b Nichos — grupo só de um tema (Fitness, Beleza, Perfumes)
 
-Um grupo pode receber só um tipo de produto. Em `config/grupos.json` o grupo ganha `"nicho": "fitness"`, e `config/nichos.json` diz o que é esse nicho:
+Um grupo pode receber só um tipo de produto. Em `config/grupos.json` o grupo ganha `"nicho": "fitness"`, e `config/nichos.json` diz o que é esse nicho. Hoje são três grupos de nicho, mais o **Geral** (de tudo, que não aparece no site):
+
+| Grupo | O que entra |
+|---|---|
+| **Fitness** | suplemento, roupa e tênis de treino, equipamento, smartwatch |
+| **Beleza** | maquiagem, skincare, cabelo e cuidados pessoais |
+| **Perfumes** | perfume, colônia, body splash (importados, árabes e nacionais) — perfume sai **só** aqui, não no Beleza |
 
 - `obrigatorias`: o nome do produto precisa casar com **pelo menos uma** linha. `tenis+corrida` = precisa ter as duas palavras. Vale palavra inteira, sem ligar para acento, maiúscula ou plural simples.
-- `extras`: também entram, mas com os títulos gerais (ex.: ração, perfume, fone comum, tênis casual — não faz sentido "BORA TREINAR" em ração).
-- `bloqueadas`: se casar com alguma, fica de fora (ex.: `aquario`).
+- `extras`: também entram, mas com os títulos gerais (ex.: fone comum e tênis casual no Fitness — não faz sentido "BORA TREINAR" num fone).
+- `bloqueadas`: se casar com alguma, fica de fora (ex.: `aquario`; `aparador+grama` = as duas palavras juntas). Vale palavra inteira: `pet` não barra "tapete".
 - `titulos`: títulos prontos com a cara do nicho (usados quando não há IA configurada).
+
+Grupo ligado (`"ativo": true`) mas **sem canal** fica em espera: o bot não busca nem posta nada para ele, e o aviso "Bot ligado" lista quem está esperando. Para ligar o canal, veja a seção 3.12.
 
 Como o ML não tem uma página de ofertas "só fitness", o bot varre as ofertas de várias categorias (`config/categorias.json`) e **o filtro de palavras é que faz a seleção**. No log da coleta, `Recusados: {"fora do nicho": N, ...}` mostra quanto ficou de fora; para ajustar, edite as listas e reinicie o bot.
 
@@ -166,7 +174,7 @@ Assim o bot fica ligado sem depender do seu PC. O arquivo `render.yaml` (na raiz
 
 1. Tenha em mãos, do seu `.env`: `ML_AFFILIATE_TAG`, `TELEGRAM_BOT_TOKEN` e `AVISOS_DESTINO_TELEGRAM` (seção 3.10). `HEARTBEAT_URL` é opcional (seção 3.10, "Monitoramento externo").
 2. Pegue os cookies do ML pelo F12 (seção 3.2, "Jeito manual") — é o valor que vai em `ML_COOKIES`. Na nuvem não há janela para o `npm run login-ml`.
-3. No Render: **Dashboard > New > Blueprint** > escolha este repositório. Ele lê o `render.yaml` e pede os segredos; cole os valores. Amazon (`AMAZON_*`) e `LLM_API_KEY` são opcionais.
+3. No Render: **Dashboard > New > Blueprint** > escolha este repositório. Ele lê o `render.yaml` e pede os segredos; cole os valores. Amazon (`AMAZON_*`), Awin (`AWIN_API_TOKEN`) e `LLM_API_KEY` são opcionais.
 4. Acompanhe em **Logs** do serviço `achadinhos-vic-bot`: deve aparecer `✅ Telegram conectado`, a primeira busca e os links gerados. O aviso **"Bot ligado"** chega no seu Telegram.
 
 No dia a dia:
@@ -176,6 +184,37 @@ No dia a dia:
 - **Ver a fila ou o log**: aba **Shell** do serviço > `npm run status` ou `tail -n 50 data/bot.log`.
 
 Atenção: os servidores do Render ficam fora do Brasil. Se o Mercado Livre pedir verificação ou recusar a sessão vinda de lá, o bot avisa (`busca não trouxe nenhum produto` / `sessão expirou`) em vez de falhar calado — nesse caso, o caminho é rodar no seu PC (seção 2) ou num servidor no Brasil.
+
+## 3.12 Ligar um canal de nicho no Telegram (sem mexer em arquivo)
+
+Fitness, Beleza e Perfumes já estão prontos no bot, esperando o canal de cada um. Para ligar:
+
+1. No Telegram, crie o canal com o **nome do grupo no título** — por exemplo `Achadinhos da Vic · Fitness`, `Achadinhos da Vic · Beleza`, `Achadinhos da Vic · Perfumes`.
+2. Adicione o bot como **administrador**, com permissão de **postar** e de **convidar pessoas por link**. Quem adiciona precisa ser você (a conta do `AVISOS_DESTINO_TELEGRAM`).
+3. Pronto. Em alguns segundos o bot te manda no privado **"Canal ligado: Fitness ✅"** com o **link de convite** para pôr no site, e já faz a primeira busca daquele grupo.
+
+A ligação fica guardada em `data/canais-telegram.json` (no disco do Render, sobrevive aos deploys). Se o título não tiver o nome de nenhum grupo em espera, o bot avisa e mostra o chat id — aí é só preencher `"telegram"` daquele grupo em `config/grupos.json`. Isso depende da caixa de entrada estar ligada (`AVISOS_DESTINO_TELEGRAM` preenchido).
+
+Depois, cole o convite no site: em `Vic Site/index.html`, lista `GRUPOS`, campo `telegram` do grupo.
+
+## 3.13 Awin — outras lojas (adidas, Centauro, Granado...)
+
+A [Awin](https://www.awin.com/br) é uma rede de afiliados: uma conta só dá acesso aos programas de várias lojas. Cada loja aprova (ou não) o seu pedido, e **só rende comissão a loja em que você foi aprovado** — por isso o bot pergunta à Awin quais são e só usa essas.
+
+O que o bot faz com ela:
+
+- **Cupons e promoções**: a cada busca ele lê, pela API oficial, os cupons ativos das suas lojas e posta nos grupos da loja (até 2 novos por grupo por busca, nunca dois seguidos). Só cupom que veio da Awin — várias lojas zeram a comissão de cupom "de fora".
+- **Ofertas dos canais acompanhados e da caixa de entrada**: link de loja parceira (ou link da Awin de outro afiliado) é trocado pelo **seu** link, com o nome e o preço que estiverem na mensagem. Nada da página da loja é raspado.
+- **Link na mão**: `npm run awin -- link https://www.loja.com.br/produto`.
+
+Para ligar:
+
+1. Crie a conta de afiliado em https://ui.awin.com/publisher-signup/br/awin/step1 (a Awin pode pedir um depósito pequeno de verificação, devolvido na primeira comissão) e espere a aprovação.
+2. Peça para entrar nas lojas. A lista sugerida está em `config/awin.json`, com o grupo de cada uma e se aceita pessoa física; a página de cada loja é `https://ui.awin.com/merchant-profile/<id>` > **Join programme**. Várias lojas grandes de beleza (O Boticário, Natura, Eudora, Beleza na Web) **só aceitam CNPJ**.
+3. Crie o token da API em https://ui.awin.com/awin-api e ponha em `AWIN_API_TOKEN` (no `.env` e no Render). O id de afiliado o bot descobre sozinho.
+4. `npm run awin` mostra as lojas aprovadas, as pendentes, as recomendadas em que você ainda não pediu e os cupons que já sairiam.
+
+Loja aprovada que não está em `config/awin.json` vai só para o grupo geral; para mandar a um grupo de nicho, acrescente-a ali com `"grupos"`. Sem `AWIN_API_TOKEN` nada da Awin roda e o resto do bot segue igual.
 
 ## 4. Uso
 
@@ -244,7 +283,9 @@ src/espelho.js           espelho: lê grupos-fonte e enfileira as ofertas com o 
 src/ml/resolver.js       do link de outro afiliado (meli.la) até os dados do produto
 src/patch-wwebjs.js      correção do envio de imagem no whatsapp-web.js
 config/fontes.json       grupos-fonte do espelho
-config/nichos.json       palavras e títulos de cada nicho (fitness)
+config/nichos.json       palavras e títulos de cada nicho (fitness, beleza, perfumes)
+config/awin.json         lojas parceiras da Awin e o grupo de cada uma
+src/awin.js              Awin: link de afiliado, lojas aprovadas, cupons e espelho de loja parceira
 src/store.js             fila e histórico em data/db.json (= aba Produtos)
 src/caption.js           título (IA ou pronto) + legenda
 src/senders.js           whatsapp-web.js / Evolution / WuzAPI / console

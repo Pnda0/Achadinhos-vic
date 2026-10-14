@@ -6,8 +6,10 @@
  *   CRON_RESUMO  -> manda o resumo do dia no WhatsApp do dono (AVISOS_DESTINO)
  */
 import cron from 'node-cron';
-import { loadFontes, loadGrupos, loadNichos, settings } from './config.js';
+import { loadFontes, loadGrupos, loadNichos, settings, vincularCanal } from './config.js';
 import { Avisos } from './avisos.js';
+import { Awin } from './awin.js';
+import { grupoDoTitulo } from './telegram.js';
 import { iniciarHeartbeat } from './heartbeat.js';
 import { Espelho, resolverFontes } from './espelho.js';
 import { LeitorDeCanais, jidDoCanal } from './telegram-canais.js';
@@ -44,8 +46,34 @@ const cicloColeta = exclusivo('coleta', async () => {
   const r = await coletar(store);
   if (!r.encontrados) await avisos.coletaVazia();
   if (r.amazonErro) await avisos.avisar('amazon', `*Amazon fora do ar no bot* ⚠️\n${r.amazonErro}`);
+  if (r.awinErro) await avisos.avisar('awin', `*Awin fora do ar no bot* ⚠️\n${r.awinErro}`);
   await gerarLinks(store);
 });
+
+// Lojas parceiras da Awin: uma instância só, para a lista de lojas aprovadas ficar em memória.
+const awin = new Awin();
+
+/**
+ * O dono pôs o bot como administrador de um canal: se o título tem o nome de um grupo em espera
+ * (Fitness, Beleza, Perfumes...), o canal é ligado a ele sozinho e a primeira busca já roda.
+ */
+async function ligarCanalNovo({ chatId, titulo, tipo, quem }) {
+  const grupos = loadGrupos();
+  if (grupos.some((g) => g.telegram === chatId)) return;
+  if (!avisos.jid || quem !== avisos.jid) {
+    return log(`📋 Canal "${titulo}" [${tipo}] = ${chatId}: não liguei sozinho porque quem adicionou o bot não é o dono (AVISOS_DESTINO_TELEGRAM).`);
+  }
+  const grupo = grupoDoTitulo(titulo, grupos);
+  if (!grupo) {
+    const espera = grupos.filter((g) => g.emEspera).map((g) => g.nome).join(', ') || 'nenhum';
+    return avisos.avisar(`canal-${chatId}`, `*Canal novo: ${titulo}* 📋\nNão sei a qual grupo ele pertence. Ponha no título do canal o nome de um grupo em espera (${espera}) ou preencha "telegram": "${chatId}" em config/grupos.json.`);
+  }
+  vincularCanal(grupo.nome, chatId);
+  const convite = await sender.conviteDoCanal?.(chatId);
+  log(`🔗 Canal "${titulo}" (${chatId}) ligado ao grupo ${grupo.nome}.`);
+  await avisos.avisar(`canal-${chatId}`, `*Canal ligado: ${grupo.nome}* ✅\n"${titulo}" já recebe as ofertas de ${grupo.nome}. A primeira busca começa agora.${convite ? `\nConvite para pôr no site: ${convite}` : '\nPara eu gerar o convite do site, dê ao bot a permissão de convidar pessoas.'}`, { sempre: true });
+  cicloColeta();
+}
 
 function agendarEspelho(espelho, seg) {
   setInterval(() => {
@@ -66,8 +94,9 @@ function iniciarCaixaDeEntrada(cfg) {
   if (loadGrupos().some((g) => g.jid === dono)) return log('📥 Caixa de entrada desligada: AVISOS_DESTINO_TELEGRAM é o próprio canal de envio.');
   const destino = cfg.destinoPadrao || 'Geral';
   const fontes = [{ nome: 'Caixa de entrada', nomeWhats: 'Caixa de entrada', jid: dono, destino, manual: true }];
-  agendarEspelho(new Espelho({ sender, store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), cfg: { ...cfg, janelaMinutos: 180 }, avisos }), 10);
-  log(`📥 Caixa de entrada ligada: mande um link da Amazon ou do Mercado Livre no privado do bot que ele entra na fila do grupo "${destino}".`);
+  sender.aoVirarAdmin = (canal) => ligarCanalNovo(canal).catch((e) => registrarErro('canal-novo', e));
+  agendarEspelho(new Espelho({ sender, store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), carregarGrupos: loadGrupos, cfg: { ...cfg, janelaMinutos: 180 }, avisos, awin }), 10);
+  log(`📥 Caixa de entrada ligada: mande um link da Amazon, do Mercado Livre${awin.ligada() ? ' ou de loja parceira da Awin' : ''} no privado do bot que ele entra na fila do grupo "${destino}".`);
 }
 
 /** Canais públicos do Telegram (config/fontes.json > canaisTelegram): as ofertas de lá entram sozinhas com o link do dono. */
@@ -78,19 +107,20 @@ function iniciarCanais() {
   if (c.ativo === false || !canais.length) return;
   const destino = c.destino || cfg.destinoPadrao || 'Geral';
   const soAmazon = c.soAmazon !== false;
-  if (soAmazon && !process.env.AMAZON_PARTNER_TAG?.trim()) return log('📡 Canais do Telegram desligados: falta AMAZON_PARTNER_TAG no .env.');
+  const lojasParceiras = c.lojasParceiras !== false && awin.ligada();
+  if (soAmazon && !lojasParceiras && !process.env.AMAZON_PARTNER_TAG?.trim()) return log('📡 Canais do Telegram desligados: falta AMAZON_PARTNER_TAG no .env.');
   // Cada destino pode ter um nicho: a oferta só entra naquele grupo se o nome casar com as palavras dele.
   const nichos = loadNichos();
   const destinos = (c.destinos?.length ? c.destinos : [{ grupo: destino }]).map((d) => ({ grupo: d.grupo, palavras: d.nicho ? nichos[d.nicho]?.obrigatorias || [] : null }));
   const fontes = canais.map((n) => {
     const nome = `@${jidDoCanal(n).slice('canal:'.length)}`;
-    return { nome, nomeWhats: nome, jid: jidDoCanal(n), destino, destinos, soAmazon };
+    return { nome, nomeWhats: nome, jid: jidDoCanal(n), destino, destinos, soAmazon, lojasParceiras };
   });
   const maxPorHora = c.maxPorHora ?? 1;
-  const espelho = new Espelho({ sender: new LeitorDeCanais(), store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), cfg: { ...cfg, maxPorHora }, avisos });
+  const espelho = new Espelho({ sender: new LeitorDeCanais(), store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), carregarGrupos: loadGrupos, cfg: { ...cfg, maxPorHora }, avisos, awin });
   const seg = Math.max(60, Number(c.intervaloSegundos) || 180);
   agendarEspelho(espelho, seg);
-  log(`📡 Canais do Telegram ligados (${soAmazon ? 'só Amazon' : 'Amazon e ML'}, até ${maxPorHora} por hora em cada grupo) → ${destinos.map((d) => d.grupo).join(', ')}: ${fontes.map((f) => f.nome).join(', ')} — confere a cada ${seg}s.`);
+  log(`📡 Canais do Telegram ligados (${soAmazon ? 'só Amazon' : 'Amazon e ML'}${lojasParceiras ? ' + lojas da Awin' : ''}, até ${maxPorHora} por hora em cada grupo) → ${destinos.map((d) => d.grupo).join(', ')}: ${fontes.map((f) => f.nome).join(', ')} — confere a cada ${seg}s.`);
 }
 
 /** Liga o espelho de grupos, se houver grupos-fonte em config/fontes.json. */

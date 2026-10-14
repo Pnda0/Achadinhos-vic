@@ -22,11 +22,33 @@ export function loadNichos() {
   }
 }
 
+/**
+ * Canais do Telegram ligados sozinhos pelo bot (grupo -> chat id), guardados em data/ para sobreviver
+ * aos deploys. Valem quando o grupo não tem "telegram" preenchido em config/grupos.json.
+ */
+const CANAIS_FILE = path.join(DATA_DIR, 'canais-telegram.json');
+
+export function canaisVinculados() {
+  try {
+    return JSON.parse(fs.readFileSync(CANAIS_FILE, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+export function vincularCanal(grupo, chatId) {
+  fs.writeFileSync(CANAIS_FILE, JSON.stringify({ ...canaisVinculados(), [grupo]: String(chatId) }, null, 2) + '\n', 'utf8');
+}
+
 export function loadGrupos() {
   const cfg = readJson('config/grupos.json');
   const nichos = loadNichos();
+  const vinculados = canaisVinculados();
   return cfg.grupos.map((g) => {
     const nicho = (g.nicho && nichos[g.nicho]) || null;
+    const telegram = g.telegram || vinculados[g.nome] || '';
+    // Grupo ligado mas sem canal/grupo de destino fica "em espera": nada é buscado nem enviado para ele.
+    const temDestino = settings.sender === 'console' || Boolean(settings.sender === 'telegram' ? telegram : g.jid && !g.jid.startsWith('COLE_AQUI'));
     const filtros = { ...cfg.filtrosPadrao, ...(g.filtros || {}) };
     if (nicho) {
       filtros.palavrasObrigatorias = [
@@ -40,7 +62,10 @@ export function loadGrupos() {
       ...g,
       // No Telegram o destino é o chat id do campo "telegram"; o JID do WhatsApp fica guardado em jidWhats.
       jidWhats: g.jid,
-      jid: settings.sender === 'telegram' ? g.telegram || 'COLE_AQUI_O_CHAT_ID_DO_TELEGRAM' : g.jid,
+      jid: settings.sender === 'telegram' ? telegram || 'COLE_AQUI_O_CHAT_ID_DO_TELEGRAM' : g.jid,
+      telegram,
+      ativo: Boolean(g.ativo) && temDestino,
+      emEspera: Boolean(g.ativo) && !temDestino,
       // O texto de exemplo ("SEU_CONVITE") nunca vai para o grupo.
       mensagemAdicional: /SEU_CONVITE/.test(g.mensagemAdicional || '') ? '' : g.mensagemAdicional || '',
       filtros,

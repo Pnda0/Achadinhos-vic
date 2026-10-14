@@ -1,5 +1,5 @@
 {
-  "_comentario": "Cada grupo recebe as ofertas das categorias com o mesmo nome em 'grupo' (config/categorias.json). 'nicho' liga o grupo a uma lista de palavras de config/nichos.json. 'telegram' = chat id do canal daquele grupo. Para ligar um grupo: preencha 'telegram', ponha 'ativo': true aqui e nas categorias dele. Hoje só o 'Geral' está ativo; 'Fitness' e 'Beleza' estão prontos, esperando o canal.",
+  "_comentario": "Cada grupo recebe as ofertas das categorias com o mesmo nome em 'grupo' (config/categorias.json). 'nicho' liga o grupo a uma lista de palavras de config/nichos.json. 'telegram' = chat id do canal daquele grupo; 'jid' = grupo do WhatsApp. Grupo ligado ('ativo': true) mas SEM canal fica em espera: o bot não busca nem posta nada para ele. No Telegram o canal se liga sozinho: crie o canal com o nome do grupo no título (ex.: 'Achadinhos da Vic · Fitness') e ponha o bot como administrador — veja o README, seção 3.12. O 'Geral' é o canal de tudo (não aparece no site).",
   "filtrosPadrao": {
     "descontoMinimo": 20,
     "precoMinimo": 15,
@@ -23,8 +23,8 @@
     },
     {
       "nome": "Fitness",
-      "jid": "120363409515576601@g.us",
-      "ativo": false,
+      "jid": "",
+      "ativo": true,
       "mensagemAdicional": "",
       "filtros": {
         "descontoMinimo": 15
@@ -35,30 +35,21 @@
     {
       "nome": "Beleza",
       "jid": "",
-      "ativo": false,
+      "ativo": true,
       "mensagemAdicional": "",
       "filtros": {},
-      "tema": "beleza, perfumes, maquiagem, cabelo e cuidados pessoais",
-      "titulos": {
-        "alto": [
-          "BELEZA PELA METADE 😱",
-          "CORRE, MIGA 🏃‍♀️",
-          "PREÇO DE AMOSTRA 💸",
-          "BUGOU O PREÇO 🤯"
-        ],
-        "medio": [
-          "ACHADINHO DE BELEZA 💄",
-          "AUTOCUIDADO EM PROMO ✨",
-          "NECESSAIRE AGRADECE 💅",
-          "BAIXOU O PREÇO 📉"
-        ],
-        "baixo": [
-          "OLHA ESSE MIMO 👇",
-          "DESCONTINHO ESPERTO 😉",
-          "PRA SE CUIDAR 🧴",
-          "ACHADO DO DIA 🛒"
-        ]
+      "nicho": "beleza",
+      "telegram": ""
+    },
+    {
+      "nome": "Perfumes",
+      "jid": "",
+      "ativo": true,
+      "mensagemAdicional": "",
+      "filtros": {
+        "precoMinimo": 25
       },
+      "nicho": "perfumes",
       "telegram": ""
     }
   ]

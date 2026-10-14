@@ -131,6 +131,11 @@ export class TelegramSender {
         const c = [...this.chats.values()].at(-1);
         if (c.tipo !== 'private') log(`📋 Chat novo do Telegram: ${c.nome} [${c.tipo}] = ${c.jid}`);
       }
+      // O bot virou administrador de um canal/grupo: quem escuta (src/index.js) pode ligar o canal a um grupo.
+      const adm = u.my_chat_member;
+      if (adm && adm.chat?.type !== 'private' && ['administrator', 'creator'].includes(adm.new_chat_member?.status)) {
+        await this.aoVirarAdmin?.({ chatId: String(adm.chat.id), titulo: adm.chat.title || '', tipo: adm.chat.type, quem: String(adm.from?.id || '') });
+      }
       const m = u.message;
       if (!m || !chatIds.includes(String(m.chat.id))) continue;
       const ocultos = [...(m.entities || []), ...(m.caption_entities || [])].map((e) => e.url).filter(Boolean);
@@ -146,5 +151,26 @@ export class TelegramSender {
     return saida;
   }
 
+  /** Link de convite do canal (o bot precisa ser administrador com permissão de convidar). Null se não puder. */
+  async conviteDoCanal(chatId) {
+    try {
+      return (await this.call('createChatInviteLink', { chat_id: chatId, name: 'Site' }))?.invite_link || null;
+    } catch {
+      return null;
+    }
+  }
+
   async close() {}
+}
+
+const semAcento = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
+/**
+ * Qual grupo "em espera" combina com o título de um canal: o nome do grupo aparece como palavra no título
+ * ("Achadinhos da Vic · Perfumes" -> Perfumes; plural e acento não importam). Só vale se combinar com UM grupo.
+ */
+export function grupoDoTitulo(titulo, grupos) {
+  const palavras = semAcento(titulo).split(' ').map((p) => p.replace(/s$/, ''));
+  const candidatos = grupos.filter((g) => g.emEspera && palavras.includes(semAcento(g.nome).replace(/s$/, '')));
+  return candidatos.length === 1 ? candidatos[0] : null;
 }

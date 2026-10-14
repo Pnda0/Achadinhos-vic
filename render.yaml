@@ -59,5 +59,7 @@ services:
         sync: false
       - key: AMAZON_CREDENTIAL_SECRET
         sync: false
+      - key: AWIN_API_TOKEN
+        sync: false
       - key: LLM_API_KEY
         sync: false

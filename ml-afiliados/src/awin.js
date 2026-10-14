@@ -1,0 +1,353 @@
+/**
+ * Awin — rede de afiliados de lojas como adidas, Centauro, Granado, Soldiers Nutrition...
+ *
+ * O que o bot faz com ela:
+ *   1. link de afiliado: troca o link de uma loja parceira pelo link da Awin com o SEU id de afiliado;
+ *   2. cupons e promoções: lê na API oficial as ofertas das lojas em que você foi APROVADO e posta nos grupos;
+ *   3. espelho: link de loja parceira visto num canal acompanhado (ou mandado na caixa de entrada) entra com o seu link.
+ *
+ * Credenciais no .env:
+ *   AWIN_API_TOKEN     (https://ui.awin.com/awin-api > "Create token"; só o dono da conta vê)
+ *   AWIN_PUBLISHER_ID  (opcional: com o token o bot descobre sozinho)
+ * Lojas e o grupo de cada uma: config/awin.json. A Awin só paga comissão de loja em que a conta foi aprovada,
+ * então o bot só usa as lojas que a API devolve como "joined" (ou marcadas com "aprovado": true no arquivo).
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import { DATA_DIR, ROOT } from './config.js';
+import { log, sleep } from './util.js';
+
+const env = process.env;
+export const awinCfg = () => ({
+  token: env.AWIN_API_TOKEN?.trim() || '',
+  publisherId: env.AWIN_PUBLISHER_ID?.trim() || '',
+  apiUrl: (env.AWIN_API_URL?.trim() || 'https://api.awin.com').replace(/\/$/, ''),
+});
+
+export function loadAwin() {
+  try {
+    const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'config/awin.json'), 'utf8'));
+    return { ativo: cfg.ativo !== false, grupoGeral: cfg.grupoGeral ?? 'Geral', linkCurto: cfg.linkCurto !== false, cupons: { ativo: true, maxPorColeta: 2, diasSemRepetir: 7, ...(cfg.cupons || {}) }, anunciantes: cfg.anunciantes || [] };
+  } catch {
+    return { ativo: false, grupoGeral: 'Geral', linkCurto: true, cupons: { ativo: false }, anunciantes: [] };
+  }
+}
+
+const HOST_AWIN = /(^|\.)awin1\.com$/i;
+// Parâmetros de rastreio de OUTROS afiliados/campanhas: saem do link antes de ele ganhar o nosso.
+const RASTREIO = /^(utm_\w+|awc|awaid|sv1|sv_campaign_id|gclid|fbclid|msclkid|zanpid|clickref\d?|aff\w*|parceiro|origem|source|campaign|cmpid|ranmid|raneaid|ransiteid|irclickid|irgwc)$/i;
+
+/** "Centauro BR" -> "Centauro" (o nome que aparece na oferta). */
+export const nomeDaLoja = (nome) => String(nome || '').replace(/\s+(BR|Brasil|Brazil)$/i, '').trim();
+
+/** Tira do link da loja os parâmetros de rastreio de quem divulgou antes. */
+export function limparUrlLoja(url) {
+  const u = new URL(url);
+  for (const k of [...u.searchParams.keys()]) if (RASTREIO.test(k)) u.searchParams.delete(k);
+  u.hash = '';
+  return u.toString();
+}
+
+/** Link de afiliado "na mão" (sem API): o formato público de deep link da Awin. */
+export function linkAwin(advertiserId, publisherId, url) {
+  return `https://www.awin1.com/cread.php?awinmid=${advertiserId}&awinaffid=${publisherId}${url ? `&ued=${encodeURIComponent(url)}` : ''}`;
+}
+
+/** De um link da Awin de OUTRO afiliado, tira a loja (id) e a página de destino. Null se não for link da Awin. */
+export function lerLinkAwin(url) {
+  let u;
+  try {
+    u = new URL(url);
+  } catch {
+    return null;
+  }
+  if (!HOST_AWIN.test(u.hostname)) return null;
+  const id = Number(u.searchParams.get('awinmid') || u.searchParams.get('mid') || u.searchParams.get('v')) || null;
+  const destino = (u.searchParams.get('ued') || u.searchParams.get('p') || '').replace(/^\[\[|\]\]$/g, '');
+  return { id, destino: /^https?:\/\//i.test(destino) ? destino : null };
+}
+
+/** A loja (entre as aprovadas) dona deste endereço. */
+export function lojaDaUrl(url, anunciantes) {
+  let host;
+  try {
+    host = new URL(url).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+  return anunciantes.find((a) => (a.dominios || []).some((d) => host === d || host.endsWith(`.${d}`))) || null;
+}
+
+/** Links de um texto que podem ser de loja (tudo menos Mercado Livre, Amazon, WhatsApp e Telegram). */
+export function extrairLinksLoja(texto) {
+  const achados = String(texto || '').match(/https?:\/\/[^\s<>"']+/gi) || [];
+  const links = [];
+  for (let u of achados) {
+    u = u.replace(/[).,;!?\]*_~]+$/, '');
+    try {
+      const host = new URL(u).hostname.toLowerCase();
+      if (/(^|\.)(mercadoli[vb]re\.com(\.br)?|meli\.la|amazon\.com\.br|amzn\.to|a\.co|amzn\.com|link\.amazon|amzlinks\.in|whatsapp\.com|t\.me|telegram\.me|wa\.me)$/.test(host)) continue;
+      if (!links.includes(u)) links.push(u);
+    } catch {}
+  }
+  return links;
+}
+
+// Só estes encurtadores são seguidos (o tidd.ly é o da própria Awin). Link de outro site é ignorado:
+// seguir qualquer endereço postado num canal seria abrir páginas à toa e gerar clique para outras redes.
+const ENCURTADOR = /^(tidd\.ly|bit\.ly|tinyurl\.com|cutt\.ly|is\.gd|t\.co|rebrand\.ly|encurtador\.com\.br|abre\.ai)$/i;
+
+/**
+ * Do link que apareceu na mensagem até a página da loja parceira: { anunciante, url } ou null.
+ * Link direto da loja e link da Awin de outro afiliado são lidos sem abrir nada; encurtadores conhecidos
+ * são seguidos só pelos redirecionamentos (sem baixar a página da loja).
+ */
+export async function resolverLinkLoja(url, anunciantes, { fetchImpl = fetch, maxSaltos = 5 } = {}) {
+  let atual = url;
+  for (let i = 0; i <= maxSaltos; i++) {
+    const awin = lerLinkAwin(atual);
+    if (awin) {
+      const porId = anunciantes.find((a) => a.id === awin.id);
+      const loja = (awin.destino && lojaDaUrl(awin.destino, anunciantes)) || porId;
+      if (!loja) return null; // loja em que a conta não foi aprovada
+      return { anunciante: loja, url: awin.destino ? limparUrlLoja(awin.destino) : null };
+    }
+    const loja = lojaDaUrl(atual, anunciantes);
+    if (loja) return { anunciante: loja, url: limparUrlLoja(atual) };
+    if (i === maxSaltos) break;
+    let host;
+    try {
+      host = new URL(atual).hostname;
+    } catch {
+      return null;
+    }
+    if (!ENCURTADOR.test(host)) return null;
+    let destino;
+    for (const method of ['HEAD', 'GET']) {
+      const res = await fetchImpl(atual, { method, redirect: 'manual', signal: AbortSignal.timeout(15_000) });
+      res.body?.cancel?.().catch(() => {});
+      destino = res.headers?.get?.('location');
+      if (destino) break;
+    }
+    if (!destino) return null;
+    atual = new URL(destino, atual).toString();
+  }
+  return null;
+}
+
+const CACHE_FILE = path.join(DATA_DIR, 'awin-programas.json');
+
+export class Awin {
+  constructor(cfg = awinCfg(), { fetchImpl = fetch, pausaMs = 3200, arquivoCache = CACHE_FILE, config = loadAwin(), agora = () => Date.now() } = {}) {
+    this.cfg = cfg;
+    this.config = config;
+    this.fetch = fetchImpl;
+    this.pausaMs = pausaMs; // a API da Awin aceita 20 chamadas por minuto
+    this.arquivoCache = arquivoCache;
+    this.agora = agora;
+    this.ultimaChamada = 0;
+    this.publisherId = cfg.publisherId || null;
+    this.lista = null;
+    this.listaEm = 0;
+  }
+
+  /** Dá para falar com a API (cupons, lista de lojas aprovadas, link curto)? */
+  configurada() {
+    return Boolean(this.config.ativo && this.cfg.token);
+  }
+
+  /** Dá para montar link de afiliado? Basta o id de afiliado (com o token ele é descoberto). */
+  ligada() {
+    return Boolean(this.config.ativo && (this.cfg.token || this.cfg.publisherId));
+  }
+
+  async chamar(method, caminho, corpo) {
+    const espera = this.ultimaChamada + this.pausaMs - this.agora();
+    if (espera > 0) await sleep(espera);
+    this.ultimaChamada = this.agora();
+    const res = await this.fetch(`${this.cfg.apiUrl}${caminho}`, {
+      method,
+      headers: { authorization: `Bearer ${this.cfg.token}`, ...(corpo ? { 'content-type': 'application/json' } : {}) },
+      body: corpo ? JSON.stringify(corpo) : undefined,
+      signal: AbortSignal.timeout(30_000),
+    });
+    const texto = await res.text();
+    let json = null;
+    try {
+      json = JSON.parse(texto);
+    } catch {}
+    if (!res.ok) {
+      const err = new Error(`Awin ${caminho.split('?')[0]} HTTP ${res.status}: ${json?.description || json?.error || json?.message || texto.slice(0, 160)}`);
+      err.status = res.status;
+      if (res.status === 401 || res.status === 403) err.message += ' — confira AWIN_API_TOKEN (https://ui.awin.com/awin-api).';
+      throw err;
+    }
+    return json;
+  }
+
+  /** Id de afiliado (publisher). Sem AWIN_PUBLISHER_ID, pergunta à API quais contas o token enxerga. */
+  async publisher() {
+    if (this.publisherId) return this.publisherId;
+    const r = await this.chamar('GET', '/accounts?type=publisher');
+    const contas = (r?.accounts || (Array.isArray(r) ? r : [])).filter((c) => !c.accountType || c.accountType === 'publisher');
+    if (!contas.length) throw new Error('Awin: o token não enxerga nenhuma conta de afiliado (publisher).');
+    if (contas.length > 1) log(`  Awin: o token vê ${contas.length} contas; usando "${contas[0].accountName}" (${contas[0].accountId}). Para outra, preencha AWIN_PUBLISHER_ID.`);
+    this.publisherId = String(contas[0].accountId);
+    return this.publisherId;
+  }
+
+  /** Lojas com um certo relacionamento ("joined" = aprovado, "pending" = pedido em análise). */
+  async programas(relacionamento = 'joined') {
+    const id = await this.publisher();
+    const r = await this.chamar('GET', `/publishers/${id}/programmes?relationship=${relacionamento}`);
+    return (Array.isArray(r) ? r : []).map((p) => ({
+      id: Number(p.id),
+      nome: nomeDaLoja(p.name),
+      dominios: [...new Set([p.displayUrl, ...(p.validDomains || []).map((d) => d.domain)].map(dominioDe).filter(Boolean))],
+      pais: p.primaryRegion?.countryCode || null,
+    }));
+  }
+
+  /**
+   * Lojas que o bot pode usar: as aprovadas segundo a API (guardadas em data/ por 12h) somadas às marcadas
+   * com "aprovado": true em config/awin.json. Cada uma sai com os grupos definidos no arquivo.
+   */
+  async anunciantes({ validadeMs = 12 * 3_600_000 } = {}) {
+    if (this.lista && this.agora() - this.listaEm < validadeMs) return this.lista;
+    const doArquivo = new Map(this.config.anunciantes.map((a) => [Number(a.id), a]));
+    let aprovadas = this.config.anunciantes.filter((a) => a.aprovado).map((a) => ({ id: Number(a.id), nome: a.nome, dominios: a.dominios || [] }));
+    if (this.cfg.token) {
+      let cache = null;
+      try {
+        cache = JSON.parse(fs.readFileSync(this.arquivoCache, 'utf8'));
+      } catch {}
+      if (cache && this.agora() - cache.em < validadeMs) {
+        this.publisherId ||= cache.publisherId || null;
+        aprovadas = cache.programas;
+      } else {
+        try {
+          aprovadas = await this.programas('joined');
+          fs.writeFileSync(this.arquivoCache, JSON.stringify({ em: this.agora(), publisherId: this.publisherId, programas: aprovadas }, null, 2), 'utf8');
+        } catch (e) {
+          if (!cache) throw e;
+          log(`  ⚠️  Awin: não consegui atualizar a lista de lojas (${String(e.message).split('\n')[0]}) — usando a última conhecida.`);
+          aprovadas = cache.programas;
+        }
+      }
+    }
+    this.lista = aprovadas.map((p) => {
+      const a = doArquivo.get(p.id);
+      return { id: p.id, nome: nomeDaLoja(a?.nome || p.nome), dominios: [...new Set([...(p.dominios || []), ...(a?.dominios || [])])], grupos: a?.grupos || [] };
+    });
+    this.listaEm = this.agora();
+    return this.lista;
+  }
+
+  /** Link de afiliado para uma página da loja. Com token tenta o link curto oficial (tidd.ly); senão, o link longo. */
+  async gerarLink(anunciante, url) {
+    const id = await this.publisher();
+    if (this.cfg.token && this.config.linkCurto) {
+      try {
+        const r = await this.chamar('POST', `/publishers/${id}/linkbuilder/generate`, { advertiserId: anunciante.id, ...(url ? { destinationUrl: url } : {}), shorten: true });
+        if (r?.shortUrl || r?.url) return r.shortUrl || r.url;
+      } catch (e) {
+        log(`  Awin: link curto não saiu (${String(e.message).split('\n')[0].slice(0, 120)}) — usando o link longo.`);
+      }
+    }
+    return linkAwin(anunciante.id, id, url);
+  }
+
+  /** Cupons e promoções ativos no Brasil das lojas aprovadas (API "promotions"). */
+  async promocoes({ advertiserIds, paginas = 2 } = {}) {
+    const id = await this.publisher();
+    const saida = [];
+    for (let page = 1; page <= paginas; page++) {
+      const r = await this.chamar('POST', `/publisher/${id}/promotions`, {
+        filters: { membership: 'joined', status: 'active', type: 'all', regionCodes: ['BR'], ...(advertiserIds?.length ? { advertiserIds } : {}) },
+        pagination: { page, pageSize: 200 },
+      });
+      const lista = r?.data || r?.promotions || (Array.isArray(r) ? r : []);
+      saida.push(...lista);
+      if (lista.length < 200) break;
+    }
+    return saida;
+  }
+}
+
+function dominioDe(v) {
+  if (!v) return null;
+  try {
+    return new URL(/^https?:\/\//i.test(v) ? v : `https://${v}`).hostname.toLowerCase().replace(/^www\./, '');
+  } catch {
+    return null;
+  }
+}
+
+const limpo = (s) => String(s || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+
+/** Converte um cupom/promoção da API no formato de oferta do bot. Null se não serve (vencido, sem link...). */
+export function ofertaDeCupom(promo, anunciante, grupo, { agora = Date.now() } = {}) {
+  const titulo = limpo(promo?.title);
+  const link = promo?.urlTracking || null;
+  if (!promo?.promotionId || !titulo || !link) return null;
+  const fim = promo.endDate ? new Date(`${String(promo.endDate).replace(/Z$/, '')}Z`).getTime() : null;
+  const inicio = promo.startDate ? new Date(`${String(promo.startDate).replace(/Z$/, '')}Z`).getTime() : null;
+  if (fim && fim < agora) return null;
+  if (inicio && inicio > agora + 3_600_000) return null;
+  const codigo = limpo(promo.voucher?.code) || null;
+  const descricao = limpo(promo.description);
+  const pct = `${titulo} ${descricao}`.match(/(\d{1,2})\s?%/);
+  return {
+    id: `AWP-${promo.promotionId}`,
+    loja: 'awin',
+    lojaNome: anunciante.nome,
+    tipo: 'cupom',
+    origem: 'awin',
+    prioridade: true,
+    grupo,
+    categoria: `Awin: ${anunciante.nome}`,
+    nome: titulo,
+    descricao: descricao && descricao.toLowerCase() !== titulo.toLowerCase() ? descricao.slice(0, 220) : null,
+    url: promo.url || link,
+    linkAfiliado: link,
+    imagem: null, // sem foto: o aplicativo mostra a prévia da página da loja
+    precoAtual: null,
+    precoOriginal: null,
+    descontoPct: pct ? Number(pct[1]) : null,
+    cupom: codigo,
+    validade: fim ? new Date(fim).toISOString() : null,
+    nota: null,
+    adicionadoEm: promo.dateAdded || null,
+  };
+}
+
+/**
+ * Uma rodada de cupons da Awin. Devolve { produtos, categorias, motivo } como a Amazon.
+ * Cada loja manda os cupons para os grupos dela (config/awin.json) e para o grupo geral; no máximo
+ * `maxPorColeta` cupons novos por grupo a cada busca, primeiro os que têm código.
+ */
+export async function buscarCuponsAwin({ api = new Awin(), grupos = [], jaTem = () => false } = {}) {
+  const cfg = api.config;
+  if (!cfg.ativo || !cfg.cupons?.ativo) return { produtos: [], categorias: {}, motivo: 'desligada em config/awin.json' };
+  if (!api.configurada()) return { produtos: [], categorias: {}, motivo: 'falta AWIN_API_TOKEN no .env' };
+  const lojas = await api.anunciantes();
+  if (!lojas.length) return { produtos: [], categorias: {}, motivo: 'nenhuma loja aprovada na conta da Awin ainda' };
+  const porId = new Map(lojas.map((l) => [l.id, l]));
+  const ativos = new Set(grupos.filter((g) => g.ativo).map((g) => g.nome));
+  const promos = (await api.promocoes()).sort((a, b) => Boolean(b.voucher?.code) - Boolean(a.voucher?.code) || String(b.dateAdded || '').localeCompare(String(a.dateAdded || '')));
+  const produtos = [];
+  const porGrupo = {};
+  const max = Number(cfg.cupons.maxPorColeta) || 2;
+  for (const promo of promos) {
+    const loja = porId.get(Number(promo.advertiser?.id));
+    if (!loja) continue;
+    for (const grupo of new Set([...(loja.grupos || []), cfg.grupoGeral].filter((g) => g && ativos.has(g)))) {
+      if ((porGrupo[grupo] || 0) >= max) continue;
+      const p = ofertaDeCupom(promo, loja, grupo);
+      if (!p || jaTem(p)) continue;
+      porGrupo[grupo] = (porGrupo[grupo] || 0) + 1;
+      produtos.push(p);
+    }
+  }
+  return { produtos, categorias: { 'Awin: cupons e promoções': { encontrados: promos.length, aceitos: 0 } } };
+}

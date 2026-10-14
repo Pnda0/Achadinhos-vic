@@ -83,8 +83,17 @@ export class Store {
     if (!prontos.length) return null;
     const espelho = prontos.filter((p) => p.origem === 'espelho');
     if (espelho.length) return espelho.sort((a, b) => String(b.coletadoEm).localeCompare(String(a.coletadoEm)))[0];
-    prontos.sort((a, b) => (b.descontoPct || 0) - (a.descontoPct || 0));
-    const top = prontos.slice(0, 5);
+    // Cupons de loja parceira também passam na frente (são poucos por busca e têm prazo), mas nunca dois seguidos.
+    const cupom = prontos.find((p) => p.prioridade);
+    let fila = prontos;
+    if (cupom) {
+      const ultimo = this.list((p) => p.grupo === grupo && p.status === 'ENVIADO' && p.enviadoEm).sort((a, b) => String(a.enviadoEm).localeCompare(String(b.enviadoEm))).at(-1);
+      if (!ultimo?.prioridade) return cupom;
+      const produtos = prontos.filter((p) => !p.prioridade);
+      if (produtos.length) fila = produtos;
+    }
+    fila.sort((a, b) => (b.descontoPct || 0) - (a.descontoPct || 0));
+    const top = fila.slice(0, 5);
     return top[Math.floor(Math.random() * top.length)];
   }
 

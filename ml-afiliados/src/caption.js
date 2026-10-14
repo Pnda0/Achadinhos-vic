@@ -90,7 +90,32 @@ export function horaConsulta(p) {
   return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: settings.tz });
 }
 
+/** Nome da loja que aparece em cima do link. */
+export const nomeLoja = (p) => (p.loja === 'amazon' ? 'Amazon' : p.loja === 'awin' ? p.lojaNome || 'Loja parceira' : 'Mercado Livre');
+
+/** Título de um cupom/promoção de loja parceira (não passa pela IA: precisa dizer a loja). */
+export function tituloCupom(p) {
+  return `${p.cupom ? 'CUPOM' : 'PROMO'} ${String(p.lojaNome || 'DA LOJA').toUpperCase()} ${p.cupom ? '🎟️' : '🔥'}`;
+}
+
+const diaMes = (iso) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: settings.tz });
+
+/** Cupom ou promoção de loja (Awin): o que é, o código, até quando vale e o link. */
+function legendaCupom(p, { titulo, mensagemAdicional }) {
+  return [
+    `*${(titulo || tituloCupom(p)).toUpperCase()}*`,
+    p.nome.slice(0, 140),
+    p.descricao,
+    [p.cupom && `🎟️ Cupom: *${p.cupom}*`, p.validade && `⏳ Vale até ${diaMes(p.validade)}`].filter(Boolean).join('\n'),
+    `🏬 ${nomeLoja(p)}:\n🛒 ${p.linkAfiliado}`,
+    mensagemAdicional,
+  ]
+    .filter((s) => s && s.trim())
+    .join('\n\n');
+}
+
 export function montarLegenda(p, { titulo, mensagemAdicional = '' } = {}) {
+  if (p.tipo === 'cupom') return legendaCupom(p, { titulo, mensagemAdicional });
   const linhasPreco = [];
   if (p.precoAtual) {
     if (p.precoOriginal && p.precoOriginal > p.precoAtual) linhasPreco.push(`~De ${formatBRL(p.precoOriginal)}~`);
@@ -102,7 +127,7 @@ export function montarLegenda(p, { titulo, mensagemAdicional = '' } = {}) {
   }
 
   const extras = [];
-  if (p.cupom) extras.push(p.loja === 'amazon' ? `🎟️ Cupom: *${p.cupom}*` : `🎟️ ${p.cupom.replace(/ com Cupom$/i, '')} com cupom`);
+  if (p.cupom) extras.push(p.loja === 'amazon' || p.loja === 'awin' ? `🎟️ Cupom: *${p.cupom}*` : `🎟️ ${p.cupom.replace(/ com Cupom$/i, '')} com cupom`);
   if (p.frete) extras.push(`🚚 ${p.frete}${p.full ? ' ⚡FULL' : ''}`);
   if (p.nota && p.nota >= 4) extras.push(`⭐ ${p.nota.toFixed(1)}${p.vendidos ? ` · ${p.vendidos}` : ''}`);
   if (p.fimRelampago) extras.push('⏳ Oferta relâmpago — acaba hoje!');
@@ -114,7 +139,7 @@ export function montarLegenda(p, { titulo, mensagemAdicional = '' } = {}) {
     extras.join('\n'),
     p.loja === 'amazon'
       ? `🏬 Amazon:\n🛒 ${p.linkAfiliado}${p.precoAtual ? `\n\n⏱️ Preço da Amazon às ${horaConsulta(p)} — pode mudar.` : ''}`
-      : `🏬 Mercado Livre:\n🛒 ${p.linkAfiliado}`,
+      : `🏬 ${nomeLoja(p)}:\n🛒 ${p.linkAfiliado}`,
     mensagemAdicional,
   ]
     .filter((s) => s && s.trim())

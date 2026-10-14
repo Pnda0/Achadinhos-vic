@@ -6,7 +6,7 @@
   "janelaMinutos": 20,
   "maxPorHora": 15,
   "fontes": [],
-  "_comentarioCanais": "CANAIS DO TELEGRAM: canais PÚBLICOS de ofertas que o bot acompanha sozinho (lê a página t.me/s/<canal>). Em 'canais', só o nome do canal, sem @. 'soAmazon': true = pega de lá só as ofertas da Amazon (o Mercado Livre já tem a busca própria). 'destinos' = para quais grupos seus a oferta vai; com 'nicho', só entra naquele grupo se o nome do produto casar com as palavras do nicho (config/nichos.json). Grupo desligado em grupos.json é pulado. 'maxPorHora' = quantas ofertas desses canais entram por hora EM CADA grupo (elas passam na frente da fila).",
+  "_comentarioCanais": "CANAIS DO TELEGRAM: canais PÚBLICOS de ofertas que o bot acompanha sozinho (lê a página t.me/s/<canal>). Em 'canais', só o nome do canal, sem @. 'soAmazon': true = pega de lá só as ofertas da Amazon (o Mercado Livre já tem a busca própria). 'destinos' = para quais grupos seus a oferta vai; com 'nicho', só entra naquele grupo se o nome do produto casar com as palavras do nicho (config/nichos.json). Grupo desligado em grupos.json é pulado. 'maxPorHora' = quantas ofertas desses canais entram por hora EM CADA grupo (elas passam na frente da fila). 'lojasParceiras': true = também aproveita link de loja da Awin em que a sua conta foi aprovada (config/awin.json).",
   "canaisTelegram": {
     "ativo": true,
     "soAmazon": true,
@@ -28,7 +28,12 @@
       {
         "grupo": "Beleza",
         "nicho": "beleza"
+      },
+      {
+        "grupo": "Perfumes",
+        "nicho": "perfumes"
       }
-    ]
+    ],
+    "lojasParceiras": true
   }
 }

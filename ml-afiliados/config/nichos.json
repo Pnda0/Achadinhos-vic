@@ -1,5 +1,5 @@
 {
-  "_comentario": "NICHOS: listas de palavras que definem o que entra em um grupo. Um grupo usa um nicho com \"nicho\": \"fitness\" em config/grupos.json. 'obrigatorias': o nome do produto precisa casar com PELO MENOS UMA linha; 'a+b' = precisa ter as duas palavras. 'extras': também entram, mas usam os títulos gerais (não os do tema). 'bloqueadas': se casar com alguma, o produto fica de fora. Acentos, maiúsculas e plural simples (s) não importam.",
+  "_comentario": "NICHOS: listas de palavras que definem o que entra em um grupo. Um grupo usa um nicho com \"nicho\": \"fitness\" em config/grupos.json. 'obrigatorias': o nome do produto precisa casar com PELO MENOS UMA linha; 'a+b' = precisa ter as duas palavras. 'extras': também entram, mas usam os títulos gerais (não os do tema). 'bloqueadas': se casar com alguma, o produto fica de fora (palavra inteira; 'a+b' = as duas juntas). 'titulos': títulos prontos com a cara do nicho. Acentos, maiúsculas e plural simples (s) não importam. Hoje: fitness, beleza (maquiagem, skincare, cabelo) e perfumes — perfume fica só no grupo Perfumes.",
   "fitness": {
     "tema": "fitness, treino e suplementos",
     "obrigatorias": [
@@ -169,41 +169,19 @@
       "headphone",
       "headset",
       "earbuds",
-      "airpods",
-      "perfume",
-      "body splash",
-      "colonia",
-      "desodorante",
-      "hidratante",
-      "creme+corporal",
-      "creme+facial",
-      "creme+maos",
-      "creme+pentear",
-      "creme+pele",
-      "protetor solar",
-      "serum",
-      "skincare",
-      "esfoliante",
-      "sabonete+facial",
-      "sabonete+liquido",
-      "agua micelar",
-      "shampoo",
-      "condicionador",
-      "mascara+capilar",
-      "oleo+capilar",
-      "oleo+corporal",
-      "maquiagem",
-      "batom",
-      "base+maquiagem",
-      "rimel",
-      "paleta+sombra",
-      "protetor labial",
-      "racao"
+      "airpods"
     ],
     "bloqueadas": [
       "aquario",
       "brinquedo",
-      "fantasia"
+      "fantasia",
+      "racao",
+      "facial",
+      "capilar",
+      "cabelo",
+      "shampoo",
+      "condicionador",
+      "serum"
     ],
     "titulos": {
       "alto": [
@@ -229,15 +207,8 @@
     }
   },
   "beleza": {
-    "tema": "beleza, perfumes, maquiagem, cabelo e cuidados pessoais",
+    "tema": "maquiagem, skincare, cabelo e cuidados pessoais",
     "obrigatorias": [
-      "perfume",
-      "eau de parfum",
-      "eau de toilette",
-      "edp",
-      "edt",
-      "body splash",
-      "colonia",
       "desodorante",
       "antitranspirante",
       "hidratante",
@@ -328,8 +299,106 @@
       "automotivo",
       "carro",
       "brinquedo",
-      "grama",
-      "cerca"
-    ]
+      "aparador+grama",
+      "aparador+cerca",
+      "cortador+grama",
+      "secador+roupa",
+      "escova+dente",
+      "escova+dental"
+    ],
+    "titulos": {
+      "alto": [
+        "BELEZA PELA METADE 😱",
+        "CORRE, MIGA 🏃‍♀️",
+        "PREÇO DE AMOSTRA 💸",
+        "BUGOU O PREÇO 🤯"
+      ],
+      "medio": [
+        "ACHADINHO DE BELEZA 💄",
+        "AUTOCUIDADO EM PROMO ✨",
+        "NECESSAIRE AGRADECE 💅",
+        "BAIXOU O PREÇO 📉"
+      ],
+      "baixo": [
+        "OLHA ESSE MIMO 👇",
+        "DESCONTINHO ESPERTO 😉",
+        "PRA SE CUIDAR 🧴",
+        "ACHADO DO DIA 🛒"
+      ]
+    }
+  },
+  "perfumes": {
+    "tema": "perfumes e fragrâncias (importados, árabes e nacionais)",
+    "obrigatorias": [
+      "perfume",
+      "parfum",
+      "eau de parfum",
+      "eau de toilette",
+      "eau de cologne",
+      "edp",
+      "edt",
+      "deo parfum",
+      "deo colonia",
+      "desodorante colonia",
+      "colonia",
+      "body splash",
+      "body mist",
+      "decant",
+      "lattafa",
+      "armaf",
+      "afnan",
+      "rasasi",
+      "al haramain",
+      "al wataniah",
+      "maison alhambra",
+      "orientica",
+      "paris elysees",
+      "la rive",
+      "club de nuit"
+    ],
+    "bloqueadas": [
+      "automotivo",
+      "carro",
+      "veicular",
+      "aromatizador",
+      "aromatizante",
+      "difusor",
+      "ambiente",
+      "roupa",
+      "amaciante",
+      "vela",
+      "sache",
+      "pet",
+      "cachorro",
+      "gato",
+      "caes",
+      "brinquedo",
+      "porta+perfume",
+      "frasco+vazio",
+      "frasco+recarregavel",
+      "atomizador",
+      "borrifador",
+      "contratipo"
+    ],
+    "titulos": {
+      "alto": [
+        "CHEIROSO PELA METADE 😱",
+        "PERFUME COM PREÇÃO 💸",
+        "CORRE QUE ESGOTA 🏃",
+        "BUGOU O PREÇO 🤯"
+      ],
+      "medio": [
+        "CHEIRO DE RICO 💎",
+        "ACHADINHO PERFUMADO ✨",
+        "BAIXOU O PERFUME 📉",
+        "ELOGIO GARANTIDO 😍"
+      ],
+      "baixo": [
+        "OLHA ESSE CHEIRINHO 👇",
+        "PRA FICAR CHEIROSO 😉",
+        "BOA PEDIDA 👍",
+        "ACHADO DO DIA 🛒"
+      ]
+    }
   }
 }
