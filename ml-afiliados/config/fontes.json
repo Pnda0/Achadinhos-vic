@@ -11,7 +11,7 @@
     "ativo": true,
     "soAmazon": true,
     "maxPorHora": 1,
-    "intervaloSegundos": 180,
+    "intervaloSegundos": 60,
     "canais": [
       "urubupromo",
       "xetdaspromocoes",
