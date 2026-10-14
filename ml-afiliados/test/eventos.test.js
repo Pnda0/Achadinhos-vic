@@ -50,3 +50,36 @@ test('histórico: linha cortada (queda de energia) não derruba a consulta; orig
   assert.equal(origemDe({ tipo: 'cupom', loja: 'awin' }), 'awin-cupom');
   assert.equal(origemDe({ loja: 'amazon' }), 'amazon');
 });
+
+test('fonte de cada oferta, com nome legível; o "publicado" leva preço, desconto, vendas, cupom, frete e hora', async () => {
+  const { fonteDe } = await import('../src/eventos.js');
+  assert.equal(fonteDe({ categoria: 'Perfumes' }), 'Mercado Livre: Perfumes');
+  assert.equal(fonteDe({ origem: 'espelho', categoria: 'Espelho: @promobit', loja: 'amazon' }), '@promobit');
+  assert.equal(fonteDe({ origem: 'espelho', categoria: 'Espelho: Caixa de entrada' }), 'Caixa de entrada');
+  assert.equal(fonteDe({ origem: 'awin', tipo: 'cupom', loja: 'awin', categoria: 'Awin: Dafiti' }), 'Awin: Dafiti');
+  assert.equal(fonteDe({ loja: 'amazon', categoria: 'Amazon: Whey' }), 'Amazon: Whey');
+
+  const s = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-')), 'db.json'));
+  s.upsert({ id: 'MLB90', grupo: 'Geral', categoria: 'Ofertas do dia', nome: 'Tênis Corrida', url: 'https://p/90', imagem: 'i', precoAtual: 199.9, descontoPct: 40, vendidos: '+500 vendidos', cupom: 'R$ 10 OFF com Cupom', frete: 'Frete grátis', full: true, linkAfiliado: 'https://meli.la/x' });
+  await enviarProximo({ typing: async () => {}, sendImage: async () => ({ comImagem: true }), sendText: async () => {} }, { nome: 'Geral', jid: '-1', filtros: { diasSemRepetir: 5 } }, s);
+  const pub = buscarEventos('MLB90').find((e) => e.tipo === 'publicado');
+  assert.equal(pub.fonte, 'Mercado Livre: Ofertas do dia');
+  assert.deepEqual([pub.preco, pub.descontoPct, pub.vendidos, pub.cupom, pub.freteGratis, pub.full], [199.9, 40, '+500 vendidos', true, true, true]);
+  assert.match(pub.hora, /^\d{2}:\d{2}$/);
+  assert.doesNotMatch(JSON.stringify(pub), /meli\.la/);
+});
+
+test('funil do espelho e horários com fila vazia: contadores por dia, 14 dias, a limpeza diária não apaga', async () => {
+  const s = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-')), 'db.json'));
+  for (const r of ['ok', 'sem link do ML/Amazon', 'fora do nicho', 'ok']) s.contarFunil('@promobit', r, '2026-10-14');
+  assert.deepEqual(s.data.funil['2026-10-14']['@promobit'], { lidas: 4, comLink: 3, aceitas: 2, motivos: { 'sem link do ML/Amazon': 1, 'fora do nicho': 1 } });
+  const t = new Date('2026-10-14T15:05:00Z'); // 12:05 em São Paulo
+  s.anotarFilaVazia('Beleza', t);
+  s.anotarFilaVazia('Beleza', t); // mesmo horário não repete
+  assert.deepEqual(s.data.filaVazia['2026-10-14'].Beleza, ['12:05']);
+  for (let d = 1; d <= 20; d++) s.contarFunil('@x', 'ok', `2026-09-${String(d).padStart(2, '0')}`);
+  assert.equal(Object.keys(s.data.funil).length, 14);
+  assert.ok(s.data.funil['2026-10-14'], 'o dia mais novo fica');
+  s.limparDia();
+  assert.ok(s.data.funil['2026-10-14'] && s.data.filaVazia['2026-10-14']);
+});

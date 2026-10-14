@@ -7,7 +7,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { DATA_DIR } from './config.js';
+import { DATA_DIR, settings } from './config.js';
 
 const PADRAO = path.join(DATA_DIR, 'produtos.log');
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -23,12 +23,42 @@ export function origemDe(p) {
   return 'coleta';
 }
 
+/**
+ * A fonte específica da oferta, com nome legível (para o analytics): "Mercado Livre: Perfumes" (categoria da busca),
+ * "@promobit" (canal do Telegram), "Caixa de entrada", "Awin: Dafiti", "Amazon: <busca>".
+ * Sai do que o produto já guarda (categoria/origem), então vale também para o que já estava na fila.
+ */
+export function fonteDe(p) {
+  const cat = String(p.categoria || '');
+  if (p.origem === 'espelho') return cat.replace(/^Espelho:\s*/, '') || 'Espelho';
+  if (/^(Awin|Amazon):/.test(cat)) return cat;
+  if (p.tipo === 'cupom' || p.loja === 'awin') return `Awin: ${p.lojaNome || 'loja parceira'}`;
+  if (p.loja === 'amazon') return 'Amazon';
+  return cat ? `Mercado Livre: ${cat}` : 'Mercado Livre';
+}
+
+/** Hora local (fuso do bot), "14:05". */
+export const horaLocal = (d = new Date()) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: settings.tz });
+
 export function evento(tipo, p = {}, detalhe = null, arquivo = arquivoEventos()) {
   // Teste sem arquivo próprio não grava no histórico real (o Node marca os processos de teste com NODE_TEST_CONTEXT).
   if (process.env.NODE_TEST_CONTEXT && !process.env.EVENTOS_ARQUIVO && arquivo === PADRAO) return;
   try {
     if (++escritos % 200 === 1 && fs.existsSync(arquivo) && fs.statSync(arquivo).size > MAX_BYTES) fs.renameSync(arquivo, arquivo + '.antigo');
-    const linha = { t: new Date().toISOString(), tipo, grupo: p.grupo || null, id: p.id || null, loja: p.loja || 'ml', origem: origemDe(p), nome: String(p.nome || '').slice(0, 80) };
+    const agora = new Date();
+    const linha = { t: agora.toISOString(), tipo, grupo: p.grupo || null, id: p.id || null, loja: p.loja || 'ml', origem: origemDe(p), fonte: fonteDe(p), nome: String(p.nome || '').slice(0, 80) };
+    if (tipo === 'publicado') {
+      // Para o analytics: como era a oferta que saiu (sem link: o link de afiliado não vai para os arquivos).
+      Object.assign(linha, {
+        hora: horaLocal(agora),
+        preco: p.precoAtual ?? null,
+        descontoPct: p.descontoPct ?? null,
+        vendidos: p.vendidos || null,
+        cupom: !!p.cupom,
+        freteGratis: /gr[aá]tis/i.test(String(p.frete || '')),
+        full: !!p.full,
+      });
+    }
     if (detalhe) linha.detalhe = String(detalhe).split('\n')[0].slice(0, 200);
     fs.appendFileSync(arquivo, JSON.stringify(linha) + '\n');
   } catch {}

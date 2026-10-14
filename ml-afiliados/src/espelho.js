@@ -79,6 +79,7 @@ export class Espelho {
         if (m.t < limiteT) continue; // antiga: só marca como vista
         resumo.novas++;
         const r = await this.processar(m);
+        this.store.contarFunil?.(this.fontes.get(m.jid)?.nome || m.jid, r);
         if (this.fontes.get(m.jid)?.manual) await this.responder(m, r);
         if (r === 'ok') resumo.enfileiradas++;
         else resumo.ignoradas[r] = (resumo.ignoradas[r] || 0) + 1;

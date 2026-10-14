@@ -23,6 +23,11 @@ const NA_FILA = new Set(['PENDENTE', 'PRONTO', 'ENVIANDO']);
 /** Chave do produto pelo nome, para achar o mesmo produto anunciado com outro id (outro vendedor/anúncio). */
 export const chaveNome = (p) => normalizar(p.nome); // mantém números e unidades: "100ml" ≠ "50ml", "kit 3" ≠ "kit 2"
 
+/** Guarda só os últimos `dias` dias de um mapa { "AAAA-MM-DD": ... } (as chaves ordenam como datas). */
+function podarDias(mapa, dias = 14) {
+  for (const k of Object.keys(mapa).sort().slice(0, -dias)) delete mapa[k];
+}
+
 export class Store {
   constructor(file = DB_FILE) {
     this.file = file;
@@ -255,6 +260,29 @@ export class Store {
       alvo.aceitos += c.aceitos || 0;
     }
     for (const k of Object.keys(stats).sort().slice(0, -14)) delete stats[k];
+  }
+
+  /**
+   * Funil do espelho por fonte (canal, grupo ou caixa de entrada), por dia: mensagens lidas, com link de loja,
+   * aceitas e o motivo das outras. Um contador, não uma linha por mensagem. Mantém 14 dias (limparDia não apaga).
+   */
+  contarFunil(fonte, resultado, dia = diaLocal(new Date(), settings.tz)) {
+    const funil = (this.data.funil ??= {});
+    const x = ((funil[dia] ??= {})[fonte] ??= { lidas: 0, comLink: 0, aceitas: 0, motivos: {} });
+    x.lidas++;
+    if (resultado !== 'sem link do ML/Amazon') x.comLink++;
+    if (resultado === 'ok') x.aceitas++;
+    else x.motivos[resultado] = (x.motivos[resultado] || 0) + 1;
+    podarDias(funil);
+  }
+
+  /** Horário de envio em que o grupo estava com a fila vazia (para o analytics). Mantém 14 dias. */
+  anotarFilaVazia(grupo, agora = new Date()) {
+    const filaVazia = (this.data.filaVazia ??= {});
+    const lista = ((filaVazia[diaLocal(agora, settings.tz)] ??= {})[grupo] ??= []);
+    const hora = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: settings.tz });
+    if (lista.at(-1) !== hora) lista.push(hora);
+    podarDias(filaVazia);
   }
 
   statsDoDia(dia = diaLocal(new Date(), settings.tz)) {

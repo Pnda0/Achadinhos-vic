@@ -282,6 +282,7 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
     }
   }
   if (!p) {
+    store.anotarFilaVazia?.(grupo.nome);
     store.save();
     log(`📭 [${grupo.nome}] fila vazia.`);
     return null;
