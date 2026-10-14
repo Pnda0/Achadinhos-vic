@@ -13,15 +13,17 @@ rem e o "goto" acha o rotulo :depois_pull de novo no arquivo novo. Nao mude o no
 where git >nul 2>nul || goto :ligar
 echo Atualizando o bot pelo GitHub...
 git checkout -- package-lock.json 2>nul
-set ANTES=
-for /f %%h in ('git rev-parse HEAD 2^>nul') do set ANTES=%%h
 git pull --ff-only --quiet || echo Nao consegui atualizar - seguindo com a versao que ja esta aqui.& goto :depois_pull
 :depois_pull
-set DEPOIS=
-for /f %%h in ('git rev-parse HEAD 2^>nul') do set DEPOIS=%%h
-if not "%ANTES%"=="%DEPOIS%" (
+rem Reinstala se o codigo mudou desde a ultima instalacao QUE DEU CERTO (marcador em node_modules\.instalado-em).
+rem Se uma instalacao falhar, o marcador nao muda e a proxima vez tenta de novo.
+set HEADATUAL=
+for /f %%h in ('git rev-parse HEAD 2^>nul') do set HEADATUAL=%%h
+set INSTALADO=
+if exist "node_modules\.instalado-em" set /p INSTALADO=<"node_modules\.instalado-em"
+if not "%INSTALADO%"=="%HEADATUAL%" (
   echo Instalando o que mudou...
-  call npm install --no-audit --no-fund --silent || echo Falha no npm install - veja acima.
+  call npm install --no-audit --no-fund --silent && (git rev-parse HEAD>"node_modules\.instalado-em") || echo Falha no npm install - veja acima.
 )
 :ligar
 echo O bot fica rodando enquanto esta janela estiver aberta.
