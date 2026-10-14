@@ -163,13 +163,22 @@ async function main() {
   sender = createSender();
   avisos = new Avisos({ sender, store });
   // Logo no começo: a partida (listar chats, coleta inicial) pode levar minutos, e um Ctrl+C nela não pode sumir sem rastro.
-  const sair = async () => {
-    log('Encerrando (Ctrl+C ou janela fechada)...');
+  // Fechar a janela do cmd chega como SIGHUP (o Windows dá uns 10 s antes de matar). Grava a fila antes de sair:
+  // o Ctrl+C pode cair no meio de uma coleta (um envio em andamento já está gravado como ENVIANDO).
+  let saindo = false;
+  const sair = async (sinal) => {
+    if (saindo) return;
+    saindo = true;
+    log(`Encerrando (${sinal === 'SIGHUP' ? 'janela fechada' : sinal === 'SIGINT' ? 'Ctrl+C' : sinal})...`);
+    try {
+      store?.save();
+    } catch (e) {
+      log(`⚠️  Não consegui gravar a fila ao sair: ${String(e.message).split('\n')[0]}`);
+    }
     await sender?.close();
     process.exit(0);
   };
-  process.on('SIGINT', sair);
-  process.on('SIGTERM', sair);
+  for (const sinal of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sinal, sair);
   log(`🚀 ml-afiliados iniciando (envio via "${settings.sender}")`);
   // Envio que ficou pela metade quando o bot parou: pode ter saído — vira INCERTO e entra no histórico (antes de limpar).
   const incertos = store.recuperarEnvios();
