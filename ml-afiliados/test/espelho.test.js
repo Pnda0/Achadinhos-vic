@@ -143,18 +143,30 @@ test('Espelho: oferta do ML sem rótulo de vendas não entra (automático); na c
 
 test('Canal liberado pelo dono ("exigirVendas": false): ML sem rótulo entra e passa na conferência antes de postar; os outros filtros continuam', async () => {
   const agora = { t: 1_800_000_000_000 };
-  const msg = [{ id: 'l1', jid: 'A@g.us', t: seg(agora, 1), tipo: 'image', texto: 'oferta https://meli.la/1JC7ZMh', foto: 'https://cdn.telesco.pe/file/ambiente.jpg' }];
-  const semRotulo = async () => parseSocialPage(fx('social-meli-la.html'));
+  const msg = [{ id: 'l1', jid: 'A@g.us', t: seg(agora, 1), tipo: 'image', texto: '💰 De R$ 1.079 por R$ 697\nhttps://meli.la/1JC7ZMh', foto: 'https://cdn.telesco.pe/file/ambiente.jpg' }];
+  const semRotulo = async () => ({ ...parseSocialPage(fx('social-meli-la.html')), precoAtual: 696.9 });
   const liberado = montar({ msgs: () => msg, agora, resolver: semRotulo });
   Object.assign(liberado.espelho.fontes.get('A@g.us'), { exigirVendas: false, fotoDoCanal: true });
   assert.equal((await liberado.espelho.tick()).enfileiradas, 1);
   const p = liberado.store.proximo('Geral');
   assert.equal(p.semRegraVendas, true);
-  assert.equal(p.imagem, 'https://cdn.telesco.pe/file/ambiente.jpg'); // a foto do canal, não a de fundo branco do anúncio
+  assert.equal(p.imagem, 'https://cdn.telesco.pe/file/ambiente.jpg'); // preço bate (697 ≈ 696,90): a foto do canal
+
+  // preço da mensagem diferente do anúncio (a arte pode ter o preço velho escrito): fica a foto do ML
+  const outroPreco = montar({ msgs: () => msg, agora, resolver: async () => ({ ...(await semRotulo()), precoAtual: 749 }) });
+  Object.assign(outroPreco.espelho.fontes.get('A@g.us'), { exigirVendas: false, fotoDoCanal: true });
+  await outroPreco.espelho.tick();
+  assert.equal(outroPreco.store.proximo('Geral').imagem, parseSocialPage(fx('social-meli-la.html')).imagem);
   const postados = [];
   const destino = { sendImage: async (jid, img, texto) => (postados.push(texto), { comImagem: true }), sendText: async (jid, t) => postados.push(t) };
   assert.ok(await enviarProximo(destino, { nome: 'Geral', jid: 'MEU@g.us', filtros: { diasSemRepetir: 5 } }, liberado.store));
   assert.equal(postados.length, 1);
+
+  // o nicho do grupo continua valendo: loadGrupos põe as palavras do nicho em filtros.palavrasObrigatorias
+  const nicho = montar({ msgs: () => msg, agora, resolver: async () => ({ ...(await semRotulo()), nome: 'Fone Bluetooth Sem Fio' }) });
+  nicho.espelho.fontes.get('A@g.us').exigirVendas = false;
+  nicho.espelho.grupos.get('Geral').filtros.palavrasObrigatorias = ['perfume', 'body splash'];
+  assert.deepEqual((await nicho.espelho.tick()).ignoradas, { 'fora do nicho': 1 });
 
   // continua barrando o resto (aqui: palavra bloqueada)
   const bloqueado = montar({ msgs: () => msg, agora, resolver: async () => ({ ...(await semRotulo()), nome: 'Perfume usado 100ml' }) });

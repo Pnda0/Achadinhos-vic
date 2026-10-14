@@ -20,6 +20,9 @@ import { casaTermo, log, normalizar, sleep } from './util.js';
 
 const MIN = 60_000;
 
+/** O preço escrito na mensagem é o mesmo do anúncio? (o canal arredonda: até R$ 1 ou 1% de diferença) */
+export const precoBate = (daMensagem, doAnuncio) => !!daMensagem && !!doAnuncio && Math.abs(daMensagem - doAnuncio) <= Math.max(1, doAnuncio * 0.01);
+
 /** Liga cada fonte do arquivo ao grupo real do WhatsApp (pelo JID ou pelo nome). */
 export function resolverFontes(fontes, gruposWhats) {
   const ok = [];
@@ -259,8 +262,10 @@ export class Espelho {
       // na conferência final antes de postar (pipeline.js).
       const semRegraVendas = fonte.exigirVendas === false;
       const produto = { ...(await this.resolver(links[0])), grupo: destino.nome, categoria: `Espelho: ${fonte.nomeWhats || fonte.nome}`, origem: 'espelho', manual: !!fonte.manual, semRegraVendas };
-      // "fotoDoCanal": usa a foto da mensagem (ex.: perfume num ambiente) no lugar da foto de fundo branco do ML.
-      if (fonte.fotoDoCanal && m.foto) produto.imagem = m.foto;
+      // "fotoDoCanal": usa a foto da mensagem (ex.: perfume num ambiente) no lugar da foto de fundo branco do ML —
+      // só quando o preço da mensagem bate com o do anúncio, porque a arte do canal pode ter o preço escrito nela.
+      // A URL é do cdn do t.me e pode expirar; se o Telegram não conseguir baixar, o envio cai para texto com prévia.
+      if (fonte.fotoDoCanal && m.foto && precoBate(dadosDoTexto(m.texto).precoAtual, produto.precoAtual)) produto.imagem = m.foto;
 
       if (this.store.conhecido(produto.id, destino.nome)) return 'já está na fila';
       const motivo = motivoRecusa(produto, this.filtros(fonte, destino), this.store, { descontoDesconhecidoPassa: true, exigirVendas: !fonte.manual && !semRegraVendas });
