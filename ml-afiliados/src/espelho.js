@@ -12,6 +12,7 @@ import { extrairLinksML, resolverOferta, tipoLink, ErroVerificacao } from './ml/
 import { asinDeUrl, dadosDoTexto, extrairLinksAmazon, linkAfiliadoAmazon, resolverLinkAmazon } from './amazon-espelho.js';
 import { extrairLinksLoja, resolverLinkLoja } from './awin.js';
 import { nomeLoja } from './caption.js';
+import { evento } from './eventos.js';
 import { motivoRecusa } from './pipeline.js';
 import { encontrarGrupo } from './configfile.js';
 import crypto from 'node:crypto';
@@ -161,10 +162,12 @@ export class Espelho {
         : motivoRecusa(produto, this.filtros(fonte, g), this.store, { descontoDesconhecidoPassa: true, exigirVendas: !fonte.manual });
       if (motivo) {
         motivos.push(motivo);
+        evento('recusado', produto, motivo);
         continue;
       }
       linkAfiliado ??= await link();
       this.store.upsert({ ...produto, url: base.url || linkAfiliado, linkAfiliado });
+      evento('na_fila', produto);
       this.contar(g.nome);
       aceitos++;
       this.ultimoAceito = { nome: base.nome, link: linkAfiliado };
@@ -257,8 +260,11 @@ export class Espelho {
       const motivo = motivoRecusa(produto, this.filtros(fonte, destino), this.store, { descontoDesconhecidoPassa: true, exigirVendas: !fonte.manual });
       // A página do link (perfil social do outro afiliado) não mostra as vendas: oferta do ML vinda do espelho
       // automático é recusada de propósito (regra de >50 vendas). Não é bug — ver README, seção 3.7.
-      if (motivo === 'sem dado de vendas') return 'ML sem dado de vendas (o espelho não lê as vendas)';
-      if (motivo) return motivo;
+      if (motivo) {
+        const explicado = motivo === 'sem dado de vendas' ? 'ML sem dado de vendas (o espelho não lê as vendas)' : motivo;
+        evento('recusado', produto, explicado);
+        return explicado;
+      }
 
       if (this.agora() - this.ultimoRefresh > 30 * MIN) {
         await this.affiliate.refresh();
@@ -266,10 +272,14 @@ export class Espelho {
       }
       const mapa = await this.affiliate.createLinks([produto.url]);
       const link = mapa.get(produto.url) || [...mapa.values()][0];
-      if (!link) return 'ML não devolveu link de afiliado';
+      if (!link) {
+        evento('sem_link', produto, 'o ML não devolveu link de afiliado');
+        return 'ML não devolveu link de afiliado';
+      }
 
       this.store.upsert(produto);
       this.store.setLink(produto.url, link);
+      evento('na_fila', produto);
       this.contar(destino.nome);
       this.ultimoAceito = { nome: produto.nome, link };
       log(`🪞 [${destino.nome}] de "${fonte.nomeWhats || fonte.nome}": ${produto.nome.slice(0, 55)} — ${link}`);

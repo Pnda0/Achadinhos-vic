@@ -218,6 +218,32 @@ Para ligar:
 
 Loja aprovada que não está em `config/awin.json` vai só para o grupo geral; para mandar a um grupo de nicho, acrescente-a ali com `"grupos"`. Sem `AWIN_API_TOKEN` nada da Awin roda e o resto do bot segue igual.
 
+**Links curtos:** com o token, o bot pede à Awin o link curto oficial (`tidd.ly/...`) e só o usa depois de conferir que ele leva a um link da Awin com o **seu** id de afiliado (olha só o primeiro redirecionamento, sem abrir a loja). O link curto bom fica guardado em `data/awin-links.json`; se não sair, vale o link longo oficial (`awin1.com/...`), e a falha fica anotada por 24 h para não insistir. Link que já é curto, ou de outro afiliado, nunca é encurtado nem "embrulhado" de novo.
+
+## 3.14 Confiabilidade: sem post repetido, só produto que vende, histórico de cada oferta
+
+**Uma cópia só do bot.** Duas janelas do `3-iniciar.bat` abertas ao mesmo tempo postavam cada oferta duas vezes (aconteceu em 14/10/2026). Agora o bot segura a porta local `127.0.0.1:47831`; uma segunda cópia mostra *"Já tem um bot rodando neste PC… Feche ESTA janela"* e para. Os comandos que mexem na fila (`coletar`, `links`, `enviar`, `limpar`, `configurar`) também recusam rodar com o bot ligado. A porta é liberada sozinha quando o bot fecha (até em queda de energia). Para trocar a porta: `BOT_PORTA_TRAVA` no `.env`.
+
+**Mercado Livre só com mais de 50 vendas.** O número vem do rótulo do card de oferta ("+50 vendidos" — o próprio ML escreve "Mais de 50 produtos vendidos"). Sem rótulo, ou com rótulo que não dá para ler, a oferta não entra na fila (cerca de 6% das ofertas, medido em out/2026). A API pública de itens do ML não informa as vendas sem login (responde 403). O limite muda por grupo com `"vendasMinimas"` em `config/grupos.json` (padrão 50 = precisa ter mais de 50). Amazon e Awin não têm essa regra; a caixa de entrada do dono também não.
+
+**Repetição.** Cada produto é identificado pelo id da loja (MLB…, ASIN, cupom da Awin) **e** pelo nome normalizado dentro do grupo — o mesmo produto anunciado por outro vendedor (outro id, mesmo nome) conta como repetido. O histórico fica em `data/db.json` (30 dias) e sobrevive a reinícios. A conferência acontece duas vezes: antes de entrar na fila e logo antes de postar.
+
+**Estados de cada oferta na fila:** `PENDENTE` (sem link) → `PRONTO` → `ENVIANDO` (gravado no disco *antes* de chamar o Telegram) → `ENVIADO`. Se der errado:
+- `ERRO` — o Telegram respondeu que não postou: volta para a fila na próxima busca, até 3 tentativas.
+- `INCERTO` — o Telegram não respondeu (rede caiu, tempo esgotado) ou o bot caiu no meio do envio: **pode ter saído**. Conta como enviado, nunca é repetido, e o bot te avisa no privado. Se não apareceu no canal, mande o link na caixa de entrada.
+- `DUPLICADO` / `REJEITADO` — barrado na hora de postar (já saiu / link de afiliado mal formado).
+
+Limitações: o Telegram não deixa o bot consultar o que já está no canal, então um `INCERTO` não tem como ser confirmado — a escolha é não repetir. No WhatsApp (wwebjs/Evolution/WuzAPI) não dá para distinguir "não respondeu" de "recusou": todo erro vira `ERRO` e pode ser tentado de novo.
+
+**Arquivo da fila protegido.** O `data/db.json` é gravado com cópia de segurança (`db.json.bak`). Se ele estragar (queda de energia no meio da gravação), o bot guarda o arquivo estragado, carrega a cópia boa e te avisa.
+
+**Histórico de cada oferta:** `data/produtos.log` registra, por produto, se foi recusado (e por quê), entrou na fila, ficou sem link, foi barrado como repetido, publicado, falhou ou ficou sem confirmação — com a origem (busca, Amazon, cupom da Awin, espelho, caixa de entrada). Nada de link, cookie ou token. Para consultar:
+
+```powershell
+npm run historico -- MLB4049279695
+npm run historico -- "creatina dark lab"
+```
+
 ## 4. Uso
 
 Cada etapa também roda separada:
@@ -288,6 +314,9 @@ config/fontes.json       grupos-fonte do espelho
 config/nichos.json       palavras e títulos de cada nicho (fitness, beleza, perfumes)
 config/awin.json         lojas parceiras da Awin e o grupo de cada uma
 src/awin.js              Awin: link de afiliado, lojas aprovadas, cupons e espelho de loja parceira
+src/ml/vendas.js         regra de vendas do ML (mais de 50) e leitura do rótulo "+N vendidos"
+src/instancia.js         trava de cópia única do bot (porta local)
+src/eventos.js           histórico por produto (data/produtos.log, npm run historico)
 src/store.js             fila e histórico em data/db.json (= aba Produtos)
 src/caption.js           título (IA ou pronto) + legenda
 src/senders.js           whatsapp-web.js / Evolution / WuzAPI / console

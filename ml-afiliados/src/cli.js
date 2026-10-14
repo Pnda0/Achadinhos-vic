@@ -16,6 +16,7 @@
  *   npm run telegram                       -> (SENDER=telegram) mostra os chats que o bot já viu, com o chat id
  *   npm run awin                           -> testa o token da Awin e mostra as lojas aprovadas, pendentes e os cupons
  *   npm run awin -- link <url>             -> gera o seu link de afiliado da Awin para uma página de loja parceira
+ *   npm run historico -- <id ou nome>      -> o que aconteceu com um produto (recusado, na fila, publicado, falhou...)
  */
 import { coletar, gerarLinks, enviarParaTodos, enviarProximo, limpar } from './pipeline.js';
 import { createSender } from './senders.js';
@@ -34,6 +35,7 @@ import { Awin, buscarCuponsAwin, loadAwin, resolverLinkLoja } from './awin.js';
 import { log } from './util.js';
 import { instalarLogEmArquivo, registrarErro } from './logfile.js';
 import { travarInstancia } from './instancia.js';
+import { buscarEventos } from './eventos.js';
 
 instalarLogEmArquivo(`cli ${process.argv.slice(2).join(' ')}`);
 
@@ -135,6 +137,17 @@ async function main() {
       const r = await buscarCuponsAwin({ api, grupos: loadGrupos() });
       console.log(`\nCupons e promoções: ${r.motivo || `${r.produtos.length} prontos para os grupos (de ${Object.values(r.categorias)[0]?.encontrados ?? 0} ativos na Awin).`}`);
       for (const p of (r.produtos || []).slice(0, 3)) console.log(`\n[${p.grupo}]\n${montarLegenda(p)}`);
+      break;
+    }
+    case 'historico': {
+      const termo = [arg, ...resto].filter(Boolean).join(' ');
+      if (!termo) throw new Error('Informe o id ou parte do nome: npm run historico -- MLB123456');
+      const linhas = buscarEventos(termo);
+      if (!linhas.length) console.log(`Nada no histórico (data/produtos.log) com "${termo}".`);
+      for (const e of linhas.slice(-60)) {
+        const quando = new Date(e.t).toLocaleString('pt-BR', { timeZone: process.env.TZ || 'America/Sao_Paulo' });
+        console.log(`${quando}  ${String(e.tipo).padEnd(15)} [${e.grupo || '-'}] ${e.origem || ''} ${e.id || ''}  ${e.nome}${e.detalhe ? `  — ${e.detalhe}` : ''}`);
+      }
       break;
     }
     case 'resumo':

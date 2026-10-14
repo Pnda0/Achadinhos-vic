@@ -10,6 +10,7 @@ import { MLAffiliate } from './ml/affiliate.js';
 import { buscarOfertasAmazon } from './amazon.js';
 import { buscarCuponsAwin, loadAwin } from './awin.js';
 import { VENDAS_MINIMAS, motivoVendas } from './ml/vendas.js';
+import { evento } from './eventos.js';
 import { BrowserSession, sessaoNavegador } from './browser.js';
 import { estiloDoProduto, gerarTitulo, montarLegenda, tituloCupom } from './caption.js';
 import { Store } from './store.js';
@@ -89,10 +90,14 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
       const motivo = motivoRecusa(p, grupo.filtros, store);
       if (motivo) {
         recusas[motivo] = (recusas[motivo] || 0) + 1;
+        evento('recusado', p, motivo);
         continue;
       }
       c.aceitos++;
-      if (store.upsert(p)) novos++;
+      if (store.upsert(p)) {
+        novos++;
+        evento('na_fila', p);
+      }
     }
     encontrados += c.encontrados - antes;
     store.save();
@@ -117,10 +122,14 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
       const motivo = motivoRecusa(p, grupo.filtros, store);
       if (motivo) {
         recusas[motivo] = (recusas[motivo] || 0) + 1;
+        evento('recusado', p, motivo);
         continue;
       }
       if (porCategoria[p.categoria]) porCategoria[p.categoria].aceitos++;
-      if (store.upsert(p)) novos++;
+      if (store.upsert(p)) {
+        novos++;
+        evento('na_fila', p);
+      }
     }
   } catch (e) {
     amazonErro = String(e.message).split('\n')[0];
@@ -142,7 +151,10 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
       encontrados++;
       const c = Object.values(aw.categorias || {})[0];
       if (c) c.aceitos++;
-      if (store.upsert(p)) novos++;
+      if (store.upsert(p)) {
+        novos++;
+        evento('na_fila', p);
+      }
     }
   } catch (e) {
     awinErro = String(e.message).split('\n')[0];
@@ -201,7 +213,12 @@ export async function gerarLinks(
       }
       for (const [orig, link] of mapa) ok += store.setLink(orig, link);
       for (const u of lote) {
-        if (!mapa.has(u)) for (const p of store.list((x) => x.url === u)) store.setStatus(p, 'ERRO', { erro: 'sem link na resposta' });
+        if (!mapa.has(u)) {
+          for (const p of store.list((x) => x.url === u)) {
+            store.setStatus(p, 'ERRO', { erro: 'sem link na resposta' });
+            evento('sem_link', p, 'o ML não devolveu link de afiliado');
+          }
+        }
       }
       store.save();
       if (i < lotes.length - 1) await randomDelay(10, 20); // WAIT de 15s do curso entre os lotes
@@ -249,6 +266,7 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
     if (!repetido && !linkRuim) p = candidato;
     else {
       store.setStatus(candidato, repetido ? 'DUPLICADO' : 'REJEITADO', { erro: repetido || linkRuim });
+      evento(repetido ? 'duplicado' : 'link_invalido', candidato, repetido || linkRuim);
       log(`  ⏭️  [${grupo.nome}] ${repetido || linkRuim} — pulando: ${candidato.nome.slice(0, 55)}`);
     }
   }
@@ -268,14 +286,17 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
       : (await sender.sendText(grupo.jid, legenda), { comImagem: false }); // sem foto: o WhatsApp mostra a prévia do link
     const semImagem = r?.comImagem === false;
     store.setStatus(p, 'ENVIADO', { enviadoEm: new Date().toISOString(), semImagem });
+    evento('publicado', p, semImagem ? 'sem imagem' : null);
     log(`📤 [${grupo.nome}]${semImagem ? ' (sem imagem)' : ''} ${p.nome.slice(0, 60)} — ${p.linkAfiliado}`);
   } catch (e) {
     const msg = String(e.message).split('\n')[0];
     if (e.incerto) {
       store.setStatus(p, 'INCERTO', { erro: msg, enviadoEm: new Date().toISOString() });
+      evento('sem_confirmacao', p, msg);
       log(`⚠️  [${grupo.nome}] sem confirmação do envio (pode ter saído; não vou repetir): ${p.nome.slice(0, 55)} — ${msg}`);
     } else {
       store.setStatus(p, 'ERRO', { erro: msg, tentativas: (p.tentativas || 0) + 1 });
+      evento('falha_envio', p, `${msg} (tentativa ${(p.tentativas || 0)})`);
       log(`❌ [${grupo.nome}] erro ao enviar ${p.id}: ${e.stack || e.message}`);
     }
   }
