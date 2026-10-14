@@ -229,7 +229,8 @@ export async function enviarParaTodos(sender, store = new Store(), avisos = null
       log(`⚠️  Grupo "${g.nome}" sem JID configurado (rode: npm run grupos)`);
       continue;
     }
-    if (i > 0) await randomDelay(60, 120); // Wait aleatório de 1-2 min entre grupos (curso)
+    // Entre um grupo e outro: 1-2 min no WhatsApp (como no curso, contra banimento); no Telegram não precisa.
+    if (i > 0) await (settings.sender === 'telegram' ? randomDelay(3, 8) : randomDelay(60, 120));
     const p = await enviarProximo(sender, g, store);
     if (!avisos) continue;
     if (!p) await avisos.filaVazia(g.nome);
