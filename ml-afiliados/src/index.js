@@ -45,6 +45,8 @@ const exclusivo = (nome, fn) => async () => {
 };
 
 const cicloColeta = exclusivo('coleta', async () => {
+  const reabertas = store.reabrirErros(); // falhas com recusa clara voltam para a fila (até 3 tentativas)
+  if (reabertas) log(`♻️  ${reabertas} oferta(s) que tinham falhado no envio voltaram para a fila.`);
   const r = await coletar(store);
   if (!r.encontrados) await avisos.coletaVazia();
   if (r.amazonErro) await avisos.avisar('amazon', `*Amazon fora do ar no bot* ⚠️\n${r.amazonErro}`);
@@ -161,6 +163,12 @@ async function main() {
   sender = createSender();
   avisos = new Avisos({ sender, store });
   log(`🚀 ml-afiliados iniciando (envio via "${settings.sender}")`);
+  // Envio que ficou pela metade quando o bot parou: pode ter saído — vira INCERTO e entra no histórico (antes de limpar).
+  const incertos = store.recuperarEnvios();
+  if (incertos.length) {
+    store.save();
+    log(`⚠️  ${incertos.length} oferta(s) estavam sendo enviadas quando o bot parou: podem ter saído, não vou repetir.`);
+  }
   // Ligou num dia novo (o PC ficou desligado e a limpeza da meia-noite não rodou): a fila de ontem já venceu.
   // Fica antes de tudo: a caixa de entrada e o espelho, que ligam depois, já podem pôr ofertas de hoje na fila.
   if (filaDeOutroDia(store)) {
@@ -192,6 +200,7 @@ async function main() {
   cron.schedule(settings.avisos.resumoCron, () => avisos.resumoDiario(loadGrupos()).catch((e) => registrarErro('resumo', e)), opts);
   log(`⏰ Coleta: "${settings.cron.coleta}" | Envio: "${settings.cron.envio}" | Limpeza: "${settings.cron.limpeza}" | Resumo: "${settings.avisos.resumoCron}"`);
   await avisos.ligado({ grupos: loadGrupos() });
+  await avisos.aoReligar({ incertos, recuperacao: store.recuperacao });
   iniciarHeartbeat();
 
   iniciarCanais();

@@ -1,31 +1,77 @@
 /**
  * "Banco" em arquivo JSON (data/db.json) — substitui a planilha do Google do curso.
  *
- * Ciclo de vida de um produto (mesmos status da planilha):
+ * Ciclo de vida de um produto (mesmos status da planilha, mais os de controle de envio):
  *   PENDENTE  -> coletado, ainda sem link de afiliado
  *   PRONTO    -> tem link de afiliado, esperando a vez de ir pro grupo
+ *   ENVIANDO  -> o envio começou (gravado ANTES de chamar o Telegram/WhatsApp)
  *   ENVIADO   -> já foi postado (fica no histórico para não repetir)
- *   ERRO      -> falhou ao gerar link / enviar
+ *   INCERTO   -> o envio não teve resposta (timeout/queda): PODE ter saído. Conta como enviado e não é repetido.
+ *   ERRO      -> falhou com resposta clara de "não foi" (pode tentar de novo, até 3 vezes)
+ *   DUPLICADO -> barrado na hora de postar: o mesmo produto (ou o mesmo nome) já saiu no grupo
+ *   REJEITADO -> barrado na hora de postar: link de afiliado inválido
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { DATA_DIR, settings } from './config.js';
-import { diaLocal } from './util.js';
+import { diaLocal, log, normalizar } from './util.js';
 
 const DB_FILE = path.join(DATA_DIR, 'db.json');
+const MAX_TENTATIVAS = 3;
+const NA_FILA = new Set(['PENDENTE', 'PRONTO', 'ENVIANDO']);
+
+/** Chave do produto pelo nome, para achar o mesmo produto anunciado com outro id (outro vendedor/anúncio). */
+export const chaveNome = (p) => normalizar(p.nome); // mantém números e unidades: "100ml" ≠ "50ml", "kit 3" ≠ "kit 2"
 
 export class Store {
   constructor(file = DB_FILE) {
     this.file = file;
-    this.data = { produtos: {}, historico: {}, vistos: {}, stats: {} };
+    this.data = { produtos: {}, historico: {}, nomes: {}, vistos: {}, stats: {} };
+    this.recuperacao = null; // preenchido se o db.json não pôde ser lido (o index avisa o dono)
+    const lido = this.ler(file);
+    if (lido) {
+      this.data = { ...this.data, ...lido };
+      return;
+    }
+    if (!fs.existsSync(file)) return; // primeira vez: começa vazio
+    // O db.json existe mas está estragado (ex.: queda de energia no meio da gravação): guarda e usa o backup.
+    const guardado = `${file}.corrompido-${new Date().toISOString().replace(/[:.]/g, '-')}`;
     try {
-      this.data = { ...this.data, ...JSON.parse(fs.readFileSync(file, 'utf8')) };
+      fs.renameSync(file, guardado);
     } catch {}
+    const bak = this.ler(`${file}.bak`);
+    if (bak) {
+      this.data = { ...this.data, ...bak };
+      this.recuperacao = { de: 'backup', guardado };
+      log(`⚠️  O db.json estava estragado (guardado em ${path.basename(guardado)}); carreguei a última cópia boa (db.json.bak).`);
+    } else {
+      this.recuperacao = { de: 'vazio', guardado };
+      log(`❌ O db.json estava estragado e não há cópia boa: a fila e o histórico de envios começam VAZIOS (o arquivo velho ficou em ${path.basename(guardado)}).`);
+    }
   }
 
+  ler(arquivo) {
+    try {
+      const d = JSON.parse(fs.readFileSync(arquivo, 'utf8'));
+      return d && typeof d === 'object' && d.produtos ? d : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Grava sem risco de deixar o arquivo pela metade: .tmp com fsync, cópia da versão anterior em .bak, e troca. */
   save() {
     const tmp = this.file + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify(this.data, null, 2));
+    const fd = fs.openSync(tmp, 'w');
+    try {
+      fs.writeSync(fd, JSON.stringify(this.data, null, 2));
+      fs.fsyncSync(fd);
+    } finally {
+      fs.closeSync(fd);
+    }
+    try {
+      if (this.ler(this.file)) fs.copyFileSync(this.file, this.file + '.bak');
+    } catch {}
     fs.renameSync(tmp, this.file);
   }
 
@@ -33,6 +79,25 @@ export class Store {
   enviadoRecentemente(id, grupo, dias) {
     const t = this.data.historico[`${grupo}:${id}`];
     return !!t && Date.now() - new Date(t).getTime() < dias * 86_400_000;
+  }
+
+  /** Um produto com o MESMO nome (outro id) saiu neste grupo nos últimos N dias? */
+  nomeRecente(p, dias) {
+    const t = this.data.nomes?.[`${p.grupo}:${chaveNome(p)}`];
+    return !!t && Date.now() - new Date(t).getTime() < dias * 86_400_000;
+  }
+
+  /** Outro anúncio com o mesmo nome já está na fila deste grupo? */
+  duplicadoNaFila(p) {
+    const chave = chaveNome(p);
+    return this.list((x) => x.grupo === p.grupo && x.id !== p.id && NA_FILA.has(x.status) && chaveNome(x) === chave).length > 0;
+  }
+
+  /** Última checagem antes de postar. Devolve o motivo (já saiu) ou null. */
+  jaPublicado(p, dias) {
+    if (this.enviadoRecentemente(p.id, p.grupo, dias)) return 'já publicado';
+    if (this.nomeRecente(p, dias)) return 'mesmo produto já publicado (outro anúncio)';
+    return null;
   }
 
   /** Insere ou atualiza (preço muda ao longo do dia). Retorna true se for novo. */
@@ -71,7 +136,24 @@ export class Store {
 
   setStatus(p, status, extra = {}) {
     Object.assign(this.data.produtos[`${p.grupo}:${p.id}`], { status, ...extra });
-    if (status === 'ENVIADO') this.data.historico[`${p.grupo}:${p.id}`] = new Date().toISOString();
+    // INCERTO também vai para o histórico: melhor não repostar do que postar duas vezes.
+    if (status === 'ENVIADO' || status === 'INCERTO') this.anotarPublicado(p);
+  }
+
+  anotarPublicado(p) {
+    const agora = new Date().toISOString();
+    this.data.historico[`${p.grupo}:${p.id}`] = agora;
+    (this.data.nomes ??= {})[`${p.grupo}:${chaveNome(p)}`] = agora;
+  }
+
+  /**
+   * Envios que ficaram pela metade (o bot caiu durante o envio): viram INCERTO — podem ter saído,
+   * então não são repetidos. Chamado quando o bot liga. Devolve os produtos afetados.
+   */
+  recuperarEnvios() {
+    const afetados = this.list((p) => p.status === 'ENVIANDO');
+    for (const p of afetados) this.setStatus(p, 'INCERTO', { erro: 'o bot parou durante o envio' });
+    return afetados;
   }
 
   /**
@@ -115,12 +197,13 @@ export class Store {
   }
 
   /**
-   * Devolve para a fila (PRONTO) as ofertas que falharam só no envio — o link de afiliado delas
-   * continua válido. Chamado quando o bot liga.
+   * Devolve para a fila (PRONTO) as ofertas que falharam no envio com resposta clara de "não foi" — o link de
+   * afiliado delas continua válido. Até MAX_TENTATIVAS por oferta. INCERTO nunca volta (pode ter saído).
+   * Chamado quando o bot liga e a cada busca.
    */
   reabrirErros() {
     let n = 0;
-    for (const p of this.list((x) => x.status === 'ERRO' && x.linkAfiliado)) {
+    for (const p of this.list((x) => x.status === 'ERRO' && x.linkAfiliado && (x.tentativas || 0) < MAX_TENTATIVAS)) {
       p.status = 'PRONTO';
       delete p.erro;
       n++;
@@ -130,11 +213,13 @@ export class Store {
 
   /** Limpeza diária (equivale ao "deleta os produtos da planilha" à meia-noite). Mantém o histórico. */
   limparDia(diasHistorico = 30) {
+    // Envio que ficou pela metade não pode sumir sem deixar rastro no histórico (senão volta a ser postado).
+    this.recuperarEnvios();
     const antes = Object.keys(this.data.produtos).length;
     this.data.produtos = {};
     const limite = Date.now() - diasHistorico * 86_400_000;
-    for (const [k, t] of Object.entries(this.data.historico)) {
-      if (new Date(t).getTime() < limite) delete this.data.historico[k];
+    for (const mapa of [this.data.historico, (this.data.nomes ??= {})]) {
+      for (const [k, t] of Object.entries(mapa)) if (new Date(t).getTime() < limite) delete mapa[k];
     }
     return antes;
   }

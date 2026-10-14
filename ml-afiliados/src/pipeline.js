@@ -26,7 +26,32 @@ export function motivoRecusa(p, f, store, { descontoDesconhecidoPassa = false } 
   if (f.precoMaximo && p.precoAtual != null && p.precoAtual > f.precoMaximo) return 'preço alto';
   if (f.notaMinima && p.nota !== null && p.nota !== undefined && p.nota < f.notaMinima) return 'nota baixa';
   if (store && f.diasSemRepetir && store.enviadoRecentemente(p.id, p.grupo, f.diasSemRepetir)) return 'enviado recentemente';
+  // Mesmo produto anunciado com outro id (outro vendedor/anúncio, ou título igual em outra loja): conta como repetido.
+  if (store && f.diasSemRepetir && store.nomeRecente(p, f.diasSemRepetir)) return 'enviado recentemente';
+  if (store && store.duplicadoNaFila(p)) return 'duplicado na fila';
   return null;
+}
+
+/**
+ * O link de afiliado pode ir para o grupo? Devolve o motivo se não puder. Confere só o formato — o link
+ * vem da API oficial de cada programa; abrir o link aqui contaria cliques falsos para a conta de afiliado.
+ */
+export function motivoLinkInvalido(p) {
+  let u;
+  try {
+    u = new URL(p.linkAfiliado);
+  } catch {
+    return 'link inválido';
+  }
+  if (u.protocol !== 'https:') return 'link inválido';
+  const host = u.hostname.toLowerCase();
+  if (p.loja === 'amazon') return /(^|\.)amazon\.com\.br$/.test(host) && u.searchParams.get('tag') ? null : 'link da Amazon sem etiqueta';
+  if (p.loja === 'awin') {
+    if (host === 'tidd.ly' && u.pathname.length > 1) return null;
+    return /(^|\.)awin1\.com$/.test(host) && u.searchParams.get('awinaffid') ? null : 'link da Awin sem id de afiliado';
+  }
+  if (host === 'meli.la' && /^\/\w+$/.test(u.pathname)) return null;
+  return /(^|\.)mercadoli[vb]re\.com(\.br)?$/.test(host) && u.searchParams.get('matt_word') ? null : 'link do ML sem afiliado';
 }
 
 export async function coletar(store = new Store(), { amazon = buscarOfertasAmazon, awin = buscarCuponsAwin, categoriasML = null, raspar = scrapeCategoria, esperar = randomDelay } = {}) {
@@ -198,12 +223,33 @@ async function simularDigitando(sender, jid) {
   }
 }
 
+/**
+ * Publica a próxima oferta do grupo, com a última checagem contra repetição logo antes de postar.
+ * O status ENVIANDO é gravado em disco ANTES de chamar o Telegram/WhatsApp: se o bot cair no meio, ao religar
+ * a oferta vira INCERTO e não é repetida. Sem resposta do destino = INCERTO (não repete); recusa clara = ERRO
+ * (volta para a fila depois, até 3 vezes).
+ */
 export async function enviarProximo(sender, grupo, store = new Store()) {
-  const p = store.proximo(grupo.nome);
+  const dias = grupo.filtros?.diasSemRepetir || 5;
+  let p = null;
+  for (let i = 0; i < 20 && !p; i++) {
+    const candidato = store.proximo(grupo.nome);
+    if (!candidato) break;
+    const repetido = store.jaPublicado(candidato, dias);
+    const linkRuim = !repetido && motivoLinkInvalido(candidato);
+    if (!repetido && !linkRuim) p = candidato;
+    else {
+      store.setStatus(candidato, repetido ? 'DUPLICADO' : 'REJEITADO', { erro: repetido || linkRuim });
+      log(`  ⏭️  [${grupo.nome}] ${repetido || linkRuim} — pulando: ${candidato.nome.slice(0, 55)}`);
+    }
+  }
   if (!p) {
+    store.save();
     log(`📭 [${grupo.nome}] fila vazia.`);
     return null;
   }
+  store.setStatus(p, 'ENVIANDO', { tentativaEm: new Date().toISOString() });
+  store.save();
   try {
     const titulo = p.tipo === 'cupom' ? tituloCupom(p) : await gerarTitulo(p, estiloDoProduto(p, grupo));
     const legenda = montarLegenda(p, { titulo, mensagemAdicional: grupo.mensagemAdicional });
@@ -215,15 +261,20 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
     store.setStatus(p, 'ENVIADO', { enviadoEm: new Date().toISOString(), semImagem });
     log(`📤 [${grupo.nome}]${semImagem ? ' (sem imagem)' : ''} ${p.nome.slice(0, 60)} — ${p.linkAfiliado}`);
   } catch (e) {
-    store.setStatus(p, 'ERRO', { erro: e.message });
-    log(`❌ [${grupo.nome}] erro ao enviar ${p.id}: ${e.stack || e.message}`);
+    const msg = String(e.message).split('\n')[0];
+    if (e.incerto) {
+      store.setStatus(p, 'INCERTO', { erro: msg, enviadoEm: new Date().toISOString() });
+      log(`⚠️  [${grupo.nome}] sem confirmação do envio (pode ter saído; não vou repetir): ${p.nome.slice(0, 55)} — ${msg}`);
+    } else {
+      store.setStatus(p, 'ERRO', { erro: msg, tentativas: (p.tentativas || 0) + 1 });
+      log(`❌ [${grupo.nome}] erro ao enviar ${p.id}: ${e.stack || e.message}`);
+    }
   }
   store.save();
   return p;
 }
 
-export async function enviarParaTodos(sender, store = new Store(), avisos = null) {
-  const ativos = loadGrupos().filter((g) => g.ativo);
+export async function enviarParaTodos(sender, store = new Store(), avisos = null, ativos = loadGrupos().filter((g) => g.ativo)) {
   for (const [i, g] of ativos.entries()) {
     if (!g.jid || g.jid.startsWith('COLE_AQUI')) {
       log(`⚠️  Grupo "${g.nome}" sem JID configurado (rode: npm run grupos)`);
@@ -235,6 +286,7 @@ export async function enviarParaTodos(sender, store = new Store(), avisos = null
     if (!avisos) continue;
     if (!p) await avisos.filaVazia(g.nome);
     else if (p.status === 'ERRO') await avisos.falhaEnvio(g.nome, p);
+    else if (p.status === 'INCERTO') await avisos.envioIncerto(g.nome, p);
   }
 }
 

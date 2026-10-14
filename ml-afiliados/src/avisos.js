@@ -32,6 +32,10 @@ export function montarResumo(store, { dia = diaLocal(new Date(), settings.tz), g
   const semImagem = enviados.filter((p) => p.semImagem).length;
   if (semImagem) linhas.push(`🖼️ Foram sem imagem: ${semImagem}`);
   if (erros.length) linhas.push(`❌ Falharam no envio: ${erros.length}`);
+  const incertos = store.list((p) => p.status === 'INCERTO' && (!ativos.length || ativos.includes(p.grupo)));
+  if (incertos.length) linhas.push(`⚠️ Sem confirmação (podem ter saído): ${incertos.length}`);
+  const barrados = store.list((p) => (p.status === 'DUPLICADO' || p.status === 'REJEITADO') && (!ativos.length || ativos.includes(p.grupo)));
+  if (barrados.length) linhas.push(`🛑 Barradas na hora de postar (repetidas ou link inválido): ${barrados.length}`);
   if (enviados.length) {
     const melhor = [...enviados].sort((x, y) => (y.descontoPct || 0) - (x.descontoPct || 0))[0];
     linhas.push(`🏆 Maior desconto: ${melhor.nome.slice(0, 50)} — ${formatBRL(melhor.precoAtual)}${melhor.descontoPct ? ` (${melhor.descontoPct}% OFF)` : ''}`);
@@ -145,6 +149,23 @@ export class Avisos {
 
   falhaEnvio(grupo, p) {
     return this.avisar(`envio-${grupo}`, `*Falha ao postar no grupo ${grupo}* ❌\n${String(p.erro || '').split('\n')[0].slice(0, 200)}\nVou tentar as próximas ofertas normalmente.`);
+  }
+
+  /** Envio sem resposta do destino: pode ter saído. Um aviso por oferta (nunca some calado). */
+  envioIncerto(grupo, p) {
+    return this.avisar(
+      `incerto-${grupo}-${p.id}`,
+      `*Envio sem confirmação no grupo ${grupo}* ⚠️\n${String(p.nome || '').slice(0, 80)}\nO Telegram não respondeu a tempo: a oferta pode ter saído. Para não duplicar, não vou reenviar — se ela não apareceu no canal, mande o link na minha conversa que eu posto.`
+    );
+  }
+
+  /** O bot caiu no meio de envios (ou o db.json estava estragado): conta ao dono ao religar. */
+  aoReligar({ incertos = [], recuperacao = null } = {}) {
+    const linhas = [];
+    if (incertos.length) linhas.push(`${incertos.length} oferta(s) estavam sendo enviadas quando o bot parou e podem ter saído: ${incertos.map((p) => `[${p.grupo}] ${String(p.nome).slice(0, 40)}`).join('; ')}. Não vou reenviar.`);
+    if (recuperacao?.de === 'backup') linhas.push('O arquivo da fila (db.json) estava estragado; carreguei a última cópia boa.');
+    if (recuperacao?.de === 'vazio') linhas.push('O arquivo da fila (db.json) estava estragado e não havia cópia boa: a fila e o histórico de envios recomeçaram do zero — alguma oferta antiga pode voltar a ser postada.');
+    return linhas.length ? this.avisar('religar', `*Atenção ao religar* ⚠️\n${linhas.join('\n')}`, { sempre: true }) : false;
   }
 
   espelhoPausado(motivo, minutos) {

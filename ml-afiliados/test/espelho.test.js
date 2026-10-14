@@ -127,7 +127,8 @@ test('Espelho: mensagem nova com link vira oferta PRONTA com o MEU link e fura a
 test('Espelho: respeita filtros, repetidos e limite por hora', async () => {
   const agora = { t: 1_800_000_000_000 };
   let n = 0;
-  const produto = (extra) => ({ ...parseSocialPage(fx('social-meli-la.html')), ...extra });
+  // nome diferente para cada id: produtos com o MESMO nome contam como o mesmo produto (duplicado na fila)
+  const produto = (extra) => ({ ...parseSocialPage(fx('social-meli-la.html')), nome: `Produto ${extra.id}`, ...extra });
   const fila = [];
   const { store, espelho } = montar({
     msgs: () => fila, agora, cfg: { maxPorHora: 2 },

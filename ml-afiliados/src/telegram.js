@@ -31,12 +31,20 @@ export class TelegramSender {
   async call(metodo, corpo = {}, tentativa = 0) {
     if (!this.token) throw new Error('Preencha TELEGRAM_BOT_TOKEN no .env (token do @BotFather).');
     const arquivo = corpo instanceof FormData; // upload de arquivo: o fetch monta o multipart sozinho
-    const res = await this.fetch(`https://api.telegram.org/bot${this.token}/${metodo}`, {
-      method: 'POST',
-      headers: arquivo ? {} : { 'content-type': 'application/json' },
-      body: arquivo ? corpo : JSON.stringify(corpo),
-      signal: AbortSignal.timeout(arquivo ? 60_000 : 30_000),
-    });
+    let res;
+    try {
+      res = await this.fetch(`https://api.telegram.org/bot${this.token}/${metodo}`, {
+        method: 'POST',
+        headers: arquivo ? {} : { 'content-type': 'application/json' },
+        body: arquivo ? corpo : JSON.stringify(corpo),
+        signal: AbortSignal.timeout(arquivo ? 60_000 : 30_000),
+      });
+    } catch (e) {
+      // Sem resposta (rede caiu, tempo esgotado): a mensagem PODE ter chegado. Quem chama não deve repetir às cegas.
+      const err = new Error(`Telegram ${metodo}: sem resposta (${e.name === 'TimeoutError' ? 'tempo esgotado' : String(e.message).split('\n')[0]})`);
+      err.incerto = true;
+      throw err; // a mensagem nunca leva a URL (ela tem o token)
+    }
     const json = await res.json().catch(() => ({}));
     if (json.ok) return json.result;
     const espera = json.parameters?.retry_after;
@@ -45,7 +53,9 @@ export class TelegramSender {
       await sleep((espera + 1) * 1000);
       return this.call(metodo, corpo, tentativa + 1);
     }
-    throw new Error(`Telegram ${metodo}: ${json.description || `HTTP ${res.status}`}`);
+    const err = new Error(`Telegram ${metodo}: ${json.description || `HTTP ${res.status}`}`);
+    err.incerto = res.status >= 500; // erro do servidor do Telegram: não dá para saber se postou
+    throw err;
   }
 
   async init() {
@@ -76,9 +86,10 @@ export class TelegramSender {
   }
 
   /**
-   * Foto pela URL (o Telegram baixa) ou por file_id. Se o Telegram não conseguir baixar a URL (acontece com as
-   * fotos dos canais públicos), baixamos e enviamos o arquivo. Legenda > 1024 caracteres ou foto que não foi de
-   * jeito nenhum: vai como texto com prévia.
+   * Foto pela URL (o Telegram baixa) ou por file_id. Se o Telegram RECUSAR a URL (acontece com as fotos dos
+   * canais públicos), baixamos e enviamos o arquivo. Legenda > 1024 caracteres ou foto recusada de vez: vai como
+   * texto com prévia. Se o Telegram NÃO RESPONDER (erro `incerto`), não tenta outro jeito: a foto pode ter saído,
+   * e mandar de novo duplicaria a postagem.
    */
   async sendImage(chatId, imageUrl, legenda) {
     const html = paraHTML(legenda);
@@ -87,11 +98,13 @@ export class TelegramSender {
         await this.call('sendPhoto', { chat_id: chatId, photo: imageUrl, caption: html, parse_mode: 'HTML' });
         return { comImagem: true };
       } catch (e) {
+        if (e.incerto) throw e;
         try {
           if (!/^https?:\/\//.test(imageUrl)) throw e;
           await this.enviarFotoBaixada(chatId, imageUrl, html);
           return { comImagem: true };
         } catch (e2) {
+          if (e2.incerto) throw e2;
           log(`  ↪ foto não foi (${String(e2.message).split('\n')[0]}) — enviando só o texto.`);
         }
       }
