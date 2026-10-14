@@ -158,7 +158,7 @@ export class Espelho {
       };
       const motivo = this.store.conhecido(produto.id, g.nome)
         ? 'já está na fila'
-        : motivoRecusa(produto, this.filtros(fonte, g), this.store, { descontoDesconhecidoPassa: true });
+        : motivoRecusa(produto, this.filtros(fonte, g), this.store, { descontoDesconhecidoPassa: true, exigirVendas: !fonte.manual });
       if (motivo) {
         motivos.push(motivo);
         continue;
@@ -254,7 +254,10 @@ export class Espelho {
       const produto = { ...(await this.resolver(links[0])), grupo: destino.nome, categoria: `Espelho: ${fonte.nomeWhats || fonte.nome}`, origem: 'espelho' };
 
       if (this.store.conhecido(produto.id, destino.nome)) return 'já está na fila';
-      const motivo = motivoRecusa(produto, this.filtros(fonte, destino), this.store, { descontoDesconhecidoPassa: true });
+      const motivo = motivoRecusa(produto, this.filtros(fonte, destino), this.store, { descontoDesconhecidoPassa: true, exigirVendas: !fonte.manual });
+      // A página do link (perfil social do outro afiliado) não mostra as vendas: oferta do ML vinda do espelho
+      // automático é recusada de propósito (regra de >50 vendas). Não é bug — ver README, seção 3.7.
+      if (motivo === 'sem dado de vendas') return 'ML sem dado de vendas (o espelho não lê as vendas)';
       if (motivo) return motivo;
 
       if (this.agora() - this.ultimoRefresh > 30 * MIN) {

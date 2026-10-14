@@ -9,18 +9,23 @@ import { scrapeCategoria } from './ml/scraper.js';
 import { MLAffiliate } from './ml/affiliate.js';
 import { buscarOfertasAmazon } from './amazon.js';
 import { buscarCuponsAwin, loadAwin } from './awin.js';
+import { VENDAS_MINIMAS, motivoVendas } from './ml/vendas.js';
 import { BrowserSession, sessaoNavegador } from './browser.js';
 import { estiloDoProduto, gerarTitulo, montarLegenda, tituloCupom } from './caption.js';
 import { Store } from './store.js';
 import { casaTermo, chunk, diaLocal, log, normalizar, randomDelay, shuffle, sleep } from './util.js';
 
 /** Aplica os filtros do grupo. Retorna o motivo da recusa ou null se passou. */
-export function motivoRecusa(p, f, store, { descontoDesconhecidoPassa = false } = {}) {
+export function motivoRecusa(p, f, store, { descontoDesconhecidoPassa = false, exigirVendas = true } = {}) {
   const nome = normalizar(p.nome);
   const semDesconto = p.descontoPct === null || p.descontoPct === undefined;
   // Nicho: o nome precisa casar com pelo menos uma das palavras obrigatórias (ex.: fitness).
   if (f.palavrasObrigatorias?.length && !f.palavrasObrigatorias.some((t) => casaTermo(nome, t))) return 'fora do nicho';
   if ((f.palavrasBloqueadas || []).some((w) => casaTermo(nome, w))) return 'palavra bloqueada';
+  // Mercado Livre: só com MAIS de N vendas confirmadas pelo rótulo do card (src/ml/vendas.js). A caixa de entrada
+  // do dono (escolha manual dele) passa `exigirVendas: false`.
+  const vendas = exigirVendas && motivoVendas(p, f.vendasMinimas ?? VENDAS_MINIMAS);
+  if (vendas) return vendas;
   if (f.descontoMinimo && !(semDesconto && descontoDesconhecidoPassa) && (p.descontoPct || 0) < f.descontoMinimo) return 'desconto baixo';
   if (f.precoMinimo && p.precoAtual != null && p.precoAtual < f.precoMinimo) return 'preço baixo';
   if (f.precoMaximo && p.precoAtual != null && p.precoAtual > f.precoMaximo) return 'preço alto';
@@ -228,11 +233,15 @@ async function simularDigitando(sender, jid) {
  * O status ENVIANDO é gravado em disco ANTES de chamar o Telegram/WhatsApp: se o bot cair no meio, ao religar
  * a oferta vira INCERTO e não é repetida. Sem resposta do destino = INCERTO (não repete); recusa clara = ERRO
  * (volta para a fila depois, até 3 vezes).
+ * Limite: só o envio pelo Telegram sabe distinguir "sem resposta" de "recusado". No WhatsApp (wwebjs/Evolution/
+ * WuzAPI) todo erro vira ERRO — um timeout depois de a mensagem ter saído pode repetir a oferta (até 3 vezes).
+ * E o Telegram não deixa o bot consultar o que já está no canal, então um INCERTO não tem como ser confirmado.
  */
 export async function enviarProximo(sender, grupo, store = new Store()) {
   const dias = grupo.filtros?.diasSemRepetir || 5;
   let p = null;
-  for (let i = 0; i < 20 && !p; i++) {
+  // Cada candidato barrado sai da fila (muda de status), então o laço termina; null = fila realmente vazia.
+  while (!p) {
     const candidato = store.proximo(grupo.nome);
     if (!candidato) break;
     const repetido = store.jaPublicado(candidato, dias);

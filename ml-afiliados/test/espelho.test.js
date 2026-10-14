@@ -78,16 +78,19 @@ test('resolverFontes: liga a fonte ao grupo pelo nome (ou avisa)', () => {
   assert.match(r.problemas[1], /não achei/);
 });
 
-function montar({ msgs, resolver, createLinks, cfg = {}, agora = { t: 1_800_000_000_000 } }) {
+// A página social do fixture não traz o rótulo de vendas; nos testes que não são da regra de vendas, ele é acrescentado.
+const comVendas = (p) => ({ ...p, vendidos: '+500 vendidos' });
+
+function montar({ msgs, resolver, createLinks, cfg = {}, agora = { t: 1_800_000_000_000 }, manual = false }) {
   const store = tmpStore();
   const sender = { lerMensagens: async () => msgs() };
   const affiliate = { refreshes: 0, refresh: async function () { this.refreshes++; }, createLinks: createLinks || (async (urls) => new Map(urls.map((u) => [u, 'https://meli.la/MEU1']))) };
   const espelho = new Espelho({
     sender, store, affiliate,
-    fontes: [{ nome: 'Fonte A', nomeWhats: 'Fonte A', jid: 'A@g.us', destino: 'Geral' }],
+    fontes: [{ nome: 'Fonte A', nomeWhats: 'Fonte A', jid: 'A@g.us', destino: 'Geral', manual }],
     grupos: [{ nome: 'Geral', jid: 'MEU@g.us', filtros: { descontoMinimo: 20, precoMinimo: 15, precoMaximo: 5000, diasSemRepetir: 5, palavrasBloqueadas: ['usado'] } }],
     cfg: { pausaEntreConsultasSeg: 0, ...cfg },
-    resolver: resolver || (async () => parseSocialPage(fx('social-meli-la.html'))),
+    resolver: resolver || (async () => comVendas(parseSocialPage(fx('social-meli-la.html')))),
     agora: () => agora.t, esperar: async () => {},
   });
   return { store, espelho, affiliate, agora };
@@ -124,11 +127,23 @@ test('Espelho: mensagem nova com link vira oferta PRONTA com o MEU link e fura a
   assert.equal(r2.novas, 0);
 });
 
+test('Espelho: oferta do ML sem rótulo de vendas não entra (automático); na caixa de entrada do dono, entra', async () => {
+  const agora = { t: 1_800_000_000_000 };
+  const msg = [{ id: 'v1', jid: 'A@g.us', t: seg(agora, 1), tipo: 'chat', texto: 'oferta https://meli.la/1JC7ZMh' }];
+  const semRotulo = async () => parseSocialPage(fx('social-meli-la.html')); // a página social real não mostra vendas
+  const auto = montar({ msgs: () => msg, agora, resolver: semRotulo });
+  const r = await auto.espelho.tick();
+  assert.deepEqual({ enfileiradas: r.enfileiradas, ignoradas: r.ignoradas }, { enfileiradas: 0, ignoradas: { 'ML sem dado de vendas (o espelho não lê as vendas)': 1 } });
+  const dono = montar({ msgs: () => msg, agora, resolver: semRotulo, manual: true });
+  dono.espelho.responder = async () => {};
+  assert.equal((await dono.espelho.tick()).enfileiradas, 1);
+});
+
 test('Espelho: respeita filtros, repetidos e limite por hora', async () => {
   const agora = { t: 1_800_000_000_000 };
   let n = 0;
   // nome diferente para cada id: produtos com o MESMO nome contam como o mesmo produto (duplicado na fila)
-  const produto = (extra) => ({ ...parseSocialPage(fx('social-meli-la.html')), nome: `Produto ${extra.id}`, ...extra });
+  const produto = (extra) => ({ ...comVendas(parseSocialPage(fx('social-meli-la.html'))), nome: `Produto ${extra.id}`, ...extra });
   const fila = [];
   const { store, espelho } = montar({
     msgs: () => fila, agora, cfg: { maxPorHora: 2 },

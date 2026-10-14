@@ -118,9 +118,12 @@ export function productFromCard(card) {
     null;
   const lojaOficial = sellerVals.some((v) => v.icon?.icon_id === 'icon_cockade');
 
-  const reviewLabels = (comps.review_compacted?.values || []).filter((v) => v.type === 'label');
-  const nota = reviewLabels[0] ? parseFloat(reviewLabels[0].label.text) : null;
-  const vendidos = reviewLabels[1]?.label?.text?.replace(/^\|\s*/, '') || null;
+  // Nota e vendas vêm em rótulos ("4.7", "| +250mil vendidos"). Produto sem avaliação traz SÓ o de vendas,
+  // na primeira posição — por isso cada um é achado pelo conteúdo, não pela posição.
+  const reviewTextos = (comps.review_compacted?.values || []).filter((v) => v.type === 'label').map((v) => String(v.label?.text || '').trim());
+  const notaTxt = reviewTextos.find((t) => /^\d(?:[.,]\d)?$/.test(t));
+  const nota = notaTxt ? parseFloat(notaTxt.replace(',', '.')) : null;
+  const vendidos = reviewTextos.find((t) => /vendid/i.test(t))?.replace(/^\|\s*/, '') || null;
 
   const picId = card.pictures?.pictures?.[0]?.id;
   let fimRelampago = null;
@@ -216,7 +219,7 @@ export function parsePolyCards(html) {
       vendedor: null,
       lojaOficial: false,
       nota: parseFloat(card.match(/Classificação ([\d.]+) de 5/)?.[1]) || null,
-      vendidos: cleanText(card.match(/\|\s*(\+[^<]+vendidos)/)?.[1]) || null,
+      vendidos: cleanText(card.match(/>\s*\|?\s*((?:\+|mais de\s*)?[\d.,]+\s*(?:mil|milhões|milhão|M)?\s*vendid[oa]s?)\s*</i)?.[1]) || null,
       fimRelampago: null,
     });
   }

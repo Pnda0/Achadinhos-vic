@@ -6,7 +6,7 @@ import { estiloDoProduto, tituloPronto } from '../src/caption.js';
 import { casaTermo, normalizar } from '../src/util.js';
 
 const fitness = loadGrupos().find((g) => g.nome === 'Fitness');
-const prod = (nome, extra = {}) => ({ id: 'MLB1', grupo: 'Fitness', nome, precoAtual: 99, descontoPct: 30, nota: 4.6, ...extra });
+const prod = (nome, extra = {}) => ({ id: 'MLB1', grupo: 'Fitness', nome, precoAtual: 99, descontoPct: 30, nota: 4.6, vendidos: '+1000 vendidos', ...extra });
 const motivo = (nome, extra) => motivoRecusa(prod(nome, extra), fitness.filtros);
 
 test('casaTermo: palavra inteira, sem acento, plural simples e "a+b"', () => {
@@ -47,7 +47,7 @@ test('site e bot: os trÃªs grupos de nicho existem, cada um com o seu nicho e tÃ
 
 test('perfumes e beleza: cada oferta cai no grupo certo', () => {
   const grupos = loadGrupos();
-  const em = (grupo, nome) => motivoRecusa({ id: 'X', grupo, nome, precoAtual: 99, descontoPct: 30, nota: 4.6 }, grupos.find((g) => g.nome === grupo).filtros);
+  const em = (grupo, nome) => motivoRecusa({ id: 'X', grupo, nome, precoAtual: 99, descontoPct: 30, nota: 4.6, vendidos: '+1000 vendidos' }, grupos.find((g) => g.nome === grupo).filtros);
   for (const nome of [
     'Perfume Lattafa Asad Eau De Parfum 100ml Masculino',
     'Club De Nuit Intense Man Armaf Edt 105ml',

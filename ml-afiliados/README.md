@@ -115,6 +115,8 @@ Configuração em `config/fontes.json` (ou `npm run fontes -- "Nome do grupo A" 
 | `janelaMinutos` | só considera mensagens postadas nos últimos N minutos |
 | `maxPorHora` | teto de ofertas aproveitadas por hora |
 
+**Vendas (regra obrigatória):** oferta do Mercado Livre só entra na fila com **mais de 50 vendas** confirmadas pelo rótulo do card ("+50 vendidos" passa: o próprio ML escreve "Mais de 50 produtos vendidos"; "+25", "37 vendidos" ou sem rótulo ficam fora). A página que o link de outro afiliado abre não mostra as vendas, então **oferta do ML vinda do espelho automático é recusada** com o motivo "ML sem dado de vendas (o espelho não lê as vendas)" — é de propósito, não é defeito. A caixa de entrada do dono não tem essa regra (é escolha manual). Detalhes na seção 3.14.
+
 Cuidados: valem os mesmos filtros do grupo de destino (desconto mínimo, preço, palavras bloqueadas, não repetir). Se o Mercado Livre pedir verificação de segurança (captcha) ou recusar a sessão, o espelho **pausa por 1 hora** em vez de insistir. Para testar um link sem WhatsApp: `npm run testar-espelho -- https://meli.la/XXXX`.
 
 ## 3.8 Avisos e resumo diário no seu WhatsApp
