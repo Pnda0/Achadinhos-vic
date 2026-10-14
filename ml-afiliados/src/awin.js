@@ -34,6 +34,14 @@ export function loadAwin() {
 }
 
 const HOST_AWIN = /(^|\.)awin1\.com$/i;
+const HOST_CURTO = /^(tidd\.ly|bit\.ly|tinyurl\.com|cutt\.ly|is\.gd|t\.co|rebrand\.ly|encurtador\.com\.br|abre\.ai)$/i;
+const hostDe = (url) => {
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return '';
+  }
+};
 // Parâmetros de rastreio de OUTROS afiliados/campanhas: saem do link antes de ele ganhar o nosso.
 const RASTREIO = /^(utm_\w+|awc|awaid|sv1|sv_campaign_id|gclid|fbclid|msclkid|zanpid|clickref\d?|aff\w*|parceiro|origem|source|campaign|cmpid|ranmid|raneaid|ransiteid|irclickid|irgwc)$/i;
 
@@ -95,7 +103,7 @@ export function extrairLinksLoja(texto) {
 
 // Só estes encurtadores são seguidos (o tidd.ly é o da própria Awin). Link de outro site é ignorado:
 // seguir qualquer endereço postado num canal seria abrir páginas à toa e gerar clique para outras redes.
-const ENCURTADOR = /^(tidd\.ly|bit\.ly|tinyurl\.com|cutt\.ly|is\.gd|t\.co|rebrand\.ly|encurtador\.com\.br|abre\.ai)$/i;
+const ENCURTADOR = HOST_CURTO;
 
 /**
  * Do link que apareceu na mensagem até a página da loja parceira: { anunciante, url } ou null.
@@ -136,10 +144,12 @@ export async function resolverLinkLoja(url, anunciantes, { fetchImpl = fetch, ma
 }
 
 const CACHE_FILE = path.join(DATA_DIR, 'awin-programas.json');
+const LINKS_FILE = path.join(DATA_DIR, 'awin-links.json');
 
 export class Awin {
-  constructor(cfg = awinCfg(), { fetchImpl = fetch, pausaMs = 3200, arquivoCache = CACHE_FILE, config = loadAwin(), agora = () => Date.now() } = {}) {
+  constructor(cfg = awinCfg(), { fetchImpl = fetch, pausaMs = 3200, arquivoCache = CACHE_FILE, arquivoLinks = LINKS_FILE, config = loadAwin(), agora = () => Date.now() } = {}) {
     this.cfg = cfg;
+    this.arquivoLinks = arquivoLinks;
     this.config = config;
     this.fetch = fetchImpl;
     this.pausaMs = pausaMs; // a API da Awin aceita 20 chamadas por minuto
@@ -243,18 +253,62 @@ export class Awin {
     return this.lista;
   }
 
-  /** Link de afiliado para uma página da loja. Com token tenta o link curto oficial (tidd.ly); senão, o link longo. */
+  /**
+   * Link de afiliado para uma página da loja. Com token, tenta o link curto oficial da Awin (tidd.ly) e só o usa
+   * depois de conferir que ele redireciona para um link com o NOSSO id de afiliado; o link curto fica guardado
+   * (data/awin-links.json) para não pedir de novo. Qualquer falha: o link longo oficial (awin1.com), que sempre vale.
+   */
   async gerarLink(anunciante, url) {
     const id = await this.publisher();
-    if (this.cfg.token && this.config.linkCurto) {
-      try {
-        const r = await this.chamar('POST', `/publishers/${id}/linkbuilder/generate`, { advertiserId: anunciante.id, ...(url ? { destinationUrl: url } : {}), shorten: true });
-        if (r?.shortUrl || r?.url) return r.shortUrl || r.url;
-      } catch (e) {
-        log(`  Awin: link curto não saiu (${String(e.message).split('\n')[0].slice(0, 120)}) — usando o link longo.`);
+    // Link já encurtado (de outro afiliado ou de outro serviço) não é embrulhado nem encurtado de novo: o destino
+    // dele é desconhecido e a comissão poderia ir para outra pessoa. Quem chama resolve até a página da loja antes.
+    if (url && (HOST_CURTO.test(hostDe(url)) || HOST_AWIN.test(hostDe(url)))) throw new Error('link já encurtado/de afiliado: resolva até a página da loja antes');
+    const longo = linkAwin(anunciante.id, id, url);
+    if (!this.cfg.token || !this.config.linkCurto || !url) return longo;
+    const chave = `${anunciante.id}|${url}`;
+    const cache = this.lerCacheLinks();
+    if (cache[chave]) return cache[chave];
+    try {
+      const r = await this.chamar('POST', `/publishers/${id}/linkbuilder/generate`, { advertiserId: anunciante.id, destinationUrl: url, shorten: true });
+      if (r?.shortUrl && (await this.linkCurtoEhNosso(r.shortUrl, id))) {
+        this.gravarCacheLinks({ ...cache, [chave]: r.shortUrl });
+        return r.shortUrl;
       }
+      log(`  Awin: o link curto não confirmou o nosso id de afiliado — usando o link longo.`);
+    } catch (e) {
+      log(`  Awin: link curto não saiu (${String(e.message).split('\n')[0].slice(0, 120)}) — usando o link longo.`);
     }
-    return linkAwin(anunciante.id, id, url);
+    return longo;
+  }
+
+  /**
+   * O link curto leva a um link da Awin com o NOSSO id? Olha só o 1º redirecionamento (não abre a loja nem o
+   * awin1.com, onde o clique é registrado). Roda uma vez por link novo — o resultado bom fica no cache.
+   */
+  async linkCurtoEhNosso(curto, publisherId) {
+    try {
+      const res = await this.fetch(curto, { method: 'HEAD', redirect: 'manual', signal: AbortSignal.timeout(5_000) });
+      const destino = res.headers?.get?.('location') || '';
+      const u = new URL(destino, curto);
+      return HOST_AWIN.test(u.hostname) && u.searchParams.get('awinaffid') === String(publisherId);
+    } catch {
+      return false;
+    }
+  }
+
+  lerCacheLinks() {
+    try {
+      return JSON.parse(fs.readFileSync(this.arquivoLinks, 'utf8'));
+    } catch {
+      return {};
+    }
+  }
+
+  gravarCacheLinks(cache) {
+    try {
+      const entradas = Object.entries(cache).slice(-2000); // não cresce para sempre
+      fs.writeFileSync(this.arquivoLinks, JSON.stringify(Object.fromEntries(entradas)), 'utf8');
+    } catch {}
   }
 
   /** Cupons e promoções ativos no Brasil das lojas aprovadas (API "promotions"). */
@@ -355,6 +409,17 @@ export async function buscarCuponsAwin({ api = new Awin(), grupos = [], jaTem = 
       porGrupo[grupo] = (porGrupo[grupo] || 0) + 1;
       produtos.push(p);
     }
+  }
+  // Link curto oficial (tidd.ly) para a página do cupom, uma vez por promoção; se não der, fica o link de rastreio da API.
+  const curtos = new Map();
+  for (const p of produtos) {
+    const promo = promos.find((x) => `AWP-${x.promotionId}` === p.id);
+    if (!promo?.url) continue;
+    if (!curtos.has(p.id)) {
+      const link = await api.gerarLink(porId.get(Number(promo.advertiser.id)), promo.url).catch(() => null);
+      curtos.set(p.id, link && /^https:\/\/tidd\.ly\//.test(link) ? link : null);
+    }
+    if (curtos.get(p.id)) p.linkAfiliado = curtos.get(p.id);
   }
   return { produtos, categorias: { 'Awin: cupons e promoções': { encontrados: promos.length, aceitos: 0 } } };
 }

@@ -6,6 +6,7 @@ import path from 'node:path';
 
 // Antes de carregar a configuração: estes testes valem para o bot no Telegram (grupo sem canal = em espera).
 process.env.SENDER = 'telegram';
+process.env.SIMULAR_DIGITANDO = 'false'; // sem "digitando..." (só atrasaria os testes)
 const { Awin, buscarCuponsAwin, extrairLinksLoja, lerLinkAwin, limparUrlLoja, linkAwin, lojaDaUrl, nomeDaLoja, ofertaDeCupom, resolverLinkLoja } = await import('../src/awin.js');
 const { montarLegenda, tituloCupom } = await import('../src/caption.js');
 const { Espelho } = await import('../src/espelho.js');
@@ -51,6 +52,13 @@ function apiFalsa(extra = {}) {
   const chamadas = [];
   const fetchImpl = async (url, opts) => {
     const u = new URL(url);
+    if (u.hostname === 'tidd.ly') {
+      // conferência do link curto: só o 1º redirecionamento, sem token
+      chamadas.push(`${opts.method} tidd.ly${u.pathname}`);
+      assert.equal(opts.headers, undefined);
+      if (extra.curtoSemResposta) throw new Error('rede');
+      return { headers: { get: () => extra.destinoCurto ?? 'https://www.awin1.com/cread.php?awinmid=79926&awinaffid=123456&ued=x' } };
+    }
     chamadas.push(`${opts.method} ${u.pathname}${u.search}`);
     assert.equal(opts.headers.authorization, 'Bearer tok');
     if (u.pathname === '/accounts') return json({ userId: 1, accounts: [{ accountId: 123456, accountName: 'Vic', accountType: 'publisher' }] });
@@ -65,7 +73,7 @@ function apiFalsa(extra = {}) {
     return json({ error: 'nao sei' }, 404);
   };
   const config = { ativo: true, grupoGeral: 'Geral', linkCurto: true, cupons: { ativo: true, maxPorColeta: 2, diasSemRepetir: 7 }, anunciantes: [{ id: 79926, nome: 'adidas', dominios: [], grupos: ['Fitness'] }] };
-  return { chamadas, api: new Awin({ token: 'tok', publisherId: '', apiUrl: 'https://api.awin.com' }, { fetchImpl, pausaMs: 0, arquivoCache: tmp('awin.json'), config }) };
+  return { chamadas, api: new Awin({ token: 'tok', publisherId: '', apiUrl: 'https://api.awin.com' }, { fetchImpl, pausaMs: 0, arquivoCache: tmp('awin.json'), arquivoLinks: tmp('links.json'), config }) };
 }
 
 test('Awin API: descobre o id de afiliado, lista as lojas aprovadas (com cache) e gera link curto', async () => {
@@ -79,6 +87,20 @@ test('Awin API: descobre o id de afiliado, lista as lojas aprovadas (com cache) 
   assert.deepEqual(chamadas, ['GET /accounts?type=publisher', 'GET /publishers/123456/programmes?relationship=joined']);
   assert.equal(await api.gerarLink(lojas[0], 'https://www.adidas.com.br/tenis'), 'https://tidd.ly/MEU');
   assert.equal(JSON.parse(fs.readFileSync(api.arquivoCache, 'utf8')).publisherId, '123456');
+  // o link curto fica guardado: a mesma página não pede de novo à API nem confere de novo
+  const antes = chamadas.length;
+  assert.equal(await api.gerarLink(lojas[0], 'https://www.adidas.com.br/tenis'), 'https://tidd.ly/MEU');
+  assert.equal(chamadas.length, antes);
+  // link que já é curto (ou de afiliado) não é encurtado nem embrulhado de novo
+  await assert.rejects(api.gerarLink(lojas[0], 'https://tidd.ly/OUTRO'), /já encurtado/);
+  await assert.rejects(api.gerarLink(lojas[0], 'https://www.awin1.com/cread.php?awinmid=1&awinaffid=999'), /já encurtado/);
+  assert.equal(chamadas.length, antes);
+
+  // o link curto leva para OUTRO id de afiliado, ou a conferência não responde: fica o link longo (sempre nosso)
+  for (const extra of [{ destinoCurto: 'https://www.awin1.com/cread.php?awinmid=79926&awinaffid=999&ued=x' }, { curtoSemResposta: true }, { destinoCurto: '' }]) {
+    const c = apiFalsa(extra);
+    assert.equal(await c.api.gerarLink({ id: 79926 }, 'https://www.adidas.com.br/t'), 'https://www.awin1.com/cread.php?awinmid=79926&awinaffid=123456&ued=https%3A%2F%2Fwww.adidas.com.br%2Ft', JSON.stringify(extra));
+  }
 
   // a loja não deixa usar o gerador: cai no link longo, que funciona do mesmo jeito
   const b = apiFalsa({ semLinkCurto: true });
@@ -99,9 +121,11 @@ test('Awin cupons: cada loja manda para os grupos dela e para o Geral, com limit
   const r = await buscarCuponsAwin({ api, grupos });
   assert.deepEqual(r.produtos.map((p) => `${p.grupo}:${p.id}`).sort(), ['Fitness:AWP-1', 'Fitness:AWP-2', 'Geral:AWP-1', 'Geral:AWP-4']); // código primeiro; 2 por grupo
   const cupom = r.produtos.find((p) => p.id === 'AWP-1' && p.grupo === 'Fitness');
-  assert.deepEqual({ loja: cupom.loja, lojaNome: cupom.lojaNome, tipo: cupom.tipo, cupom: cupom.cupom, descontoPct: cupom.descontoPct, linkAfiliado: cupom.linkAfiliado }, { loja: 'awin', lojaNome: 'adidas', tipo: 'cupom', cupom: 'CORRE15', descontoPct: 15, linkAfiliado: PROMOS[0].urlTracking });
+  // cupom com página da loja: sai com o link curto oficial (conferido); sem página, com o link de rastreio da API
+  assert.deepEqual({ loja: cupom.loja, lojaNome: cupom.lojaNome, tipo: cupom.tipo, cupom: cupom.cupom, descontoPct: cupom.descontoPct, linkAfiliado: cupom.linkAfiliado }, { loja: 'awin', lojaNome: 'adidas', tipo: 'cupom', cupom: 'CORRE15', descontoPct: 15, linkAfiliado: 'https://tidd.ly/MEU' });
+  assert.equal(r.produtos.find((p) => p.id === 'AWP-4').linkAfiliado, PROMOS[3].urlTracking);
   const legenda = montarLegenda(cupom, { titulo: tituloCupom(cupom) });
-  assert.match(legenda, /^\*CUPOM ADIDAS 🎟️\*\n\n15% OFF em tênis de corrida\n\nVálido para a linha Adizero\.\n\n🎟️ Cupom: \*CORRE15\*\n⏳ Vale até 3[01]\/12\n\n🏬 adidas:\n🛒 https:\/\/www\.awin1\.com/);
+  assert.match(legenda, /^\*CUPOM ADIDAS 🎟️\*\n\n15% OFF em tênis de corrida\n\nVálido para a linha Adizero\.\n\n🎟️ Cupom: \*CORRE15\*\n⏳ Vale até 3[01]\/12\n\n🏬 adidas:\n🛒 https:\/\/tidd\.ly\/MEU/);
   assert.equal(tituloCupom(r.produtos.find((p) => p.id === 'AWP-2')), 'PROMO ADIDAS 🔥');
   assert.equal(ofertaDeCupom({ promotionId: 9, title: 'Sem link' }, LOJAS[0], 'Geral'), null);
 
@@ -117,6 +141,19 @@ test('Awin cupons: cada loja manda para os grupos dela e para o Geral, com limit
   const deNovo = await buscarCuponsAwin({ api, grupos, jaTem: (p) => p.id === 'AWP-1' });
   assert.ok(!deNovo.produtos.some((p) => p.id === 'AWP-1'));
   assert.equal((await buscarCuponsAwin({ api: new Awin({ token: '', publisherId: '' }, { config: api.config }), grupos })).motivo, 'falta AWIN_API_TOKEN no .env');
+});
+
+test('Awin de ponta a ponta: cupom → link curto conferido → fila → publicado (não é barrado como link inválido)', async () => {
+  const { enviarProximo } = await import('../src/pipeline.js');
+  const { api } = apiFalsa({ promos: [PROMOS[0]] });
+  const r = await buscarCuponsAwin({ api, grupos: [{ nome: 'Fitness', ativo: true }] });
+  const s = tmpStore();
+  for (const p of r.produtos) s.upsert(p);
+  const postados = [];
+  const sender = { typing: async () => {}, sendText: async (j, t) => postados.push(t), sendImage: async (j, i, t) => (postados.push(t), { comImagem: true }) };
+  const p = await enviarProximo(sender, { nome: 'Fitness', jid: '-100', mensagemAdicional: '', filtros: { diasSemRepetir: 7 } }, s);
+  assert.equal(p.status, 'ENVIADO');
+  assert.match(postados[0], /🛒 https:\/\/tidd\.ly\/MEU/);
 });
 
 test('Fila: cupom passa na frente, mas nunca dois seguidos', () => {
