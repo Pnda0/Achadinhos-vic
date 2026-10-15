@@ -21,7 +21,7 @@
       "filtros": {},
       "telegram": "-1003849571702",
       "preferirFeminino": 4,
-      "whatsapp": "Achadinhos Vic"
+      "whatsapp": "Achadinhos Vic - Geral"
     },
     {
       "nome": "Fitness",
@@ -33,7 +33,8 @@
       },
       "nicho": "fitness",
       "telegram": "-1004454980210",
-      "preferirFeminino": 4
+      "preferirFeminino": 4,
+      "whatsapp": "Achadinhos Vic - Fitness"
     },
     {
       "nome": "Beleza",
@@ -43,7 +44,8 @@
       "filtros": {},
       "nicho": "beleza",
       "telegram": "-1004455813335",
-      "preferirFeminino": 4
+      "preferirFeminino": 4,
+      "whatsapp": "Achadinhos Vic - Beleza"
     },
     {
       "nome": "Perfumes",
@@ -55,7 +57,8 @@
       },
       "nicho": "perfumes",
       "telegram": "-1004316376505",
-      "preferirFeminino": 3
+      "preferirFeminino": 3,
+      "whatsapp": "Achadinhos Vic - Perfumes"
     }
   ]
 }
