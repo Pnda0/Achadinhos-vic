@@ -14,6 +14,15 @@ export function loadCategorias() {
 }
 
 /** Nichos (config/nichos.json): listas de palavras e títulos por tema. Sem arquivo = sem nichos. */
+/** Marcas que saem primeiro (config/marcas.json, src/marcas.js). Sem o arquivo: nenhuma. */
+export function loadMarcas() {
+  try {
+    return readJson('config/marcas.json');
+  } catch {
+    return {};
+  }
+}
+
 export function loadNichos() {
   try {
     return readJson('config/nichos.json');

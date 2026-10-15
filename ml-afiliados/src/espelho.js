@@ -12,7 +12,9 @@
 import { extrairLinksML, resolverOferta, tipoLink, ErroVerificacao } from './ml/resolver.js';
 import { asinDeUrl, dadosDoTexto, extrairLinksAmazon, linkAfiliadoAmazon, resolverLinkAmazon } from './amazon-espelho.js';
 import { extrairLinksLoja, resolverLinkLoja } from './awin.js';
+import { extrairLinksShopee, urlDoProdutoShopee } from './shopee.js';
 import { nomeLoja } from './caption.js';
+import { marcaDoProduto } from './marcas.js';
 import { evento } from './eventos.js';
 import { motivoRecusa } from './pipeline.js';
 import { encontrarGrupo } from './configfile.js';
@@ -85,7 +87,8 @@ export function resolverFontes(fontes, gruposWhats) {
 }
 
 export class Espelho {
-  constructor({ sender, store, affiliate, fontes, grupos, cfg = {}, resolver = resolverOferta, agora = () => Date.now(), esperar = sleep, avisos = null, amazonTag = process.env.AMAZON_PARTNER_TAG?.trim() || '', resolverAmazon = resolverLinkAmazon, awin = null, resolverLoja = resolverLinkLoja, carregarGrupos = null }) {
+  constructor({ sender, store, affiliate, fontes, grupos, cfg = {}, resolver = resolverOferta, agora = () => Date.now(), esperar = sleep, avisos = null, amazonTag = process.env.AMAZON_PARTNER_TAG?.trim() || '', resolverAmazon = resolverLinkAmazon, awin = null, resolverLoja = resolverLinkLoja, carregarGrupos = null, shopee = null }) {
+    this.shopee = shopee?.ligada() ? shopee : null; // Shopee de afiliados (src/shopee.js); sem ela, link da Shopee sai do post
     this.avisos = avisos;
     this.awin = awin; // lojas parceiras da Awin (src/awin.js); sem ela, link de loja é ignorado
     this.resolverLoja = resolverLoja;
@@ -166,10 +169,10 @@ export class Espelho {
   }
 
   /** O grupo já recebeu o máximo de ofertas do espelho nesta hora? Um canal pode ter o próprio "maxPorHora". */
-  noLimite(grupo, fonte = null) {
+  noLimite(grupo, fonte = null, fator = 1) {
     const recentes = (this.aceitasPorGrupo.get(grupo) || []).filter((t) => this.agora() - t < 60 * MIN);
     this.aceitasPorGrupo.set(grupo, recentes);
-    return recentes.length >= (fonte?.maxPorHora ?? this.cfg.maxPorHora);
+    return recentes.length >= (fonte?.maxPorHora ?? this.cfg.maxPorHora) * fator;
   }
 
   contar(grupo) {
@@ -180,11 +183,12 @@ export class Espelho {
   alvosDe(nome, fonte, destino) {
     const motivos = [];
     const alvos = [];
+    const fator = marcaDoProduto({ nome }) ? 2 : 1; // marca da lista (config/marcas.json): o dobro do limite por hora
     for (const a of fonte.destinos?.length ? fonte.destinos : [{ grupo: destino.nome }]) {
       const g = this.grupos.get(a.grupo);
       if (!g || g.ativo === false) continue;
       if (a.palavras?.length && !a.palavras.some((t) => casaTermo(normalizar(nome), t))) motivos.push('fora do nicho');
-      else if (this.noLimite(g.nome, fonte)) motivos.push('limite por hora');
+      else if (this.noLimite(g.nome, fonte, fator)) motivos.push('limite por hora');
       else alvos.push(g);
     }
     return { alvos, motivos };
@@ -205,7 +209,7 @@ export class Espelho {
         manual: !!fonte.manual, // caixa de entrada: a regra de vendas não vale (nem na hora de postar)
         grupo: g.nome,
         categoria: `Espelho: ${fonte.nomeWhats || fonte.nome}`,
-        imagem: m.foto || null, // sem foto na mensagem, ela vem da prévia de link
+        imagem: m.foto || base.imagem || null, // sem foto na mensagem: a da loja (Shopee) ou a prévia de link
         precoAtual: d.precoAtual,
         precoOriginal: d.precoOriginal,
         precoObs: d.precoObs,
@@ -225,7 +229,11 @@ export class Espelho {
       linkAfiliado ??= await link();
       // Post copiado: o texto do canal com o link da oferta trocado pelo do dono (os outros links saem).
       if (fonte.copiarTexto && !textoPronto) {
-        textoPronto = textoCopiado(m, (u) => (ehDaOferta(u) ? linkAfiliado : null));
+        // ehDaOferta(u): true = o link desta oferta; um texto = o link do dono para outro produto do mesmo post.
+        textoPronto = textoCopiado(m, (u) => {
+          const r = ehDaOferta(u);
+          return r === true ? linkAfiliado : typeof r === 'string' ? r : null;
+        });
         if (!textoPronto) return 'sem link para trocar';
       }
       this.store.upsert({ ...produto, url: base.url || linkAfiliado, linkAfiliado, ...(textoPronto && { textoPronto, semRegraVendas: true }) });
@@ -308,6 +316,8 @@ export class Espelho {
     const links = fonte.soAmazon ? [] : extrairLinksML(m.texto).filter((l) => tipoLink(l) !== 'outro');
     const linksAmazon = links.length ? [] : extrairLinksAmazon(m.texto);
     if (!links.length && !linksAmazon.length) {
+      const linksShopee = this.shopee ? extrairLinksShopee(m.links || [], m.texto) : [];
+      if (linksShopee.length) return this.processarShopee(m, linksShopee, fonte, destino);
       const linksLoja = this.awin?.ligada() && fonte.lojasParceiras !== false ? extrairLinksLoja(m.texto) : [];
       return linksLoja.length ? this.processarLoja(m, linksLoja, fonte, destino) : 'sem link do ML/Amazon';
     }
@@ -357,6 +367,70 @@ export class Espelho {
       return 'ok';
     } catch (e) {
       return this.erroDoML(e);
+    }
+  }
+
+  /**
+   * Link do dono para cada link da Shopee do post (até 3 produtos): Map(link do post -> link curto do dono).
+   * Link que não leva a um produto, ou que a Shopee recusar, fica de fora (sai do post).
+   */
+  async linksShopeeDoDono(m, grupo) {
+    const mapa = new Map();
+    if (!this.shopee) return mapa;
+    for (const l of extrairLinksShopee(m.links || [], m.texto).slice(0, 3)) {
+      try {
+        const ids = await this.shopee.resolver(l);
+        if (ids) mapa.set(l, await this.shopee.gerarLink(urlDoProdutoShopee(ids), ['telegram', grupo]));
+      } catch (e) {
+        log(`  🪞 link da Shopee não trocou (${String(e.message).split('\n')[0]})`);
+      }
+    }
+    return mapa;
+  }
+
+  /**
+   * Oferta da Shopee (pedido do dono, 15/10/2026): o post do canal com o link da Shopee trocado pelo do dono. Nome,
+   * preço e foto vêm da API da Shopee (o texto do post completa o que faltar). Sem regra de vendas (como o ML copiado).
+   */
+  async processarShopee(m, links, fonte, destino) {
+    let ids = null;
+    let principal = null;
+    try {
+      for (const l of links.slice(0, 3)) {
+        ids = await this.shopee.resolver(l);
+        if (ids) {
+          principal = l;
+          break;
+        }
+      }
+    } catch (e) {
+      log(`  🪞 link da Shopee não resolveu (${String(e.message).split('\n')[0]})`);
+    }
+    if (!ids) return 'link da Shopee sem produto';
+    const info = await this.shopee.produto(ids).catch((e) => {
+      log(`  🪞 Shopee não mostrou o produto (${String(e.message).split('\n')[0]})`);
+      return null;
+    });
+    const d = dadosDoTexto(m.texto);
+    const nome = info?.nome || d.nome;
+    if (!nome && !fonte.manual) return 'sem nome do produto';
+    const destinos = this.alvosDe(fonte.copiarTexto ? `${nome || ''} ${m.textoVisivel ?? m.texto}` : nome || '', fonte, destino);
+    if (!destinos.alvos.length) return destinos.motivos[0] || 'sem destino';
+    const dados = { ...d, precoAtual: d.precoAtual ?? info?.precoAtual, precoOriginal: d.precoOriginal ?? info?.precoOriginal, descontoPct: d.descontoPct ?? info?.descontoPct };
+    const url = urlDoProdutoShopee(ids);
+    const base = { id: `SHP-${ids.itemId}`, loja: 'shopee', nome: nome || 'Oferta na Shopee', url, imagem: info?.imagem || null, vendidos: info?.vendidos ?? null, semRegraVendas: true };
+    let doDono = new Map();
+    const link = async () => {
+      doDono = await this.linksShopeeDoDono(m, destinos.alvos[0].nome);
+      const meu = doDono.get(principal);
+      if (!meu) throw new Error('Shopee não devolveu o link de afiliado');
+      return meu;
+    };
+    try {
+      return await this.enfileirarDoTexto(m, fonte, destinos, dados, base, link, (u) => (u === principal ? true : doDono.get(u) || false));
+    } catch (e) {
+      log(`  🪞 Shopee: ${String(e.message).split('\n')[0]}`);
+      return 'Shopee não devolveu link';
     }
   }
 
@@ -415,6 +489,7 @@ export class Espelho {
       }
       const mapa = await this.affiliate.createLinks([...new Set(produtoDo.values())]);
       const doDono = new Map([...produtoDo].map(([l, url]) => [l, mapa.get(url)]).filter(([, v]) => v));
+      for (const [l, v] of await this.linksShopeeDoDono(m, aceitos[0].grupo)) doDono.set(l, v); // link da Shopee no mesmo post
       const link = doDono.get(links[0]);
       if (!link) {
         evento('sem_link', aceitos[0], 'o ML não devolveu link de afiliado');

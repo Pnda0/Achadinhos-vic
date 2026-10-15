@@ -94,7 +94,7 @@ export function extrairLinksLoja(texto) {
     u = u.replace(/[).,;!?\]*_~]+$/, '');
     try {
       const host = new URL(u).hostname.toLowerCase();
-      if (/(^|\.)(mercadoli[vb]re\.com(\.br)?|meli\.la|amazon\.com\.br|amzn\.to|a\.co|amzn\.com|link\.amazon|amzlinks\.in|whatsapp\.com|t\.me|telegram\.me|wa\.me)$/.test(host)) continue;
+      if (/(^|\.)(mercadoli[vb]re\.com(\.br)?|meli\.la|amazon\.com\.br|amzn\.to|a\.co|amzn\.com|link\.amazon|amzlinks\.in|shopee\.com\.br|shope\.ee|shp\.ee|whatsapp\.com|t\.me|telegram\.me|wa\.me)$/.test(host)) continue;
       if (!links.includes(u)) links.push(u);
     } catch {}
   }

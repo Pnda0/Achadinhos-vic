@@ -12,6 +12,7 @@ import { buscarCuponsAwin, loadAwin } from './awin.js';
 import { VENDAS_MINIMAS, motivoVendas } from './ml/vendas.js';
 import { evento, origemDe } from './eventos.js';
 import { preferenciaFeminina } from './genero.js';
+import { preferenciaDeMarca } from './marcas.js';
 import { BrowserSession, sessaoNavegador } from './browser.js';
 import { estiloDoProduto, gerarTitulo, montarLegenda, tituloCupom } from './caption.js';
 import { Store } from './store.js';
@@ -53,6 +54,7 @@ export function motivoLinkInvalido(p) {
   if (u.protocol !== 'https:') return 'link inválido';
   const host = u.hostname.toLowerCase();
   if (p.loja === 'amazon') return /(^|\.)amazon\.com\.br$/.test(host) && u.searchParams.get('tag') ? null : 'link da Amazon sem etiqueta';
+  if (p.loja === 'shopee') return /^(s\.shopee\.com\.br|shope\.ee)$/.test(host) && u.pathname.length > 1 ? null : 'link da Shopee sem afiliado';
   if (p.loja === 'awin') {
     if (host === 'tidd.ly' && u.pathname.length > 1) return null;
     return /(^|\.)awin1\.com$/.test(host) && u.searchParams.get('awinaffid') ? null : 'link da Awin sem id de afiliado';
@@ -267,7 +269,10 @@ function vendasNoEnvio(p, grupo) {
 export async function enviarProximo(sender, grupo, store = new Store()) {
   const dias = grupo.filtros?.diasSemRepetir || 5;
   // Público principal: meninas. Femininos na frente, depois os neutros; masculino no máximo 1 a cada N posts.
-  const preferencia = grupo.preferirFeminino ? preferenciaFeminina(store, grupo.nome, grupo.preferirFeminino) : {};
+  // E as marcas da lista (config/marcas.json) passam na frente das sem marca (pedido do dono, 15/10/2026).
+  const feminina = grupo.preferirFeminino ? preferenciaFeminina(store, grupo.nome, grupo.preferirFeminino) : {};
+  const marca = preferenciaDeMarca();
+  const preferencia = { aceitar: feminina.aceitar, preferir: (x) => (feminina.preferir ? feminina.preferir(x) : 0) + marca(x) };
   let p = null;
   // Cada candidato barrado sai da fila (muda de status), então o laço termina; null = fila realmente vazia.
   while (!p) {

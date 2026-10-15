@@ -20,6 +20,7 @@ export function origemDe(p) {
   if (p.origem === 'espelho') return String(p.categoria || '').includes('Caixa de entrada') ? 'caixa' : 'espelho';
   if (p.tipo === 'cupom') return 'awin-cupom';
   if (p.loja === 'amazon') return 'amazon';
+  if (p.loja === 'shopee') return 'shopee';
   return 'coleta';
 }
 

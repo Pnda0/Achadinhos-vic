@@ -91,7 +91,7 @@ export function horaConsulta(p) {
 }
 
 /** Nome da loja que aparece em cima do link. */
-export const nomeLoja = (p) => (p.loja === 'amazon' ? 'Amazon' : p.loja === 'awin' ? p.lojaNome || 'Loja parceira' : 'Mercado Livre');
+export const nomeLoja = (p) => (p.loja === 'amazon' ? 'Amazon' : p.loja === 'shopee' ? 'Shopee' : p.loja === 'awin' ? p.lojaNome || 'Loja parceira' : 'Mercado Livre');
 
 /** Título de um cupom/promoção de loja parceira (não passa pela IA: precisa dizer a loja). */
 export function tituloCupom(p) {
@@ -102,7 +102,7 @@ const diaMes = (iso) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digi
 
 /** Onde clicar: "🛒 Ver oferta no Mercado Livre:" + link. Loja parceira vira "na loja X" (o gênero do nome varia). */
 function chamada(p, acao = 'Ver oferta') {
-  const onde = p.loja === 'amazon' ? 'na Amazon' : p.loja === 'awin' ? `na loja ${nomeLoja(p)}` : 'no Mercado Livre';
+  const onde = p.loja === 'amazon' ? 'na Amazon' : p.loja === 'shopee' ? 'na Shopee' : p.loja === 'awin' ? `na loja ${nomeLoja(p)}` : 'no Mercado Livre';
   return `🛒 ${acao} ${onde}:\n${p.linkAfiliado}`;
 }
 
@@ -169,7 +169,7 @@ export function montarLegenda(p, { titulo, mensagemAdicional = '' } = {}) {
   }
 
   const extras = [];
-  if (p.cupom) extras.push(p.loja === 'amazon' || p.loja === 'awin' ? linhaCodigo(p.cupom) : linhaCupomML(p));
+  if (p.cupom) extras.push(p.loja === 'amazon' || p.loja === 'awin' || p.loja === 'shopee' ? linhaCodigo(p.cupom) : linhaCupomML(p));
   if (p.frete) extras.push(`🚚 ${p.frete}${p.full ? ' ⚡FULL' : ''}`);
   extras.push(linhaProva(p));
   if (p.fimRelampago) extras.push('⏳ Oferta relâmpago — acaba hoje!');

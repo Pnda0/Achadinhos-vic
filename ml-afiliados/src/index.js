@@ -9,6 +9,7 @@ import cron from 'node-cron';
 import { loadFontes, loadGrupos, loadNichos, settings, vincularCanal } from './config.js';
 import { Avisos } from './avisos.js';
 import { Awin } from './awin.js';
+import { Shopee } from './shopee.js';
 import { grupoDoTitulo } from './telegram.js';
 import { iniciarHeartbeat } from './heartbeat.js';
 import { Espelho, resolverFontes } from './espelho.js';
@@ -74,6 +75,8 @@ function analytics(nome, fn) {
 
 // Lojas parceiras da Awin: uma instância só, para a lista de lojas aprovadas ficar em memória.
 const awin = new Awin();
+// Shopee de afiliados (SHOPEE_APP_ID/SHOPEE_SECRET no .env): troca os links da Shopee dos posts copiados.
+const shopee = new Shopee();
 
 /**
  * O dono pôs o bot como administrador de um canal: se o título tem o nome de um grupo em espera
@@ -117,8 +120,8 @@ function iniciarCaixaDeEntrada(cfg) {
   const destino = cfg.destinoPadrao || 'Geral';
   const fontes = [{ nome: 'Caixa de entrada', nomeWhats: 'Caixa de entrada', jid: dono, destino, manual: true }];
   sender.aoVirarAdmin = (canal) => ligarCanalNovo(canal).catch((e) => registrarErro('canal-novo', e));
-  agendarEspelho(new Espelho({ sender, store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), carregarGrupos: loadGrupos, cfg: { ...cfg, janelaMinutos: 180 }, avisos, awin }), 10);
-  log(`📥 Caixa de entrada ligada: mande um link da Amazon, do Mercado Livre${awin.ligada() ? ' ou de loja parceira da Awin' : ''} no privado do bot que ele entra na fila do grupo "${destino}".`);
+  agendarEspelho(new Espelho({ sender, store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), carregarGrupos: loadGrupos, cfg: { ...cfg, janelaMinutos: 180 }, avisos, awin, shopee }), 10);
+  log(`📥 Caixa de entrada ligada: mande um link da Amazon, do Mercado Livre${shopee.ligada() ? ', da Shopee' : ''}${awin.ligada() ? ' ou de loja parceira da Awin' : ''} no privado do bot que ele entra na fila do grupo "${destino}".`);
 }
 
 /**
@@ -157,11 +160,11 @@ function iniciarCanais() {
   const fontes = fontesDosCanais(c, { destinoPadrao: cfg.destinoPadrao, nichos: loadNichos(), lojasParceiras, amazonTag: process.env.AMAZON_PARTNER_TAG?.trim() });
   if (!fontes.length) return log('📡 Canais do Telegram desligados: falta AMAZON_PARTNER_TAG no .env.');
   const maxPorHora = c.maxPorHora ?? 1;
-  const espelho = new Espelho({ sender: new LeitorDeCanais(), store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), carregarGrupos: loadGrupos, cfg: { ...cfg, maxPorHora }, avisos, awin });
+  const espelho = new Espelho({ sender: new LeitorDeCanais(), store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), carregarGrupos: loadGrupos, cfg: { ...cfg, maxPorHora }, avisos, awin, shopee });
   const seg = Math.max(60, Number(c.intervaloSegundos) || 180);
   agendarEspelho(espelho, seg);
   const descricao = (f) =>
-    `${f.nome} (${f.soAmazon ? 'só Amazon' : 'Amazon e ML'}${lojasParceiras ? ' + lojas da Awin' : ''}${f.exigirVendas ? '' : ', sem a regra de vendas'} → ${f.destinos.map((d) => d.grupo).join(', ')})`;
+    `${f.nome} (${f.soAmazon ? 'só Amazon' : 'Amazon e ML'}${lojasParceiras ? ' + lojas da Awin' : ''}${shopee.ligada() ? ' + Shopee' : ''}${f.exigirVendas ? '' : ', sem a regra de vendas'} → ${f.destinos.map((d) => d.grupo).join(', ')})`;
   log(`📡 Canais do Telegram ligados (até ${maxPorHora} por hora em cada grupo; confere a cada ${seg}s): ${fontes.map(descricao).join(' | ')}`);
 }
 

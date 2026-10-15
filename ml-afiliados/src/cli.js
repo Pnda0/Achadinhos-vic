@@ -16,6 +16,7 @@
  *   npm run telegram                       -> (SENDER=telegram) mostra os chats que o bot já viu, com o chat id
  *   npm run awin                           -> testa o token da Awin e mostra as lojas aprovadas, pendentes e os cupons
  *   npm run awin -- link <url>             -> gera o seu link de afiliado da Awin para uma página de loja parceira
+ *   npm run shopee [-- <link>]             -> testa SHOPEE_APP_ID/SHOPEE_SECRET; com um link da Shopee, mostra o produto e o seu link
  *   npm run historico -- <id ou nome>      -> o que aconteceu com um produto (recusado, na fila, publicado, falhou...)
  *   npm run analytics [-- 7d|30d|hoje|AAAA-MM-DD] -> números dos grupos e das fontes; grava data/analytics/relatorio.html
  */
@@ -140,6 +141,16 @@ async function main() {
       const r = await buscarCuponsAwin({ api, grupos: loadGrupos() });
       console.log(`\nCupons e promoções: ${r.motivo || `${r.produtos.length} prontos para os grupos (de ${Object.values(r.categorias)[0]?.encontrados ?? 0} ativos na Awin).`}`);
       for (const p of (r.produtos || []).slice(0, 3)) console.log(`\n[${p.grupo}]\n${montarLegenda(p)}`);
+      break;
+    }
+    case 'shopee': {
+      const { Shopee, urlDoProdutoShopee } = await import('./shopee.js');
+      const api = new Shopee();
+      if (!api.ligada()) throw new Error('Preencha SHOPEE_APP_ID e SHOPEE_SECRET no .env (Shopee Afiliados > Open API) e salve o arquivo.');
+      const ids = arg ? await api.resolver(arg) : null;
+      if (arg && !ids) throw new Error('Não achei o produto nesse link da Shopee.');
+      if (ids) console.log(JSON.stringify(await api.produto(ids), null, 2));
+      log(`✅ Credenciais da Shopee aceitas. Seu link: ${await api.gerarLink(ids ? urlDoProdutoShopee(ids) : 'https://shopee.com.br/', ['teste'])}`);
       break;
     }
     case 'historico': {
