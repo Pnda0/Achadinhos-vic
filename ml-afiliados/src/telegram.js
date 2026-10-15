@@ -7,6 +7,9 @@
  * config/grupos.json: cada grupo ganha "telegram": "<chat id>" (ex.: "-1001234567890" ou "@meucanal").
  * Para descobrir o chat id: adicione o bot ao canal/grupo, poste qualquer coisa lá e rode `npm run telegram`.
  */
+import fs from 'node:fs';
+import path from 'node:path';
+import { ROOT } from './config.js';
 import { log, sleep } from './util.js';
 
 const ATUALIZACOES = ['message', 'channel_post', 'my_chat_member', 'chat_member'];
@@ -19,6 +22,9 @@ export function paraHTML(texto) {
     .replace(/(^|[\s(])~([^~\n]+)~(?=[\s).,!?:]|$)/gm, '$1<s>$2</s>')
     .replace(/(^|[\s(])`([^`\n]+)`(?=[\s).,!?:]|$)/gm, '$1<code>$2</code>');
 }
+
+/** Imagem que é um arquivo do próprio bot (pasta assets/), e não uma URL ou file_id. */
+export const ehArte = (imagem) => /^assets\/[\w.-]+\.(jpe?g|png)$/i.test(String(imagem || ''));
 
 export class TelegramSender {
   constructor({ token = process.env.TELEGRAM_BOT_TOKEN?.trim() || '', fetchImpl = fetch } = {}) {
@@ -87,6 +93,25 @@ export class TelegramSender {
   }
 
   /**
+   * Arte do bot guardada no PC (ex.: "assets/cupom.jpg", caminho a partir da pasta do bot): envia o arquivo na 1ª vez
+   * e, depois, o file_id que o Telegram devolveu (não sobe o mesmo arquivo de novo).
+   */
+  async enviarArte(chatId, arquivo, html) {
+    this.artes ??= new Map();
+    const salvo = this.artes.get(arquivo);
+    if (salvo) return this.call('sendPhoto', { chat_id: chatId, photo: salvo, caption: html, parse_mode: 'HTML' });
+    const form = new FormData();
+    form.set('chat_id', String(chatId));
+    form.set('caption', html);
+    form.set('parse_mode', 'HTML');
+    form.set('photo', new Blob([fs.readFileSync(path.resolve(ROOT, arquivo))]), path.basename(arquivo));
+    const r = await this.call('sendPhoto', form);
+    const id = r?.photo?.at(-1)?.file_id;
+    if (id) this.artes.set(arquivo, id);
+    return r;
+  }
+
+  /**
    * Foto pela URL (o Telegram baixa) ou por file_id. Se o Telegram RECUSAR a URL (acontece com as fotos dos
    * canais públicos), baixamos e enviamos o arquivo. Legenda > 1024 caracteres ou foto recusada de vez: vai como
    * texto com prévia. Se o Telegram NÃO RESPONDER (erro `incerto`), não tenta outro jeito: a foto pode ter saído,
@@ -94,6 +119,17 @@ export class TelegramSender {
    */
   async sendImage(chatId, imageUrl, legenda) {
     const html = paraHTML(legenda);
+    if (ehArte(imageUrl) && html.length <= 1024) {
+      try {
+        await this.enviarArte(chatId, imageUrl, html);
+        return { comImagem: true };
+      } catch (e) {
+        if (e.incerto) throw e;
+        log(`  ↪ arte não foi (${String(e.message).split('\n')[0]}) — enviando só o texto.`);
+        await this.sendText(chatId, legenda);
+        return { comImagem: false };
+      }
+    }
     if (imageUrl && html.length <= 1024) {
       try {
         await this.call('sendPhoto', { chat_id: chatId, photo: imageUrl, caption: html, parse_mode: 'HTML' });

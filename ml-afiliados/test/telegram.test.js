@@ -94,3 +94,16 @@ test('TelegramSender.lerMensagens: só o chat pedido, com link escondido e foto,
   assert.equal(chamadas[1].body.offset, 13);
   assert.deepEqual((await tg.listGroups()).map((c) => c.jid), ['555', '999', '-1001']); // os chats lidos continuam na lista
 });
+
+test('arte do bot (assets/cupom.jpg): sobe o arquivo na 1ª vez e reaproveita o file_id depois', async () => {
+  const pedidos = [];
+  const fetchImpl = async (url, opts) => {
+    const metodo = url.split('/').pop();
+    pedidos.push([metodo, opts.body instanceof FormData ? 'arquivo' : JSON.parse(opts.body).photo]);
+    return { ok: true, status: 200, json: async () => ({ ok: true, result: { photo: [{ file_id: 'pequeno' }, { file_id: 'ARTE123' }] } }) };
+  };
+  const t = new TelegramSender({ token: 'x', fetchImpl });
+  assert.deepEqual(await t.sendImage('-1', 'assets/cupom.jpg', '*CUPOM C&A*'), { comImagem: true });
+  assert.deepEqual(await t.sendImage('-2', 'assets/cupom.jpg', '*CUPOM RENNER*'), { comImagem: true });
+  assert.deepEqual(pedidos, [['sendPhoto', 'arquivo'], ['sendPhoto', 'ARTE123']]);
+});

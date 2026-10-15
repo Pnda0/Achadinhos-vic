@@ -377,7 +377,8 @@ export function ofertaDeCupom(promo, anunciante, grupo, { agora = Date.now() } =
     descricao: descricao && descricao.toLowerCase() !== titulo.toLowerCase() ? descricao.slice(0, 220) : null,
     url: promo.url || link,
     linkAfiliado: link,
-    imagem: null, // sem foto: o aplicativo mostra a prévia da página da loja
+    // Arte do canal (assets/, no estilo da logo): "Cupom da Vic" com código, "Promo da Vic" sem código.
+    imagem: codigo ? 'assets/cupom.jpg' : 'assets/promo.jpg',
     precoAtual: null,
     precoOriginal: null,
     descontoPct: pct ? Number(pct[1]) : null,
