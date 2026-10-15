@@ -13,7 +13,6 @@ export function loadCategorias() {
   return readJson('config/categorias.json');
 }
 
-/** Nichos (config/nichos.json): listas de palavras e títulos por tema. Sem arquivo = sem nichos. */
 /** Marcas que saem primeiro (config/marcas.json, src/marcas.js). Sem o arquivo: nenhuma. */
 export function loadMarcas() {
   try {
@@ -23,12 +22,25 @@ export function loadMarcas() {
   }
 }
 
+/**
+ * Nichos (config/nichos.json): listas de palavras e títulos por tema. Sem arquivo = sem nichos.
+ * As marcas de config/marcas.json entram nas palavras do nicho delas ("nichos": cabelo -> beleza...): um produto
+ * Elseve vai para o Beleza mesmo sem "shampoo" no nome (pedido do dono, 15/10/2026).
+ */
 export function loadNichos() {
+  let nichos;
   try {
-    return readJson('config/nichos.json');
+    nichos = readJson('config/nichos.json');
   } catch {
     return {};
   }
+  const marcas = loadMarcas();
+  for (const [lista, nicho] of Object.entries(marcas.nichos || {})) {
+    if (!nichos[nicho] || !Array.isArray(marcas[lista])) continue;
+    const termos = marcas[lista].flatMap((m) => (typeof m === 'string' ? [m] : m.termos?.length ? m.termos : [m.marca])).filter((t) => t && !String(t).startsWith('re:'));
+    nichos[nicho].obrigatorias = [...new Set([...(nichos[nicho].obrigatorias || []), ...termos])];
+  }
+  return nichos;
 }
 
 /**
