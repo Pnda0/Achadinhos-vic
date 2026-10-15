@@ -84,7 +84,7 @@ test('Canal público do Telegram: a oferta vai para cada grupo ligado cujo nicho
   const t = Math.floor(agora.t / 1000) - 60;
   const msgs = [
     { id: 'c1', jid: 'canal:x', t, texto: 'Creatina Monohidratada Dark Lab 1kg\nDe R$ 120 por R$ 60\nhttps://www.amazon.com.br/dp/B0CREATINA' },
-    { id: 'c2', jid: 'canal:x', t, texto: 'Perfume Club De Nuit Intense 105ml\nDe R$ 400 por R$ 200\nhttps://www.amazon.com.br/dp/B0PERFUME1' },
+    { id: 'c2', jid: 'canal:x', t, texto: 'Perfume Importado Intense 105ml\nDe R$ 400 por R$ 200\nhttps://www.amazon.com.br/dp/B0PERFUME1' },
     { id: 'c3', jid: 'canal:x', t, texto: 'Whey Protein Concentrado 900g\nDe R$ 200 por R$ 100\nhttps://www.amazon.com.br/dp/B0WHEY0001' },
   ];
   const espelho = new Espelho({
