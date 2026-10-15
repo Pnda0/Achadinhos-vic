@@ -22,6 +22,8 @@ import { instalarLogEmArquivo, registrarErro } from './logfile.js';
 import { gerarDia, porEmDia } from './analytics/dia.js';
 import { membrosDoDia, registrarMembros } from './analytics/membros.js';
 import { registrarAwin } from './analytics/ganhos.js';
+import { montarPainel } from './analytics/relatorio.js';
+import { destaquesDoDia, resumoSemanal } from './analytics/destaques.js';
 import { MSG_OUTRA_COPIA, travarInstancia } from './instancia.js';
 
 instalarLogEmArquivo('iniciar');
@@ -254,7 +256,25 @@ async function main() {
     opts
   );
   // O resumo não usa o "exclusivo": só lê a fila, pode sair mesmo com uma coleta em andamento.
-  cron.schedule(settings.avisos.resumoCron, () => avisos.resumoDiario(loadGrupos()).catch((e) => registrarErro('resumo', e)), opts);
+  // O resumo ganha os destaques do analytics; se o analytics falhar, o resumo sai sem eles.
+  const urlPainel = () => process.env.PAINEL_URL?.trim() || null;
+  cron.schedule(
+    settings.avisos.resumoCron,
+    () => {
+      const destaques = analytics('destaques', () => destaquesDoDia(montarPainel({ store, periodos: ['hoje', '7d'] }), { url: urlPainel() })) || [];
+      return avisos.resumoDiario(loadGrupos(), destaques).catch((e) => registrarErro('resumo', e));
+    },
+    opts
+  );
+  // Resumo da semana, toda segunda às 9h (só para o dono).
+  cron.schedule(
+    '0 9 * * 1',
+    () => {
+      const texto = analytics('semanal', () => resumoSemanal(montarPainel({ store, periodos: ['7d'] }), { url: urlPainel() }));
+      if (texto) return avisos.avisar('semanal', texto, { sempre: true }).catch((e) => registrarErro('semanal', e));
+    },
+    opts
+  );
   log(`⏰ Coleta: "${settings.cron.coleta}" | Envio: "${settings.cron.envio}" | Limpeza: "${settings.cron.limpeza}" | Resumo: "${settings.avisos.resumoCron}"`);
   await avisos.ligado({ grupos: loadGrupos() });
   await avisos.aoReligar({ incertos, recuperacao: store.recuperacao });

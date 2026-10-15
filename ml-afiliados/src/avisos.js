@@ -10,6 +10,7 @@
  */
 import { settings } from './config.js';
 import { diaLocal, formatBRL, log } from './util.js';
+import { cortar } from './analytics/destaques.js';
 
 const HORA = 3_600_000;
 const primeiraLinha = (e) => String(e?.message || e).split('\n')[0].slice(0, 200);
@@ -172,7 +173,9 @@ export class Avisos {
     return this.avisar('espelho', `*Espelho pausado por ${minutos} min* ⏸️\n${motivo}`);
   }
 
-  resumoDiario(grupos) {
-    return this.avisar('resumo', montarResumo(this.store, { grupos }), { sempre: true });
+  /** Resumo das 22h; `destaques` = linhas do analytics (melhor/pior fonte, membros...), cortado no limite do Telegram. */
+  resumoDiario(grupos, destaques = []) {
+    const texto = montarResumo(this.store, { grupos }) + (destaques.length ? `\n\n✨ *Destaques*\n${destaques.join('\n')}` : '');
+    return this.avisar('resumo', cortar(texto), { sempre: true });
   }
 }
