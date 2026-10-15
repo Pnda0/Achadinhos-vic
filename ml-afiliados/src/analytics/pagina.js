@@ -11,24 +11,27 @@ import { PASTA_ANALYTICS } from './dia.js';
 export const pastaSite = (base = PASTA_ANALYTICS) => path.join(base, 'site');
 
 const CSS = `
-:root{color-scheme:light;--bg:#f6f6f4;--surface:#fcfcfb;--line:#e4e3de;--text:#0b0b0b;--text2:#52514e;--muted:#77766f;--bar:#2a78d6;--bar-hover:#1c5cab;--warn:#b26b00;--good:#007a3d}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#111110;--surface:#1a1a19;--line:#2e2d2a;--text:#f0efec;--text2:#c3c2b7;--muted:#9a998f;--bar:#3987e5;--bar-hover:#6da7ec;--warn:#e0a03a;--good:#3fbf7f}}
-:root[data-theme="dark"]{color-scheme:dark;--bg:#111110;--surface:#1a1a19;--line:#2e2d2a;--text:#f0efec;--text2:#c3c2b7;--muted:#9a998f;--bar:#3987e5;--bar-hover:#6da7ec;--warn:#e0a03a;--good:#3fbf7f}
+/* cores da marca (logo e site): vinho, rosa, creme e dourado */
+:root{color-scheme:light;--bg:#f9f5ec;--surface:#fffdf8;--line:#ecdcd6;--text:#2b1210;--text2:#6e5552;--muted:#8f7773;--marca:#7a1712;--rosa:#c25f80;--ouro:#f2b85c;--bar:#7a1712;--bar-hover:#a8261d;--warn:#9a5b00;--good:#2f7a3a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#1a0d0c;--surface:#25130f;--line:#3d2421;--text:#f9f5ec;--text2:#dcc6c1;--muted:#ab938e;--marca:#e08ca6;--rosa:#e08ca6;--ouro:#f2b85c;--bar:#d17b96;--bar-hover:#e9a3b9;--warn:#f2b85c;--good:#6fcf86}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#1a0d0c;--surface:#25130f;--line:#3d2421;--text:#f9f5ec;--text2:#dcc6c1;--muted:#ab938e;--marca:#e08ca6;--rosa:#e08ca6;--ouro:#f2b85c;--bar:#d17b96;--bar-hover:#e9a3b9;--warn:#f2b85c;--good:#6fcf86}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
 main{max-width:1100px;margin:0 auto;padding:16px}
 h1{font-size:20px;margin:0}
+.marca{display:block;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--rosa)}
+.marca::after{content:" ✦";color:var(--ouro)}
 h2{font-size:17px;margin:28px 0 10px}
 h3{font-size:18px;margin:0}
 .topo{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between}
 .atualizado{font-size:15px;font-weight:600;color:var(--text2)}
 .abas{display:flex;gap:6px;margin:14px 0 4px;position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:2}
 .abas button{flex:1;min-height:44px;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:10px;font:inherit;font-weight:600;cursor:pointer}
-.abas button[aria-selected="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.abas button[aria-selected="true"]{background:var(--marca);color:var(--bg);border-color:var(--marca)}
 .cartoes{display:grid;grid-template-columns:1fr;gap:12px}
 @media (min-width:700px){.cartoes{grid-template-columns:1fr 1fr}}
 .cartao{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}
-.grande{font-size:34px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.grande{color:var(--marca);font-size:34px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
 .rotulo{color:var(--text2);font-size:13px}
 .linhas{display:grid;grid-template-columns:1fr auto;gap:2px 12px;margin:10px 0 0;font-size:14px}
 .linhas dt{color:var(--text2)}
@@ -64,7 +67,8 @@ details.cartao>.tabela{padding:0 12px 12px;overflow-x:auto}
 .dobra>summary{cursor:pointer;list-style-position:inside}
 .dobra>summary h2{display:inline}
 .notas{color:var(--text2);font-size:13px;padding-left:18px}
-a{color:var(--bar)}
+a{color:var(--marca)}
+:focus-visible{outline:2px solid var(--rosa);outline-offset:2px}
 .vazio{color:var(--text2);padding:12px 0}
 `;
 
@@ -226,7 +230,7 @@ export function htmlDoPainel(painel) {
 </head>
 <body>
 <main>
-<div class="topo"><h1>Painel dos grupos</h1><div class="atualizado">Atualizado ${escHtml(painel.hora)}</div></div>
+<div class="topo"><h1><span class="marca">Achadinhos da Vic</span>Painel dos grupos</h1><div class="atualizado">Atualizado ${escHtml(painel.hora)}</div></div>
 <div class="abas" role="tablist">${abas}</div>
 <section id="resumo"></section>
 <h2>Grupos</h2>
