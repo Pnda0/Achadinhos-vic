@@ -153,6 +153,8 @@ function linhaCupomML(p) {
 }
 
 export function montarLegenda(p, { titulo, mensagemAdicional = '' } = {}) {
+  // Post copiado de um canal (espelho com "copiarTexto"): sai como o canal escreveu, já com os links do dono.
+  if (p.textoPronto) return [p.textoPronto, mensagemAdicional].filter((s) => s && s.trim()).join('\n\n');
   if (p.tipo === 'cupom') return legendaCupom(p, { titulo, mensagemAdicional });
   const linhasPreco = [];
   if (p.precoAtual) {

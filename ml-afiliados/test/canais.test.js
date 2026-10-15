@@ -31,6 +31,8 @@ test('Canal público do Telegram: lê texto, links, foto e hora da página t.me/
     t: Date.UTC(2027, 0, 15, 8) / 1000,
     tipo: 'image',
     texto: 'URUBU NA COZINHA\n\nProcessador de Alimentos Philco 420W\n\nDe R$ 199 por R$ 123,25 & frete grátis\nhttps://link.amazon/B04nIB5MB\nhttps://link.amazon/B04nIB5MB',
+    textoVisivel: 'URUBU NA COZINHA\n\nProcessador de Alimentos Philco 420W\n\nDe R$ 199 por R$ 123,25 & frete grátis\nhttps://link.amazon/B04nIB5MB',
+    links: ['https://link.amazon/B04nIB5MB'],
     foto: 'https://cdn1.telesco.pe/file/FOTO.jpg',
   });
   assert.match(msgs[1].texto, /https:\/\/meli\.la\/abc/); // link escondido atrás de uma palavra

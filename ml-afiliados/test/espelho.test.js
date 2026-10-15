@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { extrairLinksML, tipoLink, parseSocialPage, parseProductPage, resolverOferta, ErroVerificacao } from '../src/ml/resolver.js';
-import { Espelho, resolverFontes } from '../src/espelho.js';
+import { Espelho, resolverFontes, textoCopiado } from '../src/espelho.js';
 import { montarLegenda } from '../src/caption.js';
 import { Store } from '../src/store.js';
 import { enviarProximo } from '../src/pipeline.js';
@@ -364,4 +364,54 @@ test('fontesDosCanais: maxPorHora do canal só quando informado', () => {
   const [a, b] = fontesDosCanais({ canais: ['x', { canal: 'y', soAmazon: false, maxPorHora: 12 }] }, { lojasParceiras: true });
   assert.equal(a.maxPorHora, undefined);
   assert.equal(b.maxPorHora, 12);
+});
+
+test('texto copiado: troca só os links da oferta, tira convite/@ do outro canal e links de outras lojas', () => {
+  const m = {
+    textoVisivel: [
+      '🔥 Whey Protein Max Titanium 900g',
+      '',
+      '💰 De R$ 199 por R$ 129',
+      '🎟️ Cupom: VOLTA10',
+      '👉 https://meli.la/AbC123',
+      '🛍️ Na Shopee: https://s.shopee.com.br/xyz',
+      'Entre no nosso grupo: https://t.me/+convite',
+      'Via @urubupromo',
+      '#TopFitAchados #Anúncio',
+    ].join('\n'),
+    links: ['https://meli.la/AbC123', 'https://meli.la/Escondido9'],
+  };
+  const trocas = { 'https://meli.la/AbC123': 'https://meli.la/MEU1', 'https://meli.la/Escondido9': 'https://meli.la/MEU2' };
+  const t = textoCopiado(m, (u) => trocas[u] || null);
+  assert.equal(t, '🔥 Whey Protein Max Titanium 900g\n\n💰 De R$ 199 por R$ 129\n🎟️ Cupom: VOLTA10\n👉 https://meli.la/MEU1\n🛒 https://meli.la/MEU2');
+  assert.doesNotMatch(t, /shopee|t\.me|@urubupromo|AbC123/);
+  // nada para trocar: não copia
+  assert.equal(textoCopiado({ textoVisivel: 'Só Shopee https://s.shopee.com.br/x' }, () => null), null);
+});
+
+test('canal com "copiarTexto": post do ML sai IGUAL ao do canal (foto dele, links do dono) e vai para o grupo do nicho', async () => {
+  const agora = { t: 1_800_000_000_000 };
+  const texto = '🔥 Perfume Lattafa Asad 100ml\n💰 De R$ 399 por R$ 199\n👉 https://meli.la/1JC7ZMh\nVia @outrocanal';
+  const msg = [{ id: 'c1', jid: 'A@g.us', t: seg(agora, 1), tipo: 'image', texto, textoVisivel: texto, links: ['https://meli.la/1JC7ZMh'], foto: 'https://cdn.telesco.pe/file/arte.jpg' }];
+  const resolver = async () => ({ ...parseSocialPage(fx('social-meli-la.html')), nome: 'Perfume Lattafa Asad Eau de Parfum 100ml', descontoPct: 5 }); // sem vendas e desconto baixo: passa assim mesmo
+  const m = montar({ msgs: () => msg, agora, resolver });
+  m.espelho.grupos.set('Perfumes', { nome: 'Perfumes', jid: 'PERF@g.us', filtros: { palavrasObrigatorias: ['perfume'], descontoMinimo: 20, diasSemRepetir: 5 } });
+  m.espelho.grupos.set('Fitness', { nome: 'Fitness', jid: 'FIT@g.us', filtros: { palavrasObrigatorias: ['whey'], diasSemRepetir: 5 } });
+  Object.assign(m.espelho.fontes.get('A@g.us'), {
+    copiarTexto: true,
+    exigirVendas: false,
+    destinos: [{ grupo: 'Geral', palavras: null }, { grupo: 'Perfumes', palavras: ['perfume'] }, { grupo: 'Fitness', palavras: ['whey'] }],
+  });
+  const r = await m.espelho.tick();
+  assert.equal(r.enfileiradas, 1);
+  const naFila = m.store.list();
+  assert.deepEqual(naFila.map((p) => p.grupo).sort(), ['Geral', 'Perfumes']);
+  const p = naFila.find((x) => x.grupo === 'Perfumes');
+  assert.equal(p.imagem, 'https://cdn.telesco.pe/file/arte.jpg');
+  assert.equal(p.textoPronto, '🔥 Perfume Lattafa Asad 100ml\n💰 De R$ 399 por R$ 199\n👉 https://meli.la/MEU1');
+  assert.equal(montarLegenda(p, { titulo: 'IGNORADO', mensagemAdicional: '' }), p.textoPronto);
+  const postados = [];
+  const destino = { sendImage: async (jid, img, t) => (postados.push([img, t]), { comImagem: true }), sendText: async () => {} };
+  await enviarProximo(destino, { nome: 'Perfumes', jid: 'PERF@g.us', filtros: { diasSemRepetir: 5 } }, m.store);
+  assert.deepEqual(postados, [['https://cdn.telesco.pe/file/arte.jpg', p.textoPronto]]);
 });

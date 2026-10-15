@@ -6,23 +6,25 @@
   "janelaMinutos": 20,
   "maxPorHora": 15,
   "fontes": [],
-  "_comentarioCanais": "CANAIS DO TELEGRAM: canais PÚBLICOS de ofertas que o bot acompanha sozinho (lê a página t.me/s/<canal>). Em 'canais', só o nome do canal, sem @. 'soAmazon': true = pega de lá só as ofertas da Amazon (o Mercado Livre já tem a busca própria). 'destinos' = para quais grupos seus a oferta vai; com 'nicho', só entra naquele grupo se o nome do produto casar com as palavras do nicho (config/nichos.json). Grupo desligado em grupos.json é pulado. 'maxPorHora' = quantas ofertas desses canais entram por hora EM CADA grupo (elas passam na frente da fila). 'lojasParceiras': true = também aproveita link de loja da Awin em que a sua conta foi aprovada (config/awin.json). Um canal pode ter opções próprias: em vez do nome, {\"canal\": \"nome\", \"destino\": \"Perfumes\", \"soAmazon\": false, \"exigirVendas\": false}. 'exigirVendas': false = as ofertas do Mercado Livre desse canal entram sem a regra de mais de 50 vendas (o espelho não consegue ler as vendas; liberado pelo dono em 14/10/2026 só para @promobigodeperfumes). 'fotoDoCanal': true = a oferta sai com a foto da mensagem do canal (mais chamativa) em vez da foto de fundo branco do anúncio. 'maxPorHora' no canal troca o limite por hora só dele (desde 15/10/2026 o grupo Perfumes vive só do @promobigodeperfumes: até 12 por hora, um envio a cada 5 min).",
+  "_comentarioCanais": "CANAIS DO TELEGRAM (desde 15/10/2026, a pedido do dono, a fonte principal): canais PÚBLICOS de ofertas que o bot lê sozinho (página t.me/s/<canal>). 'copiarTexto': true = o post sai IGUAL ao do canal (texto e foto), só com os links do Mercado Livre, da Amazon e das lojas da Awin trocados pelos do dono; convites e @ do outro canal e links de outras lojas (Shopee, AliExpress...) saem. 'exigirVendas': false = sem a regra de mais de 50 vendas (o espelho não lê vendas; o dono pediu para copiar tudo). Continuam valendo: nicho do grupo, palavras bloqueadas e não repetir. 'destinos' = para quais grupos vão as ofertas dos canais gerais; com 'nicho', só entra naquele grupo se o texto casar com as palavras do nicho (config/nichos.json). Um canal pode ter opções próprias: {\"canal\": \"nome\", \"destino\": \"Perfumes\", \"maxPorHora\": 12, ...}. 'maxPorHora' = quantas ofertas desses canais entram por hora EM CADA grupo. Amazon só entra com AMAZON_PARTNER_TAG no .env. Depois de mexer aqui, reinicie o bot.",
   "canaisTelegram": {
     "ativo": true,
-    "soAmazon": true,
-    "maxPorHora": 1,
+    "soAmazon": false,
+    "maxPorHora": 12,
     "intervaloSegundos": 60,
     "canais": [
       "urubupromo",
       "xetdaspromocoes",
       "promobit",
+      "gatunopromos",
+      "promoloucas",
+      {
+        "canal": "topfitachados",
+        "destino": "Fitness"
+      },
       {
         "canal": "promobigodeperfumes",
-        "destino": "Perfumes",
-        "soAmazon": false,
-        "exigirVendas": false,
-        "fotoDoCanal": true,
-        "maxPorHora": 12
+        "destino": "Perfumes"
       }
     ],
     "destinos": [
@@ -42,6 +44,9 @@
         "nicho": "perfumes"
       }
     ],
-    "lojasParceiras": true
+    "lojasParceiras": true,
+    "copiarTexto": true,
+    "exigirVendas": false,
+    "fotoDoCanal": true
   }
 }

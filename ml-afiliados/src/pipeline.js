@@ -290,7 +290,7 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
   store.setStatus(p, 'ENVIANDO', { tentativaEm: new Date().toISOString() });
   store.save();
   try {
-    const titulo = p.tipo === 'cupom' ? tituloCupom(p) : await gerarTitulo(p, estiloDoProduto(p, grupo));
+    const titulo = p.textoPronto ? null : p.tipo === 'cupom' ? tituloCupom(p) : await gerarTitulo(p, estiloDoProduto(p, grupo));
     const legenda = montarLegenda(p, { titulo, mensagemAdicional: grupo.mensagemAdicional });
     if (settings.simularDigitando && settings.sender !== 'console') await simularDigitando(sender, grupo.jid);
     const r = p.imagem

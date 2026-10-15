@@ -17,6 +17,8 @@ export const jidDoCanal = (nome) => PREFIXO + String(nome).trim().replace(/^(htt
  *   { "canal": "x", "destino": "Perfumes", "soAmazon": false, "exigirVendas": false, "fotoDoCanal": true, "maxPorHora": 12 }
  * "exigirVendas": false = o dono liberou este canal da regra de mais de 50 vendas do ML (o espelho não lê vendas).
  * "fotoDoCanal": true = a oferta do ML sai com a foto da mensagem do canal, não com a do anúncio (fundo branco).
+ * "copiarTexto": true = o post sai IGUAL ao do canal (texto e foto), só com os links trocados pelos do dono.
+ * "exigirVendas", "fotoDoCanal" e "copiarTexto" também valem no bloco, para todos os canais.
  */
 export function fontesDosCanais(c, { destinoPadrao = 'Geral', nichos = {}, lojasParceiras = false, amazonTag = '' } = {}) {
   const destino = c.destino || destinoPadrao;
@@ -31,7 +33,13 @@ export function fontesDosCanais(c, { destinoPadrao = 'Geral', nichos = {}, lojas
       const nome = `@${jid.slice(PREFIXO.length)}`;
       const soAmazon = (o.soAmazon ?? c.soAmazon) !== false;
       const proprios = o.destinos?.length ? comPalavras(o.destinos) : o.destino ? comPalavras([{ grupo: o.destino }]) : null;
-      return { nome, nomeWhats: nome, jid, destino: o.destino || destino, destinos: proprios || destinos, soAmazon, lojasParceiras, exigirVendas: o.exigirVendas !== false, fotoDoCanal: !!o.fotoDoCanal, ...(Number.isInteger(o.maxPorHora) && { maxPorHora: o.maxPorHora }) };
+      return {
+        nome, nomeWhats: nome, jid, destino: o.destino || destino, destinos: proprios || destinos, soAmazon, lojasParceiras,
+        exigirVendas: (o.exigirVendas ?? c.exigirVendas) !== false,
+        fotoDoCanal: !!(o.fotoDoCanal ?? c.fotoDoCanal),
+        copiarTexto: !!(o.copiarTexto ?? c.copiarTexto),
+        ...(Number.isInteger(o.maxPorHora) && { maxPorHora: o.maxPorHora }),
+      };
     })
     .filter((f) => !f.soAmazon || lojasParceiras || amazonTag); // "só Amazon" sem etiqueta e sem Awin não aproveita nada
 }
@@ -44,7 +52,7 @@ const decodificar = (s) =>
     return Number.isFinite(n) ? String.fromCodePoint(n) : tudo;
   });
 
-/** Mensagens da página t.me/s/<canal>: [{ id, jid, t (segundos), tipo, texto, foto }]. */
+/** Mensagens da página t.me/s/<canal>: [{ id, jid, t (segundos), tipo, texto, textoVisivel, links, foto }]. */
 export function parseCanal(html, canal) {
   const saida = [];
   for (const bloco of String(html || '').split('<div class="tgme_widget_message_wrap').slice(1)) {
@@ -61,6 +69,8 @@ export function parseCanal(html, canal) {
       t: data ? Math.floor(new Date(data).getTime() / 1000) : 0,
       tipo: foto ? 'image' : 'chat',
       texto: [...new Set([texto, ...links])].join('\n').slice(0, 4000),
+      textoVisivel: texto.slice(0, 4000), // o post como aparece (para copiar trocando só os links)
+      links, // inclusive os escondidos atrás de palavras ("COMPRE AQUI")
       foto,
     });
   }

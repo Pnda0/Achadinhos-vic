@@ -1,7 +1,8 @@
 /**
  * Espelho de grupos: lê as ofertas postadas em OUTROS grupos de WhatsApp (os "grupos-fonte",
  * config/fontes.json), descobre o produto do Mercado Livre, gera o link de afiliado do dono do bot
- * e coloca na fila — a mensagem é montada no nosso formato, não copiada.
+ * e coloca na fila — a mensagem é montada no nosso formato; num canal com "copiarTexto", sai IGUAL ao post do
+ * canal (texto e foto), só com os links trocados pelos do dono.
  *
  * Cuidados embutidos:
  *  - só mensagens novas (últimos N minutos) e nunca a mesma mensagem duas vezes;
@@ -22,6 +23,50 @@ const MIN = 60_000;
 
 /** O preço escrito na mensagem é o mesmo do anúncio? (o canal arredonda: até R$ 1 ou 1% de diferença) */
 export const precoBate = (daMensagem, doAnuncio) => !!daMensagem && !!doAnuncio && Math.abs(daMensagem - doAnuncio) <= Math.max(1, doAnuncio * 0.01);
+
+const URL_RE = /https?:\/\/[^\s<>"']+/gi;
+const limparUrl = (u) => u.replace(/[).,;!?\]*_~]+$/, '');
+// Linha que chama para o canal/grupo de origem (convite, @ do canal, "siga", "entre no grupo", só hashtags): não é copiada.
+const SO_HASHTAGS = /^\s*(#[\p{L}\p{N}_]+[\s,]*)+$/u; // "#TopFitAchados #Anúncio"
+const LINHA_DO_OUTRO = /t\.me\/|telegram\.me\/|chat\.whatsapp|whatsapp\.com\/|wa\.me\/|(^|\s)@[a-z0-9_]{4,}|\b(entre|participe|siga|acesse|convide|compartilhe)\b.*\b(grupo|canal|comunidade|amigos)\b/i;
+
+/**
+ * O post do canal como ele é, com os links trocados: `trocar(url)` devolve o link do dono ou null (link que não dá
+ * para trocar — outra loja, outro canal — sai, e a linha sai junto se ficar só com uma palavra ou um emoji).
+ * Links escondidos atrás de palavras ("COMPRE AQUI") entram no fim como "🛒 <link>". Null se nenhum link foi trocado.
+ */
+export function textoCopiado(m, trocar) {
+  const visivel = String(m.textoVisivel ?? m.texto ?? '');
+  const usados = new Set();
+  const linhas = [];
+  for (const linha of visivel.split('\n')) {
+    if (LINHA_DO_OUTRO.test(linha) || SO_HASHTAGS.test(linha)) continue;
+    let removeu = false;
+    let trocou = false;
+    const nova = linha.replace(URL_RE, (u) => {
+      const limpo = limparUrl(u);
+      const r = trocar(limpo);
+      if (r) {
+        usados.add(r);
+        trocou = true;
+        return r + u.slice(limpo.length);
+      }
+      removeu = true;
+      return '';
+    });
+    if (removeu && !trocou && nova.replace(/[^\p{L}\p{N}]+/gu, '').length < 20) continue;
+    linhas.push(nova.replace(/[ \t]+$/, ''));
+  }
+  for (const u of (m.links || []).map(limparUrl)) {
+    const r = trocar(u);
+    if (r && !usados.has(r)) {
+      linhas.push(`🛒 ${r}`);
+      usados.add(r);
+    }
+  }
+  if (!usados.size) return null;
+  return linhas.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
 
 /** Liga cada fonte do arquivo ao grupo real do WhatsApp (pelo JID ou pelo nome). */
 export function resolverFontes(fontes, gruposWhats) {
@@ -93,10 +138,16 @@ export class Espelho {
     return resumo;
   }
 
-  /** Oferta escolhida a dedo pelo dono (caixa de entrada) só passa pelo "não repetir". */
+  /**
+   * Oferta escolhida a dedo pelo dono (caixa de entrada) só passa pelo "não repetir". Post copiado de canal
+   * ("copiarTexto") passa pelo nicho, pelas palavras bloqueadas e pelo "não repetir": desconto, preço e nota são
+   * escolha do canal (o dono pediu para copiar tudo).
+   */
   filtros(fonte, destino) {
     const f = destino.filtros || {};
-    return fonte.manual ? { diasSemRepetir: f.diasSemRepetir } : f;
+    if (fonte.manual) return { diasSemRepetir: f.diasSemRepetir };
+    if (fonte.copiarTexto) return { palavrasObrigatorias: f.palavrasObrigatorias, palavrasBloqueadas: f.palavrasBloqueadas, diasSemRepetir: f.diasSemRepetir };
+    return f;
   }
 
   /** Caixa de entrada: conta ao dono o que aconteceu com a mensagem que ele mandou. */
@@ -143,8 +194,9 @@ export class Espelho {
    * Põe na fila de cada grupo-alvo a oferta montada com o que a mensagem diz (nome, preço, cupom).
    * `base` = o que identifica o produto (id, loja, url...); `link` só é chamado se algum grupo aceitar.
    */
-  async enfileirarDoTexto(m, fonte, { alvos, motivos }, d, base, link) {
+  async enfileirarDoTexto(m, fonte, { alvos, motivos }, d, base, link, ehDaOferta = () => false) {
     let linkAfiliado = null;
+    let textoPronto = null;
     let aceitos = 0;
     for (const g of alvos) {
       const produto = {
@@ -171,7 +223,12 @@ export class Espelho {
         continue;
       }
       linkAfiliado ??= await link();
-      this.store.upsert({ ...produto, url: base.url || linkAfiliado, linkAfiliado });
+      // Post copiado: o texto do canal com o link da oferta trocado pelo do dono (os outros links saem).
+      if (fonte.copiarTexto && !textoPronto) {
+        textoPronto = textoCopiado(m, (u) => (ehDaOferta(u) ? linkAfiliado : null));
+        if (!textoPronto) return 'sem link para trocar';
+      }
+      this.store.upsert({ ...produto, url: base.url || linkAfiliado, linkAfiliado, ...(textoPronto && { textoPronto, semRegraVendas: true }) });
       evento('na_fila', produto);
       this.contar(g.nome);
       aceitos++;
@@ -199,7 +256,8 @@ export class Espelho {
     }
     if (!asin) return 'link da Amazon sem produto';
     const linkAfiliado = linkAfiliadoAmazon(asin, this.amazonTag);
-    return this.enfileirarDoTexto(m, fonte, destinos, d, { id: `AMZ-${asin}`, asin, loja: 'amazon', nome, url: linkAfiliado }, async () => linkAfiliado);
+    const ehDaOferta = (u) => u === link || asinDeUrl(u) === asin;
+    return this.enfileirarDoTexto(m, fonte, destinos, d, { id: `AMZ-${asin}`, asin, loja: 'amazon', nome, url: linkAfiliado }, async () => linkAfiliado, ehDaOferta);
   }
 
   /** Entre os links da mensagem, o primeiro que leva a uma loja da Awin em que a conta foi aprovada. */
@@ -238,7 +296,7 @@ export class Espelho {
     const { anunciante, url } = achado;
     const id = `AWN-${anunciante.id}-${crypto.createHash('sha1').update(url).digest('hex').slice(0, 10)}`;
     const base = { id, loja: 'awin', lojaNome: anunciante.nome, nome: d.nome || `Oferta na ${anunciante.nome}`, url };
-    return this.enfileirarDoTexto(m, fonte, destinos, d, base, () => this.awin.gerarLink(anunciante, url));
+    return this.enfileirarDoTexto(m, fonte, destinos, d, base, () => this.awin.gerarLink(anunciante, url), (u) => links.includes(u) || u === url);
   }
 
   async processar(m) {
@@ -255,6 +313,7 @@ export class Espelho {
     }
 
     if (linksAmazon.length) return this.processarAmazon(m, linksAmazon[0], fonte, destino);
+    if (fonte.copiarTexto) return this.processarMLCopia(m, links, fonte, destino);
     if (this.noLimite(destino.nome, fonte)) return 'limite por hora';
 
     try {
@@ -297,15 +356,83 @@ export class Espelho {
       log(`🪞 [${destino.nome}] de "${fonte.nomeWhats || fonte.nome}": ${produto.nome.slice(0, 55)} — ${link}`);
       return 'ok';
     } catch (e) {
-      const msg = String(e.message || e).split('\n')[0];
-      if (e instanceof ErroVerificacao || /Sessão do Mercado Livre expirada|HTTP 40[13]|HTTP 429/.test(msg)) {
-        this.pausadoAte = this.agora() + this.cfg.pausaVerificacaoMin * MIN;
-        log(`⏸️  Espelho pausado por ${this.cfg.pausaVerificacaoMin} min: ${msg}`);
-        await this.avisos?.espelhoPausado(msg, this.cfg.pausaVerificacaoMin).catch(() => {});
-        return 'ML bloqueou';
+      return this.erroDoML(e);
+    }
+  }
+
+  /** Captcha/sessão/limite do ML pausa o espelho (em vez de insistir); outro erro só pula a mensagem. */
+  async erroDoML(e) {
+    const msg = String(e.message || e).split('\n')[0];
+    if (e instanceof ErroVerificacao || /Sessão do Mercado Livre expirada|HTTP 40[13]|HTTP 429/.test(msg)) {
+      this.pausadoAte = this.agora() + this.cfg.pausaVerificacaoMin * MIN;
+      log(`⏸️  Espelho pausado por ${this.cfg.pausaVerificacaoMin} min: ${msg}`);
+      await this.avisos?.espelhoPausado(msg, this.cfg.pausaVerificacaoMin).catch(() => {});
+      return 'ML bloqueou';
+    }
+    log(`  🪞 ignorada (${msg.slice(0, 140)})`);
+    return 'erro ao ler o produto';
+  }
+
+  /**
+   * Post do ML copiado de um canal ("copiarTexto"): vai para cada grupo de destino cujo nicho casa com o texto,
+   * IGUAL ao post do canal (texto e foto), com os links do ML trocados pelos do dono (até 3 produtos por post).
+   * A regra de vendas não vale (o dono pediu para copiar tudo; a página do link não mostra vendas).
+   */
+  async processarMLCopia(m, links, fonte, destino) {
+    const destinos = this.alvosDe(m.textoVisivel ?? m.texto, fonte, destino);
+    if (!destinos.alvos.length) return destinos.motivos[0] || 'sem destino';
+    const motivos = [...destinos.motivos];
+    try {
+      const produtoDo = new Map(); // link do post -> url do produto
+      let base = null;
+      for (const l of links.slice(0, 3)) {
+        await this.esperar(this.cfg.pausaEntreConsultasSeg * 1000);
+        const p = await this.resolver(l);
+        base ??= p;
+        produtoDo.set(l, p.url);
       }
-      log(`  🪞 ignorada (${msg.slice(0, 140)})`);
-      return 'erro ao ler o produto';
+      const categoria = `Espelho: ${fonte.nomeWhats || fonte.nome}`;
+      const aceitos = [];
+      for (const g of destinos.alvos) {
+        const produto = { ...base, grupo: g.nome, categoria, origem: 'espelho', semRegraVendas: true, imagem: m.foto || base.imagem };
+        if (this.store.conhecido(produto.id, g.nome)) {
+          motivos.push('já está na fila');
+          continue;
+        }
+        const motivo = motivoRecusa(produto, this.filtros(fonte, g), this.store, { descontoDesconhecidoPassa: true, exigirVendas: false });
+        if (motivo) {
+          motivos.push(motivo);
+          evento('recusado', produto, motivo);
+          continue;
+        }
+        aceitos.push(produto);
+      }
+      if (!aceitos.length) return motivos[0] || 'sem destino';
+
+      if (this.agora() - this.ultimoRefresh > 30 * MIN) {
+        await this.affiliate.refresh();
+        this.ultimoRefresh = this.agora();
+      }
+      const mapa = await this.affiliate.createLinks([...new Set(produtoDo.values())]);
+      const doDono = new Map([...produtoDo].map(([l, url]) => [l, mapa.get(url)]).filter(([, v]) => v));
+      const link = doDono.get(links[0]);
+      if (!link) {
+        evento('sem_link', aceitos[0], 'o ML não devolveu link de afiliado');
+        return 'ML não devolveu link de afiliado';
+      }
+      const textoPronto = textoCopiado(m, (u) => doDono.get(u) || null);
+      if (!textoPronto) return 'sem link para trocar';
+      for (const produto of aceitos) {
+        this.store.upsert({ ...produto, textoPronto });
+        this.store.setLink(produto.url, link);
+        evento('na_fila', produto);
+        this.contar(produto.grupo);
+        log(`🪞 [${produto.grupo}] copiado de "${fonte.nomeWhats || fonte.nome}": ${produto.nome.slice(0, 55)} — ${link}`);
+      }
+      this.ultimoAceito = { nome: base.nome, link };
+      return 'ok';
+    } catch (e) {
+      return this.erroDoML(e);
     }
   }
 }
