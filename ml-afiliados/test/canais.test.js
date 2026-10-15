@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { parseCanal, jidDoCanal, LeitorDeCanais } from '../src/telegram-canais.js';
+import { parseCanal, jidDoCanal, LeitorDeCanais, fontesDosCanais } from '../src/telegram-canais.js';
 import { resolverLinkAmazon } from '../src/amazon-espelho.js';
 import { Espelho } from '../src/espelho.js';
 import { montarLegenda } from '../src/caption.js';
@@ -111,4 +111,32 @@ test('Canal público do Telegram: a oferta vai para cada grupo ligado cujo nicho
   assert.deepEqual(r.ignoradas, { 'limite por hora': 1 });
   const fila = store.list((p) => p.status === 'PRONTO').map((p) => `${p.grupo}:${p.asin}`).sort();
   assert.deepEqual(fila, ['Beleza:B0PERFUME1', 'Fitness:B0CREATINA', 'Geral:B0CREATINA']); // o perfume não entrou no Geral (limite), mas entrou em Beleza
+});
+
+test('canal "apenasAmazon": só as ofertas da Amazon (ML/Awin ficam de fora), no formato do bot, só com etiqueta', async () => {
+  const c = { canais: [{ canal: 'urubupromo', apenasAmazon: true, copiarTexto: false }], copiarTexto: true, fotoDoCanal: true };
+  const [f] = fontesDosCanais(c, { lojasParceiras: true, amazonTag: 'achadin09027e-20' });
+  assert.equal(f.apenasAmazon, true);
+  assert.equal(f.soAmazon, true);
+  assert.equal(f.lojasParceiras, false);
+  assert.equal(f.copiarTexto, false);
+  assert.deepEqual(fontesDosCanais(c, { lojasParceiras: true, amazonTag: '' }), [], 'sem etiqueta não liga');
+
+  const agora = { t: Date.UTC(2027, 0, 15, 8, 5) };
+  const t = Math.floor(agora.t / 1000) - 60;
+  const store = tmpStore();
+  const espelho = new Espelho({
+    sender: { lerMensagens: async () => [
+      { id: 'a1', jid: f.jid, t, texto: 'Fone Bluetooth JBL Tune\nDe R$ 300 por R$ 150\nhttps://www.amazon.com.br/dp/B0FONE0001' },
+      { id: 'a2', jid: f.jid, t, texto: 'Tênis Feminino\nPor R$ 99\nhttps://meli.la/abc' },
+    ] },
+    store, affiliate: {}, fontes: [f], grupos: [{ nome: 'Geral', ativo: true, filtros: {} }],
+    agora: () => agora.t, esperar: async () => {}, amazonTag: 'achadin09027e-20',
+  });
+  const r = await espelho.tick();
+  assert.equal(r.enfileiradas, 1);
+  assert.deepEqual(r.ignoradas, { 'sem link da Amazon': 1 });
+  const [p] = store.list();
+  assert.equal(p.linkAfiliado, 'https://www.amazon.com.br/dp/B0FONE0001?tag=achadin09027e-20');
+  assert.equal(p.textoPronto, undefined, 'formato do bot, não cópia');
 });

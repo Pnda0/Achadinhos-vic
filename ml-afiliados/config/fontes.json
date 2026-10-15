@@ -16,6 +16,43 @@
       {
         "canal": "promobigodeperfumes",
         "destino": "Perfumes"
+      },
+      {
+        "canal": "urubupromo",
+        "apenasAmazon": true,
+        "copiarTexto": false
+      },
+      {
+        "canal": "xetdaspromocoes",
+        "apenasAmazon": true,
+        "copiarTexto": false
+      },
+      {
+        "canal": "promobit",
+        "apenasAmazon": true,
+        "copiarTexto": false
+      },
+      {
+        "canal": "gatunopromos",
+        "apenasAmazon": true,
+        "copiarTexto": false
+      },
+      {
+        "canal": "promoloucas",
+        "apenasAmazon": true,
+        "copiarTexto": false
+      },
+      {
+        "canal": "oqcomprei",
+        "fotoDoCanal": false,
+        "apenasAmazon": true,
+        "copiarTexto": false
+      },
+      {
+        "canal": "topfitachados",
+        "destino": "Fitness",
+        "apenasAmazon": true,
+        "copiarTexto": false
       }
     ],
     "destinos": [
@@ -29,31 +66,12 @@
       {
         "grupo": "Beleza",
         "nicho": "beleza"
-      },
-      {
-        "grupo": "Perfumes",
-        "nicho": "perfumes"
       }
     ],
     "lojasParceiras": true,
     "copiarTexto": true,
     "exigirVendas": false,
     "fotoDoCanal": true,
-    "canaisPausados": [
-      "urubupromo",
-      "xetdaspromocoes",
-      "promobit",
-      "gatunopromos",
-      "promoloucas",
-      {
-        "canal": "oqcomprei",
-        "fotoDoCanal": false
-      },
-      {
-        "canal": "topfitachados",
-        "destino": "Fitness"
-      }
-    ],
-    "_comentarioPausados": "15/10/2026 (noite), pedido do dono: o bot busca as promoções ele mesmo (ML, Shopee, Awin) e só o Perfumes copia, e só do @promobigodeperfumes (\"esquece esses canais de perfume\"; o @perfumepromo saiu). Os canais gerais ficam aqui guardados; para voltar um, mova para \"canais\" e reinicie o bot."
+    "_comentarioAmazon": "15/10/2026 (noite), pedido do dono: o Perfumes copia só o @promobigodeperfumes; dos outros canais o bot pega SÓ as ofertas da Amazon (\"apenasAmazon\") e monta o post no formato dele (\"copiarTexto\": false), com a etiqueta do dono (AMAZON_PARTNER_TAG) — sem abrir o site da Amazon. Elas vão para o Geral e, se casarem com o nicho, para o Fitness/Beleza (com os filtros de cada grupo: só marcas, desconto, feminino)."
   }
 }

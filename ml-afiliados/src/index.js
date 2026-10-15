@@ -189,7 +189,7 @@ function iniciarCanais() {
   const seg = Math.max(60, Number(c.intervaloSegundos) || 180);
   agendarEspelho(espelho, seg);
   const descricao = (f) =>
-    `${f.nome} (${f.soAmazon ? 'só Amazon' : 'Amazon e ML'}${lojasParceiras ? ' + lojas da Awin' : ''}${shopee.ligada() ? ' + Shopee' : ''}${f.exigirVendas ? '' : ', sem a regra de vendas'} → ${f.destinos.map((d) => d.grupo).join(', ')})`;
+    `${f.nome} (${f.apenasAmazon ? `só Amazon${f.copiarTexto ? '' : ', no formato do bot'}` : `${f.soAmazon ? 'só Amazon' : 'Amazon e ML'}${f.lojasParceiras ? ' + lojas da Awin' : ''}${shopee.ligada() ? ' + Shopee' : ''}`}${f.exigirVendas ? '' : ', sem a regra de vendas'} → ${f.destinos.map((d) => d.grupo).join(', ')})`;
   log(`📡 Canais do Telegram ligados (até ${maxPorHora} por hora em cada grupo; confere a cada ${seg}s): ${fontes.map(descricao).join(' | ')}`);
 }
 

@@ -321,6 +321,7 @@ export class Espelho {
     // Fonte "soAmazon": dali só interessam as ofertas da Amazon (o ML já tem a busca própria).
     const links = fonte.soAmazon ? [] : extrairLinksML(m.texto).filter((l) => tipoLink(l) !== 'outro');
     const linksAmazon = links.length ? [] : extrairLinksAmazon(m.texto);
+    if (fonte.apenasAmazon && !linksAmazon.length) return 'sem link da Amazon'; // canal só para Amazon: ML/Shopee/Awin ficam de fora
     if (!links.length && !linksAmazon.length) {
       const linksShopee = this.shopee ? extrairLinksShopee(m.links || [], m.texto) : [];
       if (linksShopee.length) return this.processarShopee(m, linksShopee, fonte, destino);
