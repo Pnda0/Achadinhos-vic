@@ -79,7 +79,8 @@ function numeros(lista) {
 const novoGrupo = () => ({
   publicadas: 0,
   naFila: 0,
-  recusadas: 0,
+  recusadas: 0, // na busca (não entraram na fila)
+  barradas: 0, // na hora de postar (link inválido, vendas na conferência final); repetidas ficam em "duplicados"
   duplicados: 0,
   linkInvalido: 0,
   incertos: 0,
@@ -96,7 +97,7 @@ const novoGrupo = () => ({
   top10: [],
   fontes: {},
 });
-const novaFonte = () => ({ naFila: 0, publicadas: 0, recusadas: 0, recusas: {}, duplicados: 0, incertos: 0, erros: 0 });
+const novaFonte = () => ({ naFila: 0, publicadas: 0, recusadas: 0, recusas: {}, barradas: 0, barragens: {}, duplicados: 0, incertos: 0, erros: 0 });
 
 /** Quantas ofertas sobraram na fila de cada grupo — só se a fila do db.json é deste dia. */
 function filaQueSobrou(store, dia) {
@@ -123,14 +124,23 @@ export function montarDia(dia, { eventos = [], store = null, membros = null, par
         G.naFila++;
         F.naFila++;
         break;
+      // Recusada na BUSCA (filtros do grupo: nicho, vendas, desconto...): oferta que nem entrou na fila.
       case 'recusado':
-      case 'sem_link':
-      case 'link_invalido': {
-        const motivo = e.tipo === 'sem_link' ? 'sem link de afiliado' : e.detalhe || (e.tipo === 'link_invalido' ? 'link inválido' : 'outro');
-        if (e.tipo === 'link_invalido') G.linkInvalido++;
+      case 'sem_link': {
+        const motivo = e.tipo === 'sem_link' ? 'sem link de afiliado' : e.detalhe || 'outro';
         G.recusadas++;
         F.recusadas++;
         F.recusas[motivo] = (F.recusas[motivo] || 0) + 1;
+        break;
+      }
+      // Barrada NA HORA DE POSTAR: estava na fila e não saiu (link inválido, vendas na conferência final).
+      case 'link_invalido':
+      case 'barrado': {
+        const motivo = e.detalhe || (e.tipo === 'link_invalido' ? 'link inválido' : 'outro');
+        if (e.tipo === 'link_invalido') G.linkInvalido++;
+        G.barradas++;
+        F.barradas++;
+        F.barragens[motivo] = (F.barragens[motivo] || 0) + 1;
         break;
       }
       case 'publicado':

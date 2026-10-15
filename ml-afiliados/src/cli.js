@@ -17,6 +17,7 @@
  *   npm run awin                           -> testa o token da Awin e mostra as lojas aprovadas, pendentes e os cupons
  *   npm run awin -- link <url>             -> gera o seu link de afiliado da Awin para uma página de loja parceira
  *   npm run historico -- <id ou nome>      -> o que aconteceu com um produto (recusado, na fila, publicado, falhou...)
+ *   npm run analytics [-- 7d|30d|hoje|AAAA-MM-DD] -> números dos grupos e das fontes; grava data/analytics/relatorio.html
  */
 import { coletar, gerarLinks, enviarParaTodos, enviarProximo, limpar } from './pipeline.js';
 import { createSender } from './senders.js';
@@ -36,6 +37,8 @@ import { log } from './util.js';
 import { instalarLogEmArquivo, registrarErro } from './logfile.js';
 import { travarInstancia } from './instancia.js';
 import { buscarEventos } from './eventos.js';
+import { montarPainel, textoDoPainel } from './analytics/relatorio.js';
+import { gravarSite } from './analytics/pagina.js';
 
 instalarLogEmArquivo(`cli ${process.argv.slice(2).join(' ')}`);
 
@@ -148,6 +151,17 @@ async function main() {
         const quando = new Date(e.t).toLocaleString('pt-BR', { timeZone: process.env.TZ || 'America/Sao_Paulo' });
         console.log(`${quando}  ${String(e.tipo).padEnd(15)} [${e.grupo || '-'}] ${e.origem || ''} ${e.id || ''}  ${e.nome}${e.detalhe ? `  — ${e.detalhe}` : ''}`);
       }
+      break;
+    }
+    case 'analytics': {
+      // Só lê (sem trava, sem gravar no db.json); grava apenas o relatório em data/analytics/.
+      const periodo = arg || '7d';
+      if (!/^(hoje|7d|30d|\d{4}-\d{2}-\d{2})$/.test(periodo)) throw new Error('Use: npm run analytics -- 7d   (ou 30d, hoje, 2026-10-14)');
+      const periodos = ['hoje', '7d', '30d'];
+      const painel = montarPainel({ periodos: periodos.includes(periodo) ? periodos : [periodo, ...periodos] });
+      console.log(textoDoPainel(painel, periodo));
+      gravarSite(painel);
+      console.log('\n📄 Painel completo: data/analytics/relatorio.html (abre no navegador)');
       break;
     }
     case 'resumo':

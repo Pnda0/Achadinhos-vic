@@ -277,7 +277,7 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
     else {
       const motivo = repetido || linkRuim || vendas;
       store.setStatus(candidato, repetido ? 'DUPLICADO' : 'REJEITADO', { erro: motivo });
-      evento(repetido ? 'duplicado' : linkRuim ? 'link_invalido' : 'recusado', candidato, motivo);
+      evento(repetido ? 'duplicado' : linkRuim ? 'link_invalido' : 'barrado', candidato, motivo); // "barrado" = na hora de postar (≠ recusado na busca)
       log(`  ⏭️  [${grupo.nome}] ${motivo} — pulando: ${candidato.nome.slice(0, 55)}`);
     }
   }
