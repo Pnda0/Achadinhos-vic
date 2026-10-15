@@ -146,6 +146,11 @@ class WWebJsSender {
   async sendText(jid, texto) {
     await this.client.sendMessage(jid, texto, { sendSeen: false, linkPreview: true });
   }
+  /** Link de convite do grupo (o número do bot precisa ser admin). */
+  async conviteDoGrupo(jid) {
+    const chat = await this.client.getChatById(jid);
+    return `https://chat.whatsapp.com/${await chat.getInviteCode()}`;
+  }
   /** JID de um número de telefone (só dígitos, com DDI 55). Null se o número não tiver WhatsApp. */
   async jidDoNumero(numero) {
     const r = await this.client.getNumberId(numero);

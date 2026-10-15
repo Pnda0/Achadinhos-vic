@@ -79,6 +79,20 @@ export class EspelhoWhatsApp {
     return { ligados: Object.keys(this.jids), problemas, faltando: ativos.map((g) => g.nome).filter((n) => !this.jids[n]) };
   }
 
+  /** Links de convite dos grupos ligados (para o site), guardados em data/whatsapp-convites.json. */
+  async convites(arquivo = path.join(path.dirname(this.arquivoGrupos), 'whatsapp-convites.json')) {
+    const links = {};
+    for (const [nome, jid] of Object.entries(this.jids)) {
+      try {
+        links[nome] = await this.sender.conviteDoGrupo(jid);
+      } catch (e) {
+        log(`  ⚠️  convite do WhatsApp ${nome}: ${String(e.message || e).split('\n')[0]} (o número do bot é admin?)`);
+      }
+    }
+    fs.writeFileSync(arquivo, JSON.stringify(links, null, 2) + '\n');
+    return links;
+  }
+
   /** A próxima oferta a espelhar, revezando os grupos. Null se nenhum grupo tem oferta nova. */
   proxima() {
     const grupos = this.carregarGrupos().filter((g) => g.ativo !== false && this.jids[g.nome]);

@@ -143,6 +143,8 @@ async function iniciarWhatsApp() {
     if (problemas.length) {
       await avisos.avisar('whatsapp-grupos', `*WhatsApp conectado* 📲\nEsses grupos ficam sem WhatsApp por enquanto:\n${problemas.join('\n')}\nO nome tem que ser igual ao do grupo no WhatsApp (config/grupos.json, campo "whatsapp").`, { sempre: true });
     }
+    const convites = await espelhoWhats.convites().catch(() => ({}));
+    for (const [nome, link] of Object.entries(convites)) log(`   🔗 Convite do WhatsApp ${nome}: ${link}`);
     espelhoWhats.rodar().catch((e) => registrarErro('whatsapp', e));
   } catch (e) {
     registrarErro('whatsapp', e);
