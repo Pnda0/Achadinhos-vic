@@ -240,6 +240,10 @@ Desde 15/10/2026 (`src/shopee.js`), post de canal com link da Shopee entra na fi
 - O post sai igual ao do canal, como os do ML; sem a regra de vendas. Post do ML que também tem link da Shopee: os dois são trocados.
 - Sem as credenciais, nada muda: o link da Shopee continua saindo do post.
 
+## 3.13f Busca de reposição
+
+Desde 15/10/2026: grupo com busca própria (categorias do ML ou Shopee) que fica com a fila vazia ganha uma busca extra — conferido ao ligar e a cada 10 min das 8h às 21h, no máximo uma busca extra a cada 2 horas (`REPOSICAO_MIN` em `src/index.js`). Assim, horário de coleta perdido (PC desligado, bot reiniciando) não deixa o grupo parado até o dia seguinte.
+
 ## 3.13e Busca própria na Shopee
 
 Desde 15/10/2026 (`src/shopee-busca.js`, `config/shopee.json`), em cada busca (`CRON_COLETA`) o bot procura na Shopee pela API de afiliados: no Fitness, Beleza e Perfumes, uma busca por marca da lista de cada nicho (`config/marcas.json`); no Geral, palavras femininas (vestido, bolsa, bijuteria...). Os mais vendidos primeiro, e só entra com **50+ vendas, nota 4,5+ e 15%+ de desconto** (ajustável no arquivo), além dos filtros do grupo. Cada coleta faz `buscasPorColeta` buscas por grupo, revezando a lista. O link já vem da API com o seu id de afiliado. Precisa de `SHOPEE_APP_ID`/`SHOPEE_SECRET` no `.env`.

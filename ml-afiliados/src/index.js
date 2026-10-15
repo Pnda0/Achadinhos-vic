@@ -6,7 +6,7 @@
  *   CRON_RESUMO  -> manda o resumo do dia no WhatsApp do dono (AVISOS_DESTINO)
  */
 import cron from 'node-cron';
-import { loadFontes, loadGrupos, loadNichos, settings, vincularCanal } from './config.js';
+import { loadCategorias, loadFontes, loadGrupos, loadNichos, loadShopee, settings, vincularCanal } from './config.js';
 import { Avisos } from './avisos.js';
 import { Awin } from './awin.js';
 import { Shopee } from './shopee.js';
@@ -62,6 +62,29 @@ const cicloColeta = exclusivo('coleta', async () => {
   if (r.awinErro) await avisos.avisar('awin', `*Awin fora do ar no bot* ⚠️\n${r.awinErro}`);
   await gerarLinks(store);
 });
+
+/**
+ * Busca de reposição (pedido do dono, 15/10/2026: "acabaram as ofertas do Beleza e do Fitness"): grupo que tem
+ * busca própria (categorias do ML ou Shopee) e ficou sem nada na fila ganha uma busca extra — no máximo uma a cada
+ * REPOSICAO_MIN minutos, para não forçar o Mercado Livre. Vale também ao ligar (o PC pode ter perdido o horário).
+ */
+const REPOSICAO_MIN = 120;
+function gruposSemFila() {
+  const shopee = loadShopee();
+  const comBusca = new Set([
+    ...loadCategorias().filter((c) => c.ativo).map((c) => c.grupo),
+    ...(shopee.ativo === false ? [] : Object.entries(shopee.grupos || {}).filter(([, g]) => g.ativo !== false).map(([n]) => n)),
+  ]);
+  const ativos = loadGrupos().filter((g) => g.ativo && comBusca.has(g.nome)).map((g) => g.nome);
+  return ativos.filter((nome) => !store.list((p) => p.grupo === nome && (p.status === 'PRONTO' || p.status === 'PENDENTE')).length);
+}
+async function reporSePreciso(quando) {
+  const vazios = gruposSemFila();
+  const ultima = Date.parse(store.data.ultimaColeta || 0) || 0;
+  if (!vazios.length || Date.now() - ultima < REPOSICAO_MIN * 60_000) return;
+  log(`🔁 Busca de reposição (${quando}): sem ofertas na fila de ${vazios.join(', ')}.`);
+  await cicloColeta();
+}
 
 /** Analytics (data/analytics/): só lê e grava arquivos de relatório; uma falha aqui nunca derruba o bot. */
 function analytics(nome, fn) {
@@ -336,9 +359,10 @@ async function main() {
   await iniciarEspelho();
   iniciarWhatsApp(); // sem await: esperar o QR code não pode segurar o resto
 
-  // Se não há nada na fila dos grupos ATIVOS ao ligar, já faz uma coleta.
-  const ativos = new Set(loadGrupos().filter((g) => g.ativo).map((g) => g.nome));
-  if (!store.list((p) => ativos.has(p.grupo) && (p.status === 'PRONTO' || p.status === 'PENDENTE')).length) await cicloColeta();
+  // Ao ligar: grupo com busca própria e fila vazia já ganha uma busca (o PC pode ter perdido o horário da coleta).
+  // Durante o dia, a cada 10 min, a mesma conferência (no máximo uma busca extra a cada REPOSICAO_MIN minutos).
+  await reporSePreciso('ao ligar');
+  cron.schedule('*/10 8-21 * * *', () => reporSePreciso('fila vazia').catch((e) => registrarErro('reposicao', e)), opts);
 }
 
 main().catch((e) => {

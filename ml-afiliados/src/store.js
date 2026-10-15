@@ -253,6 +253,7 @@ export class Store {
 
   /** Guarda os números de uma coleta no dia (para o resumo diário). Mantém 14 dias. */
   registrarColeta({ encontrados = 0, novos = 0, recusas = {}, categorias = {} }, dia = diaLocal(new Date(), settings.tz)) {
+    this.data.ultimaColeta = new Date().toISOString(); // para a busca de reposição (index.js)
     const stats = (this.data.stats ??= {});
     const d = (stats[dia] ??= { coletas: 0, encontrados: 0, novos: 0, recusas: {}, categorias: {} });
     d.coletas++;

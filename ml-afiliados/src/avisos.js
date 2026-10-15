@@ -145,7 +145,7 @@ export class Avisos {
   }
 
   filaVazia(grupo) {
-    return this.avisar(`fila-${grupo}`, `*Acabaram as ofertas do grupo ${grupo}* 📭\nO bot fica sem postar até a próxima busca (${settings.cron.coleta}).`);
+    return this.avisar(`fila-${grupo}`, `*Acabaram as ofertas do grupo ${grupo}* 📭\nO bot faz uma busca extra em até 2 horas (das 8h às 21h) e volta a postar quando achar ofertas.`);
   }
 
   falhaEnvio(grupo, p) {
