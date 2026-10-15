@@ -12,7 +12,7 @@ import { buscarCuponsAwin, loadAwin } from './awin.js';
 import { VENDAS_MINIMAS, motivoVendas } from './ml/vendas.js';
 import { evento, origemDe } from './eventos.js';
 import { preferenciaFeminina } from './genero.js';
-import { preferenciaDeMarca } from './marcas.js';
+import { marcaDoProduto, preferenciaDeMarca } from './marcas.js';
 import { BrowserSession, sessaoNavegador } from './browser.js';
 import { estiloDoProduto, gerarTitulo, montarLegenda, tituloCupom } from './caption.js';
 import { Store } from './store.js';
@@ -25,6 +25,8 @@ export function motivoRecusa(p, f, store, { descontoDesconhecidoPassa = false, e
   // Nicho: o nome precisa casar com pelo menos uma das palavras obrigatórias (ex.: fitness).
   if (f.palavrasObrigatorias?.length && !f.palavrasObrigatorias.some((t) => casaTermo(nome, t))) return 'fora do nicho';
   if ((f.palavrasBloqueadas || []).some((w) => casaTermo(nome, w))) return 'palavra bloqueada';
+  // Grupo "soMarcas" (grupos.json): só produto de uma marca de config/marcas.json. Cupom de loja passa.
+  if (f.soMarcas && p.tipo !== 'cupom' && !marcaDoProduto(p)) return 'sem marca da lista';
   // Mercado Livre: só com MAIS de N vendas confirmadas pelo rótulo do card (src/ml/vendas.js). A caixa de entrada
   // do dono (escolha manual dele) passa `exigirVendas: false`.
   const vendas = exigirVendas && motivoVendas(p, f.vendasMinimas ?? VENDAS_MINIMAS);
@@ -248,6 +250,12 @@ async function simularDigitando(sender, jid) {
   }
 }
 
+/** Grupo "soMarcas": o que entrou na fila antes do filtro (ou sem marca) não sai. Cupom e caixa de entrada passam. */
+function marcaNoEnvio(p, grupo) {
+  if (!grupo.soMarcas || p.manual || p.tipo === 'cupom' || origemDe(p) === 'caixa') return null;
+  return marcaDoProduto(p) ? null : 'sem marca da lista';
+}
+
 /**
  * A regra de vendas vale de novo na hora de postar: a fila pode ter ofertas de antes da regra (ou de antes de uma
  * mudança nela). A caixa de entrada do dono e os canais que ele liberou da regra ficam de fora, como na coleta.
@@ -280,7 +288,7 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
     if (!candidato) break;
     const repetido = store.jaPublicado(candidato, dias);
     const linkRuim = !repetido && motivoLinkInvalido(candidato);
-    const vendas = !repetido && !linkRuim && vendasNoEnvio(candidato, grupo);
+    const vendas = !repetido && !linkRuim && (vendasNoEnvio(candidato, grupo) || marcaNoEnvio(candidato, grupo));
     if (!repetido && !linkRuim && !vendas) p = candidato;
     else {
       const motivo = repetido || linkRuim || vendas;

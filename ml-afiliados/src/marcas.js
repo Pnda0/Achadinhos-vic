@@ -6,8 +6,14 @@
 import { loadMarcas } from './config.js';
 import { casaTermo, normalizar } from './util.js';
 
-/** Lista plana [{ marca, termos }] do arquivo (termo "re:..." = expressão regular no texto original). */
-export function listaDeMarcas(cfg = loadMarcas()) {
+let cache = { em: 0, lista: null };
+
+/** Lista plana [{ marca, termos }] do arquivo (termo "re:..." = expressão regular no texto original). Sem `cfg`: relê o arquivo no máximo 1x por minuto. */
+export function listaDeMarcas(cfg) {
+  if (!cfg) {
+    if (!cache.lista || Date.now() - cache.em > 60_000) cache = { em: Date.now(), lista: listaDeMarcas(loadMarcas()) };
+    return cache.lista;
+  }
   const lista = [];
   for (const [chave, itens] of Object.entries(cfg || {})) {
     if (chave.startsWith('_') || !Array.isArray(itens)) continue;

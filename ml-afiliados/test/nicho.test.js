@@ -5,7 +5,9 @@ import { motivoRecusa } from '../src/pipeline.js';
 import { estiloDoProduto, tituloPronto } from '../src/caption.js';
 import { casaTermo, normalizar } from '../src/util.js';
 
-const fitness = loadGrupos().find((g) => g.nome === 'Fitness');
+// Estes testes conferem as PALAVRAS do nicho; o filtro de marcas (soMarcas) tem teste próprio (marcas.test.js).
+const semFiltroDeMarca = (g) => ({ ...g, filtros: { ...g.filtros, soMarcas: false } });
+const fitness = semFiltroDeMarca(loadGrupos().find((g) => g.nome === 'Fitness'));
 const prod = (nome, extra = {}) => ({ id: 'MLB1', grupo: 'Fitness', nome, precoAtual: 99, descontoPct: 30, nota: 4.6, vendidos: '+1000 vendidos', ...extra });
 const motivo = (nome, extra) => motivoRecusa(prod(nome, extra), fitness.filtros);
 
@@ -49,7 +51,7 @@ test('site e bot: os três grupos de nicho existem, cada um com o seu nicho e t�
 });
 
 test('perfumes e beleza: cada oferta cai no grupo certo', () => {
-  const grupos = loadGrupos();
+  const grupos = loadGrupos().map(semFiltroDeMarca);
   const em = (grupo, nome) => motivoRecusa({ id: 'X', grupo, nome, precoAtual: 99, descontoPct: 30, nota: 4.6, vendidos: '+1000 vendidos' }, grupos.find((g) => g.nome === grupo).filtros);
   for (const nome of [
     'Perfume Lattafa Asad Eau De Parfum 100ml Masculino',

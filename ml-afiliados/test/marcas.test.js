@@ -43,3 +43,28 @@ test('fila: oferta de marca sai antes da sem marca; feminino continua valendo', 
   assert.equal(preferenciaDeMarca({ peso: 2, x: ['Nike'] })({ nome: 'Tênis Nike' }), 2);
   assert.equal(preferenciaDeMarca({})({ nome: 'Tênis Nike' }), 0);
 });
+
+test('grupo "soMarcas" (Fitness, Beleza, Perfumes): só marca da lista entra e sai; Geral não filtra; cupom passa', async () => {
+  const { loadGrupos } = await import('../src/config.js');
+  const { motivoRecusa } = await import('../src/pipeline.js');
+  const grupos = loadGrupos();
+  const g = (nome) => grupos.find((x) => x.nome === nome);
+  assert.equal(g('Beleza').filtros.soMarcas, true);
+  assert.equal(g('Geral').filtros.soMarcas, undefined);
+  const p = (grupo, nome, extra = {}) => ({ id: 'X', grupo, nome, precoAtual: 99, descontoPct: 30, nota: 4.6, vendidos: '+1000 vendidos', ...extra });
+  assert.equal(motivoRecusa(p('Beleza', 'Shampoo Elseve Liso dos Sonhos 400ml'), g('Beleza').filtros), null);
+  assert.equal(motivoRecusa(p('Beleza', 'Shampoo Genérico Liso 400ml'), g('Beleza').filtros), 'sem marca da lista');
+  assert.equal(motivoRecusa(p('Beleza', 'Cupom C&A', { tipo: 'cupom' }), { soMarcas: true }), null);
+  assert.equal(motivoRecusa(p('Geral', 'Air Fryer Mondial 4L'), g('Geral').filtros), null);
+
+  // na hora de postar: o que já estava na fila sem marca é barrado
+  const store = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-')), 'db.json'));
+  const pronto = (id, nome) => store.upsert({ id, grupo: 'Beleza', nome, status: 'PRONTO', url: `https://x/${id}`, linkAfiliado: `https://meli.la/${id}`, descontoPct: 30, vendidos: '+1000 vendidos', coletadoEm: '2026-10-15T10:00:00Z' });
+  pronto('A', 'Máscara Capilar Genérica Feminina');
+  pronto('B', 'Máscara Capilar Wella Feminina');
+  const sender = { sendImage: async () => ({ comImagem: true }), sendText: async () => {} };
+  const grupo = { nome: 'Beleza', jid: 'B', filtros: { diasSemRepetir: 5 }, soMarcas: true };
+  assert.equal((await enviarProximo(sender, grupo, store))?.nome, 'Máscara Capilar Wella Feminina');
+  assert.equal(await enviarProximo(sender, grupo, store), null);
+  assert.equal(store.list((x) => x.id === 'A')[0].status, 'REJEITADO');
+});

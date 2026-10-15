@@ -149,7 +149,7 @@ export class Espelho {
   filtros(fonte, destino) {
     const f = destino.filtros || {};
     if (fonte.manual) return { diasSemRepetir: f.diasSemRepetir };
-    if (fonte.copiarTexto) return { palavrasObrigatorias: f.palavrasObrigatorias, palavrasBloqueadas: f.palavrasBloqueadas, diasSemRepetir: f.diasSemRepetir };
+    if (fonte.copiarTexto) return { palavrasObrigatorias: f.palavrasObrigatorias, palavrasBloqueadas: f.palavrasBloqueadas, diasSemRepetir: f.diasSemRepetir, soMarcas: f.soMarcas };
     return f;
   }
 

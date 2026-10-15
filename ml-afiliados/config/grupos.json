@@ -34,7 +34,8 @@
       "nicho": "fitness",
       "telegram": "-1004454980210",
       "preferirFeminino": 4,
-      "whatsapp": "Achadinhos Vic - Fitness"
+      "whatsapp": "Achadinhos Vic - Fitness",
+      "soMarcas": true
     },
     {
       "nome": "Beleza",
@@ -45,7 +46,8 @@
       "nicho": "beleza",
       "telegram": "-1004455813335",
       "preferirFeminino": 4,
-      "whatsapp": "Achadinhos Vic - Beleza"
+      "whatsapp": "Achadinhos Vic - Beleza",
+      "soMarcas": true
     },
     {
       "nome": "Perfumes",
@@ -58,7 +60,8 @@
       "nicho": "perfumes",
       "telegram": "-1004316376505",
       "preferirFeminino": 3,
-      "whatsapp": "Achadinhos Vic - Perfumes"
+      "whatsapp": "Achadinhos Vic - Perfumes",
+      "soMarcas": true
     }
   ]
 }
