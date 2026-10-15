@@ -7,7 +7,9 @@
  *  - wuzapi     -> WuzAPI (a usada na versão v3 do curso)
  *  - console    -> não envia nada, só mostra a mensagem (para testar)
  */
-import { settings } from './config.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { ROOT, settings } from './config.js';
 import { requireBrowserPath } from './browser.js';
 import { garantirPatchWwebjs } from './patch-wwebjs.js';
 import { log, sleep } from './util.js';
@@ -24,6 +26,13 @@ export function detectarImagem(buf) {
 }
 
 async function downloadImage(url) {
+  // Arte do próprio bot (pasta assets/, ex.: a do cupom): lê o arquivo, não baixa.
+  if (/^assets\/[\w.-]+\.(jpe?g|png)$/i.test(url)) {
+    const buf = fs.readFileSync(path.resolve(ROOT, url));
+    buf.tipo = detectarImagem(buf);
+    if (!buf.tipo) throw new Error(`a arte ${url} não é uma imagem`);
+    return buf;
+  }
   const res = await fetch(url, {
     headers: { 'user-agent': settings.userAgent, accept: 'image/jpeg,image/png;q=0.9,*/*;q=0.5' },
     signal: AbortSignal.timeout(30_000),

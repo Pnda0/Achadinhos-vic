@@ -305,7 +305,7 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
       ? await sender.sendImage(grupo.jid, p.imagem, legenda)
       : (await sender.sendText(grupo.jid, legenda), { comImagem: false }); // sem foto: o WhatsApp mostra a prévia do link
     const semImagem = r?.comImagem === false;
-    store.setStatus(p, 'ENVIADO', { enviadoEm: new Date().toISOString(), semImagem });
+    store.setStatus(p, 'ENVIADO', { enviadoEm: new Date().toISOString(), semImagem, legenda }); // a legenda vai igual para o WhatsApp
     evento('publicado', p, semImagem ? 'sem imagem' : null);
     log(`📤 [${grupo.nome}]${semImagem ? ' (sem imagem)' : ''} ${p.nome.slice(0, 60)} — ${p.linkAfiliado}`);
   } catch (e) {

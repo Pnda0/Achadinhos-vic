@@ -8,6 +8,7 @@ O dono fala português e prefere que o Claude **faça tudo sozinho** (inclusive 
 - **Bot** (`ml-afiliados/`): roda **no PC de casa** do dono (Windows), pelo `ml-afiliados/3-iniciar.bat`, que liga com o Windows (atalho na pasta Inicializar). Ao ligar, ele faz `git pull` e `npm install`: **o que for para o `main` chega no bot na próxima vez que ele ligar**. O Render foi abandonado — `render.yaml` ficou só de referência.
 - **Site** (`Vic Site/index.html`): Cloudflare Pages, https://achadinhos-vic.pages.dev, conta Cloudflare **alanribeiro8352@icloud.com** (o dono também tem a conta Alan_carvalho2015@hotmail.com — não é essa). Push NÃO publica o site: `npx wrangler@4 pages deploy "Vic Site" --project-name achadinhos-vic --branch main` (pede `wrangler login` na conta certa).
 - **Telegram**: bot @achadinhosvic_bot; o dono é o usuário 2078974860 (é o `AVISOS_DESTINO_TELEGRAM`). Chat id de cada canal em `ml-afiliados/config/grupos.json`; convites de cada canal no `GRUPOS` do site.
+- **WhatsApp** (desde 15/10/2026): espelho do Telegram num chip só do bot, 1 mensagem a cada 6 min no total (`WHATSAPP_ESPELHO`/`WHATSAPP_INTERVALO_MIN` no `.env` de casa; README 3.13b). Não acelere sem o dono: risco de banimento.
 - **Afiliados**: Mercado Livre (etiqueta `pndaaaa`), Awin (conta de afiliado 1694399; lojas e grupos em `ml-afiliados/config/awin.json`; `npm run awin` mostra aprovadas/pendentes/cupons), Amazon ainda sem etiqueta.
 
 ## Regras importantes

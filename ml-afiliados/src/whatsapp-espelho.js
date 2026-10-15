@@ -1,0 +1,136 @@
+/**
+ * Espelho no WhatsApp: o que sai no Telegram também vai para os grupos do WhatsApp — devagar, para o número não
+ * ser banido (pedido do dono, 15/10/2026). Um número só para o bot (chip separado), 4 grupos novos.
+ *
+ *  - No máximo 1 mensagem a cada WHATSAPP_INTERVALO_MIN minutos (padrão 6) NO TOTAL, com alguns segundos de
+ *    variação, só das 8h às 21h59; os grupos se revezam (Geral → Fitness → Beleza → Perfumes → ...).
+ *  - Em cada vez: a oferta mais recente daquele grupo que já saiu no Telegram (na última hora) e ainda não foi
+ *    para o WhatsApp — mesmo texto e mesma foto. Grupo sem oferta nova é pulado e a vez passa para o próximo.
+ *  - Nunca repete no mesmo grupo: a oferta é marcada ANTES de enviar (sem resposta = não reenvia).
+ *  - Os grupos do WhatsApp são achados pelo nome (o grupo com "Fitness" no nome é o Fitness...) e guardados em
+ *    data/whatsapp-grupos.json.
+ * Liga com WHATSAPP_ESPELHO=true no .env. Na 1ª vez abre o WhatsApp Web para escanear o QR code com o chip do bot.
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import { DATA_DIR, settings } from './config.js';
+import { evento } from './eventos.js';
+import { log, normalizar, sleep } from './util.js';
+
+const ARQUIVO_GRUPOS = path.join(DATA_DIR, 'whatsapp-grupos.json');
+const UMA_HORA = 3_600_000;
+
+export function lerGruposWhats(arquivo = ARQUIVO_GRUPOS) {
+  try {
+    return JSON.parse(fs.readFileSync(arquivo, 'utf8')) || {};
+  } catch {
+    return {};
+  }
+}
+
+/** Liga cada grupo do bot ao grupo do WhatsApp cujo nome tem o nome dele (só se for um único grupo). */
+export function ligarPorNome(gruposBot, gruposWhats) {
+  const palavras = (t) => normalizar(t).split(/[^a-z0-9]+/).filter(Boolean).map((p) => p.replace(/s$/, ''));
+  const ligados = {};
+  for (const g of gruposBot) {
+    const alvo = palavras(g.nome).join(' ');
+    const achados = gruposWhats.filter((w) => palavras(w.nome).join(' ').split(' ').includes(alvo));
+    if (achados.length === 1) ligados[g.nome] = achados[0].jid;
+  }
+  return ligados;
+}
+
+/** Horário em que o WhatsApp pode postar (o mesmo do envio do Telegram: 8h às 21h59, fuso do bot). */
+export function dentroDoHorario(agora = new Date()) {
+  const h = Number(agora.toLocaleTimeString('en-GB', { hour: '2-digit', hour12: false, timeZone: settings.tz }).slice(0, 2));
+  return h >= 8 && h < 22;
+}
+
+export class EspelhoWhatsApp {
+  constructor({ sender, store, carregarGrupos, avisos = null, intervaloMin = 6, arquivoGrupos = ARQUIVO_GRUPOS, agora = () => Date.now(), esperar = sleep }) {
+    this.sender = sender;
+    this.store = store;
+    this.carregarGrupos = carregarGrupos;
+    this.avisos = avisos;
+    this.intervaloMs = Math.max(3, intervaloMin) * 60_000;
+    this.arquivoGrupos = arquivoGrupos;
+    this.agora = agora;
+    this.esperar = esperar;
+    this.vez = 0; // de qual grupo é a vez
+    this.jids = lerGruposWhats(arquivoGrupos);
+  }
+
+  /** Procura os grupos no WhatsApp pelo nome e guarda. Devolve { ligados, faltando }. */
+  async ligarGrupos() {
+    const ativos = this.carregarGrupos().filter((g) => g.ativo !== false);
+    const achados = ligarPorNome(ativos, await this.sender.listGroups());
+    this.jids = { ...this.jids, ...achados };
+    fs.mkdirSync(path.dirname(this.arquivoGrupos), { recursive: true });
+    fs.writeFileSync(this.arquivoGrupos, JSON.stringify(this.jids, null, 2) + '\n');
+    const faltando = ativos.map((g) => g.nome).filter((n) => !this.jids[n]);
+    return { ligados: Object.keys(this.jids), faltando };
+  }
+
+  /** A próxima oferta a espelhar, revezando os grupos. Null se nenhum grupo tem oferta nova. */
+  proxima() {
+    const grupos = this.carregarGrupos().filter((g) => g.ativo !== false && this.jids[g.nome]);
+    const ja = (this.store.data.whatsapp ??= {});
+    for (let i = 0; i < grupos.length; i++) {
+      const g = grupos[(this.vez + i) % grupos.length];
+      const p = this.store
+        .list((x) => x.grupo === g.nome && x.status === 'ENVIADO' && x.legenda && x.enviadoEm && this.agora() - new Date(x.enviadoEm).getTime() < UMA_HORA && !ja[`${g.nome}:${x.id}`])
+        .sort((a, b) => String(b.enviadoEm).localeCompare(String(a.enviadoEm)))[0];
+      if (p) {
+        this.vez = (this.vez + i + 1) % grupos.length;
+        return { grupo: g, p };
+      }
+    }
+    return null;
+  }
+
+  /** Uma postagem (se houver). Devolve a oferta enviada, ou null. */
+  async enviarUma() {
+    if (!dentroDoHorario(new Date(this.agora()))) return null;
+    const alvo = this.proxima();
+    if (!alvo) return null;
+    const { grupo, p } = alvo;
+    const jid = this.jids[grupo.nome];
+    // Marca ANTES de enviar: se o WhatsApp não responder, não reenvia (melhor perder uma do que repetir).
+    this.store.data.whatsapp[`${grupo.nome}:${p.id}`] = new Date(this.agora()).toISOString();
+    this.store.save();
+    try {
+      await this.sender.typing?.(jid, 4 + Math.random() * 6).catch(() => {});
+      const temFoto = /^https?:\/\//.test(p.imagem || '') || /^assets\//.test(p.imagem || '');
+      if (temFoto) await this.sender.sendImage(jid, p.imagem, p.legenda);
+      else await this.sender.sendText(jid, p.legenda);
+      evento('whatsapp', p);
+      log(`📲 [WhatsApp ${grupo.nome}] ${String(p.nome).slice(0, 60)}`);
+      return p;
+    } catch (e) {
+      const msg = String(e.message || e).split('\n')[0];
+      evento('whatsapp_falhou', p, msg);
+      log(`⚠️  [WhatsApp ${grupo.nome}] não foi (${msg}) — não vou repetir esta oferta.`);
+      await this.avisos?.avisar('whatsapp', `*WhatsApp com problema* ⚠️\n${msg}`).catch(() => {});
+      return null;
+    }
+  }
+
+  /** Limpa as marcas de mais de 30 dias (chamado na limpeza diária). */
+  podar(dias = 30) {
+    const limite = this.agora() - dias * 86_400_000;
+    for (const [k, t] of Object.entries(this.store.data.whatsapp || {})) if (new Date(t).getTime() < limite) delete this.store.data.whatsapp[k];
+  }
+
+  /** Laço: uma postagem, espera o intervalo (com até 60 s de variação), de novo. Nunca derruba o bot. */
+  async rodar({ parar = () => false } = {}) {
+    while (!parar()) {
+      try {
+        await this.enviarUma();
+      } catch (e) {
+        log(`⚠️  espelho do WhatsApp: ${String(e.message || e).split('\n')[0]}`);
+      }
+      await this.esperar(this.intervaloMs + Math.floor(Math.random() * 60_000));
+    }
+  }
+}
+

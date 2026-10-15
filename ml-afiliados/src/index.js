@@ -27,6 +27,7 @@ import { destaquesDoDia, resumoSemanal } from './analytics/destaques.js';
 import { gravarSite } from './analytics/pagina.js';
 import { publicarPainel, urlPublicada } from './analytics/publicar.js';
 import { MSG_OUTRA_COPIA, travarInstancia } from './instancia.js';
+import { EspelhoWhatsApp } from './whatsapp-espelho.js';
 
 instalarLogEmArquivo('iniciar');
 
@@ -118,6 +119,32 @@ function iniciarCaixaDeEntrada(cfg) {
   sender.aoVirarAdmin = (canal) => ligarCanalNovo(canal).catch((e) => registrarErro('canal-novo', e));
   agendarEspelho(new Espelho({ sender, store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), carregarGrupos: loadGrupos, cfg: { ...cfg, janelaMinutos: 180 }, avisos, awin }), 10);
   log(`📥 Caixa de entrada ligada: mande um link da Amazon, do Mercado Livre${awin.ligada() ? ' ou de loja parceira da Awin' : ''} no privado do bot que ele entra na fila do grupo "${destino}".`);
+}
+
+/**
+ * Espelho no WhatsApp (WHATSAPP_ESPELHO=true): conecta o chip do bot (na 1ª vez abre o WhatsApp Web para escanear o
+ * QR code), acha os 4 grupos pelo nome e posta devagar o que já saiu no Telegram. Roda à parte do envio do Telegram;
+ * se o WhatsApp não conectar, o Telegram segue normal.
+ */
+let espelhoWhats = null;
+async function iniciarWhatsApp() {
+  if (!settings.whatsappEspelho) return;
+  try {
+    const whats = createSender('wwebjs');
+    log('📲 WhatsApp: conectando o número do bot (na 1ª vez, escaneie o QR code na janela do WhatsApp Web que abrir)...');
+    await whats.init();
+    espelhoWhats = new EspelhoWhatsApp({ sender: whats, store, carregarGrupos: loadGrupos, avisos, intervaloMin: settings.whatsappIntervaloMin });
+    const { ligados, faltando } = await espelhoWhats.ligarGrupos();
+    log(`📲 WhatsApp ligado: ${ligados.join(', ') || 'nenhum grupo'}${faltando.length ? ` | sem grupo no WhatsApp: ${faltando.join(', ')}` : ''} — 1 mensagem a cada ${settings.whatsappIntervaloMin} min.`);
+    if (faltando.length) {
+      await avisos.avisar('whatsapp-grupos', `*WhatsApp conectado* 📲\nNão achei grupo com o nome de: ${faltando.join(', ')}.\nCrie no WhatsApp um grupo com esse nome (ex.: "Achadinhos da Vic · ${faltando[0]}"), ponha o número do bot como admin e reinicie o bot.`, { sempre: true });
+    }
+    espelhoWhats.rodar().catch((e) => registrarErro('whatsapp', e));
+  } catch (e) {
+    registrarErro('whatsapp', e);
+    log(`⚠️  WhatsApp não conectou: ${String(e.message).split('\n')[0]} — o Telegram segue normal.`);
+    await avisos.avisar('whatsapp', `*WhatsApp não conectou* ⚠️\n${String(e.message).split('\n')[0]}\nReinicie o bot e escaneie o QR code com o chip do bot (WhatsApp > Aparelhos conectados).`).catch(() => {});
+  }
 }
 
 /** Canais públicos do Telegram (config/fontes.json > canaisTelegram): as ofertas de lá entram sozinhas com o link do dono. */
@@ -232,6 +259,7 @@ async function main() {
     settings.cron.limpeza,
     exclusivo('limpeza', async () => {
       analytics('fim do dia', () => gerarDia(diaLocal(new Date(Date.now() - 60_000), settings.tz), { store })); // o dia que acabou, antes de esvaziar a fila
+      espelhoWhats?.podar();
       limpar(store);
     }),
     opts
@@ -300,6 +328,7 @@ async function main() {
 
   iniciarCanais();
   await iniciarEspelho();
+  iniciarWhatsApp(); // sem await: esperar o QR code não pode segurar o resto
 
   // Se não há nada na fila dos grupos ATIVOS ao ligar, já faz uma coleta.
   const ativos = new Set(loadGrupos().filter((g) => g.ativo).map((g) => g.nome));

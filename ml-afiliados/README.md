@@ -223,6 +223,15 @@ Loja aprovada que não está em `config/awin.json` vai só para o grupo geral; p
 
 **Arte dos posts de cupom**: cada cupom/promoção da Awin sai com uma imagem da pasta `assets/`: a da loja, com o logo dela em destaque e a assinatura "Achadinhos da VIC" no canto (`cupom-<id>.jpg` / `promo-<id>.jpg`; hoje C&A 17648, Nike 17652 e Riachuelo 86587), ou a genérica "Cupom da VIC" / "Promo da VIC" (`cupom.jpg` / `promo.jpg`) para loja sem arte. Para criar a de uma loja nova: ponha o logo em `assets/logos/<id>.svg`, abra `assets/arte-loja.html` trocando o logo, o título e a frase, e salve um print de 1080×1080 como `cupom-<id>.jpg` (e `promo-<id>.jpg`).
 
+## 3.13b Espelho no WhatsApp
+
+Desde 15/10/2026 o que sai no Telegram também vai para os grupos do WhatsApp, **devagar** para o número não ser banido (`src/whatsapp-espelho.js`, `WHATSAPP_ESPELHO=true` no `.env`):
+
+- **Número só do bot** (chip separado). Na 1ª vez, o bot abre o WhatsApp Web: no celular do chip, WhatsApp → Aparelhos conectados → Conectar um aparelho → escaneie o QR code. A sessão fica em `.wwebjs_auth/` (fora do git).
+- **Grupos**: crie no WhatsApp 4 grupos com o nome do grupo do bot no título (ex.: "Achadinhos da Vic · Fitness") e ponha o número do bot como admin. O bot acha cada um pelo nome e guarda em `data/whatsapp-grupos.json`; se faltar algum, avisa no Telegram.
+- **Ritmo**: 1 mensagem a cada `WHATSAPP_INTERVALO_MIN` minutos (6) **no total**, com alguns segundos de variação, das 8h às 21h59, revezando os grupos. Em cada vez vai a oferta mais recente daquele grupo que saiu no Telegram na última hora — mesmo texto e mesma foto (foto de mensagem do Telegram, sem URL, vai como texto). Nunca repete no mesmo grupo; se o WhatsApp falhar, a oferta não é reenviada.
+- Se o WhatsApp não conectar, o Telegram segue normal e o bot avisa no Telegram.
+
 ## 3.14 Confiabilidade: sem post repetido, só produto que vende, histórico de cada oferta
 
 **Uma cópia só do bot.** Duas janelas do `3-iniciar.bat` abertas ao mesmo tempo postavam cada oferta duas vezes (aconteceu em 14/10/2026). Agora o bot segura a porta local `127.0.0.1:47831`; uma segunda cópia mostra *"Já tem um bot rodando neste PC… Feche ESTA janela"* e para. Os comandos que mexem na fila (`coletar`, `links`, `enviar`, `limpar`, `configurar`) também recusam rodar com o bot ligado. A porta é liberada sozinha quando o bot fecha (até em queda de energia). Para trocar a porta: `BOT_PORTA_TRAVA` no `.env`.

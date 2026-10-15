@@ -99,6 +99,9 @@ export const settings = {
   wuzapi: { url: env.WUZAPI_URL, token: env.WUZAPI_TOKEN },
   simularDigitando: bool(env.SIMULAR_DIGITANDO, true),
   whatsappJanela: bool(env.WHATSAPP_JANELA, true),
+  // Espelho no WhatsApp (src/whatsapp-espelho.js): o que sai no Telegram vai também, 1 mensagem a cada N minutos.
+  whatsappEspelho: bool(env.WHATSAPP_ESPELHO, false),
+  whatsappIntervaloMin: Number(env.WHATSAPP_INTERVALO_MIN) || 6,
   enviarSemImagem: bool(env.ENVIAR_SEM_IMAGEM, true),
   llm: { baseUrl: env.LLM_BASE_URL, apiKey: env.LLM_API_KEY, model: env.LLM_MODEL },
   cron: {
