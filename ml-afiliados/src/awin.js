@@ -353,6 +353,16 @@ function dominioDe(v) {
 const limpo = (s) => String(s || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
 /** Converte um cupom/promoção da API no formato de oferta do bot. Null se não serve (vencido, sem link...). */
+/**
+ * Arte do post de cupom (pasta assets/): a da loja, com o logo dela em destaque ("cupom-17648.jpg"), ou a genérica
+ * no estilo da logo da Vic ("cupom.jpg"). `tipo` = 'cupom' (tem código) ou 'promo' (sem código).
+ * Para criar a arte de uma loja nova: assets/arte-loja.html + o logo em assets/logos/<id>.svg (README, seção 3.13).
+ */
+export function arteDoCupom(idLoja, tipo) {
+  const daLoja = `assets/${tipo}-${idLoja}.jpg`;
+  return fs.existsSync(path.join(ROOT, daLoja)) ? daLoja : `assets/${tipo}.jpg`;
+}
+
 export function ofertaDeCupom(promo, anunciante, grupo, { agora = Date.now() } = {}) {
   const titulo = limpo(promo?.title);
   const link = promo?.urlTracking || null;
@@ -377,8 +387,7 @@ export function ofertaDeCupom(promo, anunciante, grupo, { agora = Date.now() } =
     descricao: descricao && descricao.toLowerCase() !== titulo.toLowerCase() ? descricao.slice(0, 220) : null,
     url: promo.url || link,
     linkAfiliado: link,
-    // Arte do canal (assets/, no estilo da logo): "Cupom da Vic" com código, "Promo da Vic" sem código.
-    imagem: codigo ? 'assets/cupom.jpg' : 'assets/promo.jpg',
+    imagem: arteDoCupom(anunciante.id, codigo ? 'cupom' : 'promo'),
     precoAtual: null,
     precoOriginal: null,
     descontoPct: pct ? Number(pct[1]) : null,

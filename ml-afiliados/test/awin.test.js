@@ -254,3 +254,11 @@ test('Coleta: grupo em espera não é buscado e a mesma página de ofertas é ba
   assert.equal(r.novos, 1);
   assert.deepEqual(Object.keys(r.categorias).sort(), ['A', 'B']); // a ordem das categorias é sorteada
 });
+
+test('arte do cupom: a da loja quando existe (logo em destaque), senão a genérica da Vic', async () => {
+  const { arteDoCupom } = await import('../src/awin.js');
+  assert.equal(arteDoCupom(17648, 'cupom'), 'assets/cupom-17648.jpg');
+  assert.equal(arteDoCupom(17648, 'promo'), 'assets/promo-17648.jpg');
+  assert.equal(arteDoCupom(99999, 'cupom'), 'assets/cupom.jpg');
+  assert.equal(arteDoCupom(99999, 'promo'), 'assets/promo.jpg');
+});

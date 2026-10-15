@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yellowtail&family=Oswald:wght@400;500&family=Inter:wght@600;700&display=swap">
+<style>
+  /* Arte de cupom por loja: o logo da loja em destaque; a Vic como assinatura no canto. */
+  :root { --vinho: #7a1712; --rosa: #d17b96; --creme: #f9f5ec; --ouro: #f2b85c; --tinta: #2b1210; }
+  * { margin: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1080px; overflow: hidden; }
+  body { position: relative; background: repeating-linear-gradient(180deg, var(--rosa) 0 135px, var(--vinho) 135px 270px); font-family: Inter, sans-serif; }
+  .bilhete {
+    position: absolute; left: 90px; top: 100px; width: 900px; height: 740px; transform: rotate(-3deg);
+    background: var(--creme); border-radius: 36px; box-shadow: 0 22px 40px rgba(40, 0, 0, .4);
+    display: flex; flex-direction: column; overflow: hidden;
+    /* recortes de bilhete nas laterais, na altura da linha pontilhada */
+    -webkit-mask: radial-gradient(circle 46px at 0 450px, #0000 98%, #000) , radial-gradient(circle 46px at 100% 450px, #0000 98%, #000);
+    -webkit-mask-composite: source-in; mask-composite: intersect;
+  }
+  .logo { flex: none; display: flex; align-items: center; justify-content: center; padding: 80px 90px 20px; height: 450px; border-bottom: 6px dashed #d9c5bf; }
+  .logo img { max-width: 620px; max-height: 300px; object-fit: contain; }
+  .texto { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 40px 10px; text-align: center; }
+  .titulo { white-space: nowrap; font: 500 86px/1 Oswald, sans-serif; color: var(--vinho); letter-spacing: 3px; text-transform: uppercase; }
+  .sub { margin-top: 16px; font: 700 32px/1.2 Inter, sans-serif; color: #7d6562; }
+  .prendedor { position: absolute; left: 470px; top: 52px; width: 150px; height: 120px; transform: rotate(-3deg); filter: drop-shadow(0 6px 6px rgba(0,0,0,.35)); }
+  .assinatura { position: absolute; right: 56px; bottom: 54px; display: flex; align-items: center; gap: 16px; transform: rotate(-3deg); }
+  .foto { width: 112px; height: 112px; border-radius: 50%; border: 7px solid var(--creme); background: url('avatar.jpg') center/cover; box-shadow: 0 6px 14px rgba(40,0,0,.35); }
+  .nome { font: 64px/1 Yellowtail, cursive; color: var(--creme); text-shadow: 0 4px 10px rgba(40,0,0,.45); }
+  .nome b { font: 500 70px/1 Oswald, sans-serif; color: var(--ouro); letter-spacing: 2px; }
+  .estrela { position: absolute; left: 70px; bottom: 60px; width: 120px; height: 120px; transform: rotate(10deg); }
+</style>
+</head>
+<body>
+  <div class="bilhete">
+    <div class="logo"><img src="logos/<id da loja>.svg" alt=""></div>
+    <div class="texto"><div class="titulo">__TITULO__</div><div class="sub">__SUB__</div></div>
+  </div>
+  <svg class="prendedor" viewBox="0 0 150 120" aria-hidden="true">
+    <defs><linearGradient id="m" x1="0" x2="1"><stop offset="0" stop-color="#6d6f73"/><stop offset=".45" stop-color="#d7d9dc"/><stop offset="1" stop-color="#77797d"/></linearGradient></defs>
+    <rect x="10" y="62" width="130" height="34" rx="7" fill="url(#m)"/>
+    <rect x="42" y="18" width="66" height="54" rx="8" fill="url(#m)"/>
+    <circle cx="75" cy="32" r="18" fill="#8e9095"/><circle cx="75" cy="32" r="10" fill="#c9cbce"/>
+  </svg>
+  <svg class="estrela" viewBox="-100 -100 200 200" aria-hidden="true">
+    <path fill="#f2b85c" stroke="#f2b85c" stroke-width="3" stroke-linejoin="round" d="M0,-96 L9,-14 L68,-68 L16,-4 L96,6 L14,12 L58,74 L4,18 L-8,92 L-10,16 L-66,62 L-18,4 L-94,-10 L-16,-10 L-62,-70 L-4,-16 Z"/>
+  </svg>
+  <div class="assinatura"><div class="foto"></div><div class="nome">Achadinhos da <b>VIC</b></div></div>
+</body>
+</html>

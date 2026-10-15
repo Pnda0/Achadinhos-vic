@@ -221,6 +221,8 @@ Loja aprovada que não está em `config/awin.json` vai só para o grupo geral; p
 
 **Links curtos:** com o token, o bot pede à Awin o link curto oficial (`tidd.ly/...`) e só o usa depois de conferir que ele leva a um link da Awin com o **seu** id de afiliado (olha só o primeiro redirecionamento, sem abrir a loja). O link curto bom fica guardado em `data/awin-links.json`; se não sair, vale o link longo oficial (`awin1.com/...`), e a falha fica anotada por 24 h para não insistir. Link que já é curto, ou de outro afiliado, nunca é encurtado nem "embrulhado" de novo.
 
+**Arte dos posts de cupom**: cada cupom/promoção da Awin sai com uma imagem da pasta `assets/`: a da loja, com o logo dela em destaque e a assinatura "Achadinhos da VIC" no canto (`cupom-<id>.jpg` / `promo-<id>.jpg`; hoje C&A 17648, Nike 17652 e Riachuelo 86587), ou a genérica "Cupom da VIC" / "Promo da VIC" (`cupom.jpg` / `promo.jpg`) para loja sem arte. Para criar a de uma loja nova: ponha o logo em `assets/logos/<id>.svg`, abra `assets/arte-loja.html` trocando o logo, o título e a frase, e salve um print de 1080×1080 como `cupom-<id>.jpg` (e `promo-<id>.jpg`).
+
 ## 3.14 Confiabilidade: sem post repetido, só produto que vende, histórico de cada oferta
 
 **Uma cópia só do bot.** Duas janelas do `3-iniciar.bat` abertas ao mesmo tempo postavam cada oferta duas vezes (aconteceu em 14/10/2026). Agora o bot segura a porta local `127.0.0.1:47831`; uma segunda cópia mostra *"Já tem um bot rodando neste PC… Feche ESTA janela"* e para. Os comandos que mexem na fila (`coletar`, `links`, `enviar`, `limpar`, `configurar`) também recusam rodar com o bot ligado. A porta é liberada sozinha quando o bot fecha (até em queda de energia). Para trocar a porta: `BOT_PORTA_TRAVA` no `.env`.
