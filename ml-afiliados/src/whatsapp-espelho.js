@@ -16,7 +16,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DATA_DIR, settings } from './config.js';
 import { evento } from './eventos.js';
-import { log, normalizar, sleep } from './util.js';
+import { generoDoProduto } from './genero.js';
+import { marcaDoProduto, preferenciaDeMarca } from './marcas.js';
+import { casaTermo, log, normalizar, sleep } from './util.js';
 
 const ARQUIVO_GRUPOS = path.join(DATA_DIR, 'whatsapp-grupos.json');
 const UMA_HORA = 3_600_000;
@@ -47,6 +49,16 @@ export function ligarPorNome(gruposBot, gruposWhats) {
     else problemas.push(achados.length ? `${g.nome}: há ${achados.length} grupos chamados "${g.whatsapp}"` : `${g.nome}: não achei o grupo "${g.whatsapp}" no WhatsApp do bot`);
   }
   return { ligados, problemas };
+}
+
+/**
+ * A oferta vale para o grupo pelas regras de AGORA (o que saiu no Telegram antes de uma regra nova não passa):
+ * "só marcas" e palavras bloqueadas do grupo. Cupom de loja e caixa de entrada passam no "só marcas".
+ */
+export function valeNoGrupo(p, g) {
+  if (g.soMarcas && p.tipo !== 'cupom' && !p.manual && !marcaDoProduto(p)) return false;
+  const nome = normalizar(p.nome);
+  return !(g.filtros?.palavrasBloqueadas || []).some((w) => casaTermo(nome, w));
 }
 
 /** Horário em que o WhatsApp pode postar (o mesmo do envio do Telegram: 8h às 21h59, fuso do bot). */
@@ -93,15 +105,35 @@ export class EspelhoWhatsApp {
     return links;
   }
 
-  /** A próxima oferta a espelhar, revezando os grupos. Null se nenhum grupo tem oferta nova. */
+  /** As últimas `n` ofertas que foram para o WhatsApp deste grupo (para a regra do masculino). */
+  ultimosNoWhats(grupo, n) {
+    return Object.entries(this.store.data.whatsapp || {})
+      .reverse() // mesma hora: a anotada por último é a mais recente (a ordenação abaixo mantém empates)
+      .filter(([k]) => k.startsWith(`${grupo}:`))
+      .sort((a, b) => String(b[1]).localeCompare(String(a[1])))
+      .slice(0, n)
+      .map(([k]) => this.store.data.produtos[k])
+      .filter(Boolean);
+  }
+
+  /**
+   * A próxima oferta a espelhar, revezando os grupos. Null se nenhum grupo tem oferta nova. Mesmas regras do
+   * Telegram, contadas no WhatsApp: femininas e de marca primeiro, masculino no máximo 1 a cada N posts
+   * ("preferirFeminino"), "só marcas" e palavras bloqueadas.
+   */
   proxima() {
     const grupos = this.carregarGrupos().filter((g) => g.ativo !== false && this.jids[g.nome]);
     const ja = (this.store.data.whatsapp ??= {});
+    const marca = preferenciaDeMarca();
     for (let i = 0; i < grupos.length; i++) {
       const g = grupos[(this.vez + i) % grupos.length];
+      const cadaN = g.preferirFeminino ? (Number.isInteger(g.preferirFeminino) && g.preferirFeminino >= 2 ? g.preferirFeminino : 3) : 0;
+      const semMasculino = cadaN && this.ultimosNoWhats(g.nome, cadaN - 1).some((x) => generoDoProduto(x) === 'm');
+      const nota = (x) => (cadaN ? ({ f: 2, m: 0 }[generoDoProduto(x)] ?? 1) : 0) + marca(x);
       const p = this.store
         .list((x) => x.grupo === g.nome && x.status === 'ENVIADO' && x.legenda && x.enviadoEm && this.agora() - new Date(x.enviadoEm).getTime() < UMA_HORA && !ja[`${g.nome}:${x.id}`])
-        .sort((a, b) => String(b.enviadoEm).localeCompare(String(a.enviadoEm)))[0];
+        .filter((x) => valeNoGrupo(x, g) && !(semMasculino && generoDoProduto(x) === 'm'))
+        .sort((a, b) => nota(b) - nota(a) || String(b.enviadoEm).localeCompare(String(a.enviadoEm)))[0];
       if (p) {
         this.vez = (this.vez + i + 1) % grupos.length;
         return { grupo: g, p };

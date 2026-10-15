@@ -98,3 +98,26 @@ test('espelho: falha não repete a oferta; fora do horário não posta; foto do 
   assert.equal(dentroDoHorario(new Date('2026-10-15T08:00:00-03:00')), true);
   assert.equal(dentroDoHorario(new Date('2026-10-15T22:00:00-03:00')), false);
 });
+
+test('espelho: mesmas regras do Telegram no WhatsApp — feminino e marca primeiro, 1 masculino a cada N, só marcas, bloqueadas', async () => {
+  const store = new Store(path.join(pasta(), 'db.json'));
+  const enviados = [];
+  const sender = { typing: async () => {}, listGroups: async () => [{ jid: 'P@g.us', nome: 'Perfumes' }], sendImage: async (jid, img, t) => enviados.push(t), sendText: async (jid, t) => enviados.push(t) };
+  const grupos = [{ nome: 'Perfumes', ativo: true, whatsapp: 'Perfumes', preferirFeminino: 3, soMarcas: true, filtros: { palavrasBloqueadas: ['refil'] } }];
+  const e = new EspelhoWhatsApp({ sender, store, carregarGrupos: () => grupos, arquivoGrupos: path.join(pasta(), 'wa.json'), agora: () => MEIO_DIA, esperar: async () => {} });
+  await e.ligarGrupos();
+  let min = 1;
+  const publicar = (id, nome) => {
+    store.data.produtos[`Perfumes:${id}`] = { id, grupo: 'Perfumes', nome, status: 'ENVIADO', legenda: nome, imagem: null, enviadoEm: new Date(MEIO_DIA - min++ * 60_000).toISOString() };
+  };
+  publicar('M1', 'Perfume Rabanne Invictus Masculino'); // o mais novo
+  publicar('M2', 'Perfume Carolina Herrera Bad Boy');
+  publicar('X1', 'Perfume Genérico Floral Feminino'); // sem marca da lista
+  publicar('R1', 'Refil Perfume Dior Feminino'); // palavra bloqueada
+  publicar('F1', 'Perfume Lattafa Yara');
+  publicar('N1', 'Perfume Dior Unissex');
+  for (let i = 0; i < 4; i++) await e.enviarUma();
+  assert.deepEqual(enviados, ['Perfume Lattafa Yara', 'Perfume Dior Unissex', 'Perfume Rabanne Invictus Masculino']);
+  // o próximo masculino espera: já foi 1 nos últimos 2
+  assert.equal(await e.enviarUma(), null);
+});
