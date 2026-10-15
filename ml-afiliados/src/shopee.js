@@ -17,10 +17,12 @@ const HOST_SHOPEE = /(^|\.)(shopee\.com\.br|shope\.ee|shp\.ee)$/;
 const HOST_CURTO = /^(s\.shopee\.com\.br|shope\.ee|br\.shp\.ee|shp\.ee)$/;
 
 export function credenciaisShopee(env = process.env) {
-  const um = (...nomes) => nomes.map((n) => env[n]?.trim()).find(Boolean) || '';
+  // Maiúsculas não importam; "shope_appID" e "Senha_shopee" são os nomes que o dono usou no .env (15/10/2026).
+  const chaves = Object.keys(env);
+  const um = (...nomes) => nomes.map((n) => env[chaves.find((k) => k.toLowerCase() === n.toLowerCase())]?.trim()).find(Boolean) || '';
   return {
-    appId: um('SHOPEE_APP_ID', 'SHOPEE_APPID', 'SHOPEE_PARTNER_ID', 'SHOPEE_ID'),
-    secret: um('SHOPEE_SECRET', 'SHOPEE_APP_SECRET', 'SHOPEE_API_KEY', 'SHOPEE_KEY', 'SHOPEE_SENHA'),
+    appId: um('SHOPEE_APP_ID', 'SHOPEE_APPID', 'SHOPE_APPID', 'SHOPEE_PARTNER_ID', 'SHOPEE_ID'),
+    secret: um('SHOPEE_SECRET', 'SHOPEE_APP_SECRET', 'SHOPEE_API_KEY', 'SHOPEE_KEY', 'SHOPEE_SENHA', 'SENHA_SHOPEE'),
   };
 }
 

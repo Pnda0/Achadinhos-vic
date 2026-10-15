@@ -16,6 +16,7 @@ const tmpStore = () => new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(),
 test('Shopee: credenciais do .env, links e ids do produto', () => {
   assert.deepEqual(credenciaisShopee({ SHOPEE_APP_ID: ' 123 ', SHOPEE_SECRET: 'abc' }), { appId: '123', secret: 'abc' });
   assert.deepEqual(credenciaisShopee({ SHOPEE_APPID: '9', SHOPEE_API_KEY: 'k' }), { appId: '9', secret: 'k' });
+  assert.deepEqual(credenciaisShopee({ shope_appID: '7', Senha_shopee: 's' }), { appId: '7', secret: 's' }); // os nomes do .env do dono
   assert.equal(new Shopee({ appId: '', secret: 'x' }).ligada(), false);
 
   const texto = 'Olha https://s.shopee.com.br/AbC123). e https://meli.la/x e https://shopee.com.br/Vestido-Midi-i.111.222?sp_atk=1';
