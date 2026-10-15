@@ -18,7 +18,10 @@
       "promobit",
       "gatunopromos",
       "promoloucas",
-      "oqcomprei",
+      {
+        "canal": "oqcomprei",
+        "fotoDoCanal": false
+      },
       {
         "canal": "topfitachados",
         "destino": "Fitness"
@@ -29,7 +32,8 @@
       },
       {
         "canal": "perfumepromo",
-        "destino": "Perfumes"
+        "destino": "Perfumes",
+        "fotoDoCanal": false
       }
     ],
     "destinos": [

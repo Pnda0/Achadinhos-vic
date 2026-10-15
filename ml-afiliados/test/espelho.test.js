@@ -415,3 +415,14 @@ test('canal com "copiarTexto": post do ML sai IGUAL ao do canal (foto dele, link
   await enviarProximo(destino, { nome: 'Perfumes', jid: 'PERF@g.us', filtros: { diasSemRepetir: 5 } }, m.store);
   assert.deepEqual(postados, [['https://cdn.telesco.pe/file/arte.jpg', p.textoPronto]]);
 });
+
+test('canal com "fotoDoCanal": false (foto com a marca do canal): o post copiado sai com a foto do anúncio', async () => {
+  const agora = { t: 1_800_000_000_000 };
+  const texto = '🔥 Perfume Lattafa Asad 100ml\n💰 Por R$ 199\n👉 https://meli.la/1JC7ZMh';
+  const msg = [{ id: 'c9', jid: 'A@g.us', t: seg(agora, 1), tipo: 'image', texto, textoVisivel: texto, links: ['https://meli.la/1JC7ZMh'], foto: 'https://cdn.telesco.pe/file/com-selo-do-canal.jpg' }];
+  const resolver = async () => ({ ...parseSocialPage(fx('social-meli-la.html')), nome: 'Perfume Lattafa Asad 100ml', imagem: 'https://http2.mlstatic.com/foto-do-anuncio.jpg' });
+  const m = montar({ msgs: () => msg, agora, resolver });
+  Object.assign(m.espelho.fontes.get('A@g.us'), { copiarTexto: true, exigirVendas: false, fotoDoCanal: false, destinos: [{ grupo: 'Geral', palavras: null }] });
+  assert.equal((await m.espelho.tick()).enfileiradas, 1);
+  assert.equal(m.store.list()[0].imagem, 'https://http2.mlstatic.com/foto-do-anuncio.jpg');
+});

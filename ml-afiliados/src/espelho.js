@@ -23,6 +23,12 @@ import { casaTermo, log, normalizar, sleep } from './util.js';
 
 const MIN = 60_000;
 
+/**
+ * A foto do post, se pode ser usada. Canal com "fotoDoCanal": false (fontes.json) põe a marca dele nas fotos
+ * (ex.: o selo "promoção verificada por @oqcomprei", visto em 15/10/2026): aí vale a foto do anúncio.
+ */
+export const fotoDaMensagem = (m, fonte) => (fonte?.fotoDoCanal === false ? null : m.foto || null);
+
 /** O preço escrito na mensagem é o mesmo do anúncio? (o canal arredonda: até R$ 1 ou 1% de diferença) */
 export const precoBate = (daMensagem, doAnuncio) => !!daMensagem && !!doAnuncio && Math.abs(daMensagem - doAnuncio) <= Math.max(1, doAnuncio * 0.01);
 
@@ -209,7 +215,7 @@ export class Espelho {
         manual: !!fonte.manual, // caixa de entrada: a regra de vendas não vale (nem na hora de postar)
         grupo: g.nome,
         categoria: `Espelho: ${fonte.nomeWhats || fonte.nome}`,
-        imagem: m.foto || base.imagem || null, // sem foto na mensagem: a da loja (Shopee) ou a prévia de link
+        imagem: fotoDaMensagem(m, fonte) || base.imagem || null, // sem foto (ou foto com a marca do canal): a da loja ou a prévia de link
         precoAtual: d.precoAtual,
         precoOriginal: d.precoOriginal,
         precoObs: d.precoObs,
@@ -468,7 +474,7 @@ export class Espelho {
       const categoria = `Espelho: ${fonte.nomeWhats || fonte.nome}`;
       const aceitos = [];
       for (const g of destinos.alvos) {
-        const produto = { ...base, grupo: g.nome, categoria, origem: 'espelho', semRegraVendas: true, imagem: m.foto || base.imagem };
+        const produto = { ...base, grupo: g.nome, categoria, origem: 'espelho', semRegraVendas: true, imagem: fotoDaMensagem(m, fonte) || base.imagem };
         if (this.store.conhecido(produto.id, g.nome)) {
           motivos.push('já está na fila');
           continue;
