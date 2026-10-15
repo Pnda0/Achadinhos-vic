@@ -12,14 +12,14 @@ export const pastaSite = (base = PASTA_ANALYTICS) => path.join(base, 'site');
 
 const CSS = `
 /* cores da marca (logo e site): vinho, rosa, creme e dourado */
-:root{color-scheme:light;--bg:#f9f5ec;--surface:#fffdf8;--line:#ecdcd6;--text:#2b1210;--text2:#6e5552;--muted:#8f7773;--marca:#7a1712;--rosa:#c25f80;--ouro:#f2b85c;--bar:#7a1712;--bar-hover:#a8261d;--warn:#9a5b00;--good:#2f7a3a}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#1a0d0c;--surface:#25130f;--line:#3d2421;--text:#f9f5ec;--text2:#dcc6c1;--muted:#ab938e;--marca:#e08ca6;--rosa:#e08ca6;--ouro:#f2b85c;--bar:#d17b96;--bar-hover:#e9a3b9;--warn:#f2b85c;--good:#6fcf86}}
-:root[data-theme="dark"]{color-scheme:dark;--bg:#1a0d0c;--surface:#25130f;--line:#3d2421;--text:#f9f5ec;--text2:#dcc6c1;--muted:#ab938e;--marca:#e08ca6;--rosa:#e08ca6;--ouro:#f2b85c;--bar:#d17b96;--bar-hover:#e9a3b9;--warn:#f2b85c;--good:#6fcf86}
+:root{color-scheme:light;--bg:#f9f5ec;--surface:#fffdf8;--line:#ecdcd6;--text:#2b1210;--text2:#6e5552;--muted:#75605c;--marca:#7a1712;--rosa:#c25f80;--rosa-texto:#a8466a;--ouro:#f2b85c;--bar:#7a1712;--bar-hover:#a8261d;--warn:#9a5b00;--good:#2f7a3a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#1a0d0c;--surface:#25130f;--line:#3d2421;--text:#f9f5ec;--text2:#dcc6c1;--muted:#ab938e;--marca:#e08ca6;--rosa:#e08ca6;--rosa-texto:#e08ca6;--ouro:#f2b85c;--bar:#d17b96;--bar-hover:#e9a3b9;--warn:#f2b85c;--good:#6fcf86}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#1a0d0c;--surface:#25130f;--line:#3d2421;--text:#f9f5ec;--text2:#dcc6c1;--muted:#ab938e;--marca:#e08ca6;--rosa:#e08ca6;--rosa-texto:#e08ca6;--ouro:#f2b85c;--bar:#d17b96;--bar-hover:#e9a3b9;--warn:#f2b85c;--good:#6fcf86}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
 main{max-width:1100px;margin:0 auto;padding:16px}
 h1{font-size:20px;margin:0}
-.marca{display:block;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--rosa)}
+.marca{display:block;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--rosa-texto)}
 .marca::after{content:" ✦";color:var(--ouro)}
 h2{font-size:17px;margin:28px 0 10px}
 h3{font-size:18px;margin:0}
