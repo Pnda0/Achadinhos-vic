@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yellowtail&family=Oswald:wght@500;600&display=swap">
+<style>
+  /* Foto dos grupos (WhatsApp/Telegram): ?n=fitness|beleza|perfumes. Tudo dentro do círculo central (o app recorta). */
+  :root { --vinho: #7a1712; --rosa: #d17b96; --creme: #f9f5ec; --ouro: #f2b85c; }
+  * { margin: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1080px; overflow: hidden; }
+  body { position: relative; background: repeating-linear-gradient(180deg, var(--rosa) 0 120px, var(--vinho) 120px 240px); }
+  .disco {
+    position: absolute; left: 90px; top: 90px; width: 900px; height: 900px; border-radius: 50%;
+    background: var(--creme); box-shadow: 0 0 0 18px var(--ouro), 0 24px 50px rgba(40, 0, 0, .45);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .marca { font: 92px/1 Yellowtail, cursive; color: var(--vinho); margin-top: 10px; }
+  .marca b { font: 600 92px/1 Oswald, sans-serif; color: var(--ouro); -webkit-text-stroke: 3px var(--vinho); margin-left: 22px; }
+  .icone { width: 330px; height: 330px; margin: 18px 0 10px; }
+  .nicho { font: 600 150px/1 Oswald, sans-serif; letter-spacing: 6px; text-transform: uppercase; color: var(--vinho); }
+  .estrela { position: absolute; width: 150px; height: 150px; right: 70px; top: 80px; }
+</style>
+</head>
+<body>
+<div class="disco">
+  <div class="marca">Achadinhos<b>VIC</b></div>
+  <svg class="icone" id="icone" viewBox="0 0 200 200"></svg>
+  <div class="nicho" id="nicho"></div>
+</div>
+<svg class="estrela" viewBox="0 0 100 100"><path d="M50 0 L58 38 L100 50 L58 62 L50 100 L42 62 L0 50 L42 38 Z" fill="#f2b85c" stroke="#7a1712" stroke-width="3"/></svg>
+<script>
+  const V = '#7a1712', R = '#d17b96', O = '#f2b85c';
+  const ICONES = {
+    // halter
+    fitness: `<g stroke="${V}" stroke-width="6" stroke-linejoin="round">
+      <rect x="62" y="92" width="76" height="16" rx="6" fill="${O}"/>
+      <rect x="34" y="58" width="24" height="84" rx="8" fill="${R}"/><rect x="142" y="58" width="24" height="84" rx="8" fill="${R}"/>
+      <rect x="14" y="74" width="20" height="52" rx="7" fill="${V}"/><rect x="166" y="74" width="20" height="52" rx="7" fill="${V}"/></g>`,
+    // batom
+    beleza: `<g stroke="${V}" stroke-width="6" stroke-linejoin="round">
+      <path d="M78 96 L78 54 Q78 30 100 18 L122 40 L122 96 Z" fill="${R}"/>
+      <rect x="70" y="96" width="60" height="26" rx="4" fill="${O}"/>
+      <rect x="64" y="122" width="72" height="66" rx="8" fill="${V}"/></g>`,
+    // frasco de perfume
+    perfumes: `<g stroke="${V}" stroke-width="6" stroke-linejoin="round">
+      <rect x="86" y="14" width="28" height="22" rx="4" fill="${O}"/>
+      <rect x="92" y="36" width="16" height="18" fill="${V}"/>
+      <rect x="40" y="54" width="120" height="132" rx="26" fill="${R}"/>
+      <path d="M64 86 Q64 74 76 74 L92 74" fill="none" stroke="#f9f5ec" stroke-width="10" stroke-linecap="round"/>
+      <circle cx="100" cy="128" r="22" fill="${O}"/></g>`,
+  };
+  const n = (new URLSearchParams(location.search).get('n') || 'fitness').toLowerCase();
+  document.getElementById('icone').innerHTML = ICONES[n] || ICONES.fitness;
+  document.getElementById('nicho').textContent = n;
+  if (n.length > 7) document.getElementById("nicho").style.fontSize = "128px";
+</script>
+</body>
+</html>
