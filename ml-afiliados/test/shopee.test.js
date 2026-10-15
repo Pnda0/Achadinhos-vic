@@ -112,8 +112,8 @@ test('busca própria na Shopee: marcas da lista + palavras, só produto forte, r
     ligada: () => true,
     buscar: async (termo) => (buscados.push(termo), [item('1'), item('2', { vendas: 10 }), item('3', { nota: 3.9 }), item('4', { descontoPct: 5 }), item('5', { linkAfiliado: null })]),
   };
-  const cfg = { buscasPorColeta: 2, vendasMinimas: 50, notaMinima: 4.5, descontoMinimo: 15, grupos: { Beleza: { buscas: ['a', 'b', 'c'] }, Geral: { buscas: ['d'] } } };
-  const grupos = [{ nome: 'Beleza', ativo: true }, { nome: 'Geral', ativo: false }];
+  const cfg = { buscasPorColeta: 2, vendasMinimas: 50, notaMinima: 4.5, descontoMinimo: 15, grupos: { Beleza: { buscas: ['a', 'b', 'c'] }, Geral: { buscas: ['d'] }, Perfumes: { ativo: false, buscas: ['p'] } } };
+  const grupos = [{ nome: 'Beleza', ativo: true }, { nome: 'Geral', ativo: false }, { nome: 'Perfumes', ativo: true }];
   const vez = {};
   const r = await buscarOfertasShopee({ grupos, api, cfg, vez, esperar: async () => {} });
   assert.deepEqual(buscados, ['a', 'b']); // Geral desligado não busca

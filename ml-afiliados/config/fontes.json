@@ -8,32 +8,14 @@
   "fontes": [],
   "_comentarioCanais": "CANAIS DO TELEGRAM (desde 15/10/2026, a pedido do dono, a fonte principal): canais PÚBLICOS de ofertas que o bot lê sozinho (página t.me/s/<canal>). 'copiarTexto': true = o post sai IGUAL ao do canal (texto e foto), só com os links do Mercado Livre, da Amazon e das lojas da Awin trocados pelos do dono; convites e @ do outro canal e links de outras lojas (AliExpress...) saem (os da Shopee são trocados pelos do dono quando há SHOPEE_APP_ID/SHOPEE_SECRET no .env). 'exigirVendas': false = sem a regra de mais de 50 vendas (o espelho não lê vendas; o dono pediu para copiar tudo). Continuam valendo: nicho do grupo, palavras bloqueadas e não repetir. 'destinos' = para quais grupos vão as ofertas dos canais gerais; com 'nicho', só entra naquele grupo se o texto casar com as palavras do nicho (config/nichos.json). Um canal pode ter opções próprias: {\"canal\": \"nome\", \"destino\": \"Perfumes\", \"maxPorHora\": 12, ...}. 'maxPorHora' = quantas ofertas desses canais entram por hora EM CADA grupo. Amazon só entra com AMAZON_PARTNER_TAG no .env. Depois de mexer aqui, reinicie o bot.",
   "canaisTelegram": {
-    "ativo": false,
+    "ativo": true,
     "soAmazon": false,
     "maxPorHora": 20,
     "intervaloSegundos": 60,
     "canais": [
-      "urubupromo",
-      "xetdaspromocoes",
-      "promobit",
-      "gatunopromos",
-      "promoloucas",
-      {
-        "canal": "oqcomprei",
-        "fotoDoCanal": false
-      },
-      {
-        "canal": "topfitachados",
-        "destino": "Fitness"
-      },
       {
         "canal": "promobigodeperfumes",
         "destino": "Perfumes"
-      },
-      {
-        "canal": "perfumepromo",
-        "destino": "Perfumes",
-        "fotoDoCanal": false
       }
     ],
     "destinos": [
@@ -56,6 +38,22 @@
     "lojasParceiras": true,
     "copiarTexto": true,
     "exigirVendas": false,
-    "fotoDoCanal": true
+    "fotoDoCanal": true,
+    "canaisPausados": [
+      "urubupromo",
+      "xetdaspromocoes",
+      "promobit",
+      "gatunopromos",
+      "promoloucas",
+      {
+        "canal": "oqcomprei",
+        "fotoDoCanal": false
+      },
+      {
+        "canal": "topfitachados",
+        "destino": "Fitness"
+      }
+    ],
+    "_comentarioPausados": "15/10/2026 (noite), pedido do dono: o bot busca as promoções ele mesmo (ML, Shopee, Awin) e só o Perfumes copia, e só do @promobigodeperfumes (\"esquece esses canais de perfume\"; o @perfumepromo saiu). Os canais gerais ficam aqui guardados; para voltar um, mova para \"canais\" e reinicie o bot."
   }
 }

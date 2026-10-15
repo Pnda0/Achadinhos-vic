@@ -24,7 +24,7 @@ export async function buscarOfertasShopee({ grupos, api = new Shopee(), cfg = lo
   const produtos = [];
   const categorias = {};
   const marcas = loadMarcas();
-  for (const g of grupos.filter((x) => x.ativo && cfg.grupos?.[x.nome])) {
+  for (const g of grupos.filter((x) => x.ativo && cfg.grupos?.[x.nome] && cfg.grupos[x.nome].ativo !== false)) {
     const lista = buscasDoGrupo(cfg.grupos[g.nome], marcas);
     if (!lista.length) continue;
     const n = Math.min(lista.length, cfg.buscasPorColeta || 12);

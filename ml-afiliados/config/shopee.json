@@ -9,15 +9,66 @@
   "grupos": {
     "Geral": {
       "buscas": [
-        "vestido feminino", "blusa feminina", "cropped feminino", "calça feminina", "saia feminina", "conjunto feminino",
-        "pijama feminino", "lingerie", "biquíni", "sandália feminina", "tênis feminino", "bolsa feminina", "carteira feminina",
-        "bijuteria", "brinco feminino", "colar feminino", "relógio feminino", "óculos de sol feminino",
-        "organizador de maquiagem", "espelho com led", "secador de cabelo", "escova alisadora",
-        "kit skincare", "body splash", "garrafa térmica", "copo térmico stanley", "luminária", "jogo de cama", "manta sofá"
+        "vestido feminino",
+        "blusa feminina",
+        "cropped feminino",
+        "calça feminina",
+        "saia feminina",
+        "conjunto feminino",
+        "pijama feminino",
+        "lingerie",
+        "biquíni",
+        "sandália feminina",
+        "tênis feminino",
+        "bolsa feminina",
+        "carteira feminina",
+        "bijuteria",
+        "brinco feminino",
+        "colar feminino",
+        "relógio feminino",
+        "óculos de sol feminino",
+        "organizador de maquiagem",
+        "espelho com led",
+        "secador de cabelo",
+        "escova alisadora",
+        "kit skincare",
+        "body splash",
+        "garrafa térmica",
+        "copo térmico stanley",
+        "luminária",
+        "jogo de cama",
+        "manta sofá"
       ]
     },
-    "Fitness": { "marcas": ["fitness"], "buscas": ["legging fitness", "top fitness", "conjunto academia feminino", "creatina", "whey protein"] },
-    "Beleza": { "marcas": ["cabelo", "maquiagem", "skincare"] },
-    "Perfumes": { "marcas": ["perfumes"], "buscas": ["perfume feminino importado", "perfume árabe feminino"] }
+    "Fitness": {
+      "marcas": [
+        "fitness"
+      ],
+      "buscas": [
+        "legging fitness",
+        "top fitness",
+        "conjunto academia feminino",
+        "creatina",
+        "whey protein"
+      ]
+    },
+    "Beleza": {
+      "marcas": [
+        "cabelo",
+        "maquiagem",
+        "skincare"
+      ]
+    },
+    "Perfumes": {
+      "marcas": [
+        "perfumes"
+      ],
+      "buscas": [
+        "perfume feminino importado",
+        "perfume árabe feminino"
+      ],
+      "ativo": false,
+      "_comentario": "Desligado em 15/10/2026: o Perfumes só copia o @promobigodeperfumes (pedido do dono)."
+    }
   }
 }
