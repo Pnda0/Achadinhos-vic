@@ -100,3 +100,31 @@ test('canal com "copiarTexto": post da Shopee sai igual ao do canal, com o link 
   const sem = new Espelho({ sender: { lerMensagens: async () => [{ ...msg, id: 'tgc-x/2' }] }, store: tmpStore(), affiliate: {}, fontes: [{ nome: '@x', jid: 'canal:x', destino: 'Geral', copiarTexto: true }], grupos: [{ nome: 'Geral', filtros: {} }], agora: () => agora, esperar: async () => {} });
   assert.deepEqual((await sem.tick()).ignoradas, { 'sem link do ML/Amazon': 1 });
 });
+
+test('busca própria na Shopee: marcas da lista + palavras, só produto forte, revezando as buscas', async () => {
+  const { buscarOfertasShopee, buscasDoGrupo } = await import('../src/shopee-busca.js');
+  const marcas = { cabelo: ['Wella', { marca: "L'Oréal", termos: ['loreal'] }], perfumes: ['Dior'] };
+  assert.deepEqual(buscasDoGrupo({ marcas: ['cabelo'], buscas: ['Wella', 'escova'] }, marcas), ['Wella', "L'Oréal", 'escova']);
+
+  const buscados = [];
+  const item = (id, extra = {}) => ({ itemId: id, shopId: '9', nome: `Shampoo Wella ${id}`, precoAtual: 50, descontoPct: 30, vendas: 500, vendidos: '500 vendidos', nota: 4.8, imagem: 'https://cf/x.jpg', url: `https://shopee.com.br/product/9/${id}`, linkAfiliado: `https://s.shopee.com.br/${id}`, ...extra });
+  const api = {
+    ligada: () => true,
+    buscar: async (termo) => (buscados.push(termo), [item('1'), item('2', { vendas: 10 }), item('3', { nota: 3.9 }), item('4', { descontoPct: 5 }), item('5', { linkAfiliado: null })]),
+  };
+  const cfg = { buscasPorColeta: 2, vendasMinimas: 50, notaMinima: 4.5, descontoMinimo: 15, grupos: { Beleza: { buscas: ['a', 'b', 'c'] }, Geral: { buscas: ['d'] } } };
+  const grupos = [{ nome: 'Beleza', ativo: true }, { nome: 'Geral', ativo: false }];
+  const vez = {};
+  const r = await buscarOfertasShopee({ grupos, api, cfg, vez, esperar: async () => {} });
+  assert.deepEqual(buscados, ['a', 'b']); // Geral desligado não busca
+  assert.deepEqual(r.produtos.map((p) => p.id), ['SHP-1', 'SHP-1']);
+  assert.equal(r.produtos[0].loja, 'shopee');
+  assert.equal(r.produtos[0].linkAfiliado, 'https://s.shopee.com.br/1');
+  assert.equal(r.produtos[0].categoria, 'Shopee: Beleza');
+  assert.deepEqual(r.categorias['Shopee: Beleza'], { encontrados: 10, aceitos: 0 });
+  await buscarOfertasShopee({ grupos, api, cfg, vez, esperar: async () => {} });
+  assert.deepEqual(buscados.slice(2), ['c', 'a']); // a próxima coleta continua de onde parou
+
+  const sem = await buscarOfertasShopee({ grupos, api: { ligada: () => false }, cfg });
+  assert.match(sem.motivo, /SHOPEE_APP_ID/);
+});

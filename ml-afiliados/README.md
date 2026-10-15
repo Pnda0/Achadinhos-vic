@@ -240,6 +240,10 @@ Desde 15/10/2026 (`src/shopee.js`), post de canal com link da Shopee entra na fi
 - O post sai igual ao do canal, como os do ML; sem a regra de vendas. Post do ML que também tem link da Shopee: os dois são trocados.
 - Sem as credenciais, nada muda: o link da Shopee continua saindo do post.
 
+## 3.13e Busca própria na Shopee
+
+Desde 15/10/2026 (`src/shopee-busca.js`, `config/shopee.json`), em cada busca (`CRON_COLETA`) o bot procura na Shopee pela API de afiliados: no Fitness, Beleza e Perfumes, uma busca por marca da lista de cada nicho (`config/marcas.json`); no Geral, palavras femininas (vestido, bolsa, bijuteria...). Os mais vendidos primeiro, e só entra com **50+ vendas, nota 4,5+ e 15%+ de desconto** (ajustável no arquivo), além dos filtros do grupo. Cada coleta faz `buscasPorColeta` buscas por grupo, revezando a lista. O link já vem da API com o seu id de afiliado. Precisa de `SHOPEE_APP_ID`/`SHOPEE_SECRET` no `.env`.
+
 ## 3.13d Marcas primeiro
 
 `config/marcas.json` (listas da Victória, 15/10/2026: cabelo, maquiagem, skincare, perfumes, fitness) vale em todos os grupos. Oferta com uma dessas marcas no nome ou no texto do post ganha `peso` (1,5) na fila, somado à preferência feminina: feminina de marca > neutra de marca > feminina sem marca > neutra sem marca. O limite de masculino (1 a cada N) continua. No espelho, oferta de marca pode entrar até o dobro do `maxPorHora`. **Só marcas**: grupo com `"soMarcas": true` em `config/grupos.json` (hoje Fitness, Beleza e Perfumes, escolha do dono em 15/10/2026) só recebe produto de marca da lista, na busca e de novo na hora de postar (cupom de loja e caixa de entrada passam). Cada lista também vale como palavra do nicho (`"nichos"` em marcas.json): Elseve entra no Beleza sem "shampoo" no nome. Para incluir uma marca, acrescente na lista e reinicie o bot. Marca escrita de outro jeito: `{"marca": "Nome", "termos": ["jeito 1", "jeito 2"]}` (`src/marcas.js`).

@@ -16,6 +16,7 @@ test('histórico por produto: cada etapa deixa rastro, sem link nem dado sensív
   const s = new Store(path.join(path.dirname(ARQ), 'db.json'));
   const base = { grupo: 'Geral', precoAtual: 99, descontoPct: 50, nota: 4.7, imagem: 'https://img/x.jpg' };
   const r = await coletar(s, {
+    shopee: async () => ({ produtos: [], categorias: {}, motivo: "desligada (teste)" }),
     categoriasML: [{ grupo: 'Geral', nome: 'A', url: 'https://ml/ofertas', paginas: 1, ativo: true }],
     raspar: async () => [
       { ...base, id: 'MLB10', nome: 'Fone Bom', url: 'https://p/10', vendidos: '+1000 vendidos' },

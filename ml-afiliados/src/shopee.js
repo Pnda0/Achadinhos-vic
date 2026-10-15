@@ -55,6 +55,29 @@ export function idsDoLinkShopee(url) {
 
 export const urlDoProdutoShopee = ({ shopId, itemId }) => `https://shopee.com.br/product/${shopId}/${itemId}`;
 
+const CAMPOS = 'itemId shopId productName price priceMin priceMax priceDiscountRate imageUrl sales ratingStar shopName productLink offerLink';
+
+/** Um item da API no formato do bot (vendas em texto, como o rótulo do ML). */
+export function produtoDaShopee(n) {
+  const preco = Number(n.priceMin || n.price) || null;
+  const desconto = Number(n.priceDiscountRate) || null;
+  return {
+    itemId: n.itemId != null ? String(n.itemId) : null,
+    shopId: n.shopId != null ? String(n.shopId) : null,
+    nome: n.productName || null,
+    precoAtual: preco,
+    precoOriginal: preco && desconto ? Math.round((preco / (1 - desconto / 100)) * 100) / 100 : null,
+    descontoPct: desconto,
+    imagem: n.imageUrl || null,
+    vendas: Number(n.sales) || 0,
+    vendidos: Number(n.sales) > 0 ? `${Number(n.sales)} vendidos` : null,
+    nota: Number(n.ratingStar) || null,
+    lojaNome: n.shopName || null,
+    url: n.productLink || null,
+    linkAfiliado: n.offerLink || null,
+  };
+}
+
 export class Shopee {
   constructor({ appId, secret, fetchImpl = fetch, agora = () => Date.now() } = credenciaisShopee()) {
     this.appId = appId || '';
@@ -95,23 +118,18 @@ export class Shopee {
 
   /** Dados do produto (ou null): { nome, precoAtual, precoOriginal, descontoPct, imagem, vendidos, nota, lojaNome }. */
   async produto({ shopId, itemId }) {
-    const d = await this.graphql(
-      `{ productOfferV2(shopId: ${Number(shopId)}, itemId: ${Number(itemId)}, limit: 1) { nodes { itemId productName price priceMin priceMax priceDiscountRate imageUrl sales ratingStar shopName } } }`
-    );
+    const d = await this.graphql(`{ productOfferV2(shopId: ${Number(shopId)}, itemId: ${Number(itemId)}, limit: 1) { nodes { ${CAMPOS} } } }`);
     const n = d.productOfferV2?.nodes?.[0];
-    if (!n) return null;
-    const preco = Number(n.priceMin || n.price) || null;
-    const desconto = Number(n.priceDiscountRate) || null;
-    return {
-      nome: n.productName || null,
-      precoAtual: preco,
-      precoOriginal: preco && desconto ? Math.round((preco / (1 - desconto / 100)) * 100) / 100 : null,
-      descontoPct: desconto,
-      imagem: n.imageUrl || null,
-      vendidos: Number(n.sales) > 0 ? `${Number(n.sales)} vendidos` : null, // texto, como o rótulo do ML
-      nota: Number(n.ratingStar) || null,
-      lojaNome: n.shopName || null,
-    };
+    return n ? produtoDaShopee(n) : null;
+  }
+
+  /**
+   * Busca por palavra (a busca própria, src/shopee-busca.js): os mais vendidos primeiro (sortType 2).
+   * Cada item já vem com `offerLink`, o link de afiliado do dono.
+   */
+  async buscar(palavra, { limite = 20, ordem = 2 } = {}) {
+    const d = await this.graphql(`{ productOfferV2(keyword: ${JSON.stringify(String(palavra))}, sortType: ${Number(ordem)}, page: 1, limit: ${Number(limite)}) { nodes { ${CAMPOS} } } }`);
+    return (d.productOfferV2?.nodes || []).map(produtoDaShopee);
   }
 
   /**

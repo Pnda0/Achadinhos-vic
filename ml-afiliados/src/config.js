@@ -13,6 +13,15 @@ export function loadCategorias() {
   return readJson('config/categorias.json');
 }
 
+/** Busca própria na Shopee (config/shopee.json, src/shopee-busca.js). Sem o arquivo: desligada. */
+export function loadShopee() {
+  try {
+    return readJson('config/shopee.json');
+  } catch {
+    return { ativo: false };
+  }
+}
+
 /** Marcas que saem primeiro (config/marcas.json, src/marcas.js). Sem o arquivo: nenhuma. */
 export function loadMarcas() {
   try {

@@ -32,7 +32,7 @@ export function origemDe(p) {
 export function fonteDe(p) {
   const cat = String(p.categoria || '');
   if (p.origem === 'espelho') return cat.replace(/^Espelho:\s*/, '') || 'Espelho';
-  if (/^(Awin|Amazon):/.test(cat)) return cat;
+  if (/^(Awin|Amazon|Shopee):/.test(cat)) return cat;
   if (p.tipo === 'cupom' || p.loja === 'awin') return `Awin: ${p.lojaNome || 'loja parceira'}`;
   if (p.loja === 'amazon') return 'Amazon';
   return cat ? `Mercado Livre: ${cat}` : 'Mercado Livre';

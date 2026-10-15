@@ -239,6 +239,7 @@ test('Coleta: grupo em espera não é buscado e a mesma página de ofertas é ba
   const baixadas = [];
   const raspar = async (cat) => (baixadas.push(cat.url), [{ id: 'MLB1', nome: 'Fone Bluetooth', url: 'https://p/1', precoAtual: 99, descontoPct: 40, nota: 4.8, grupo: cat.grupo, categoria: cat.nome }]);
   const r = await coletar(tmpStore(), {
+    shopee: async () => ({ produtos: [], categorias: {}, motivo: "desligada (teste)" }),
     categoriasML: [
       { grupo: 'Geral', nome: 'A', url: 'https://ml/ofertas', paginas: 1, ativo: true },
       { grupo: 'Geral', nome: 'B', url: 'https://ml/ofertas', paginas: 1, ativo: true },

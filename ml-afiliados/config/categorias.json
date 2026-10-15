@@ -3,70 +3,70 @@
     "grupo": "Geral",
     "nome": "Ofertas Relâmpago",
     "url": "https://www.mercadolivre.com.br/ofertas?container_id=MLB779362-1&promotion_type=lightning",
-    "ativo": false,
+    "ativo": true,
     "paginas": 2
   },
   {
     "grupo": "Geral",
     "nome": "Preços imbatíveis",
     "url": "https://www.mercadolivre.com.br/ofertas?container_id=MLB1298579-1&deal_ids=MLB1298579",
-    "ativo": false,
+    "ativo": true,
     "paginas": 1
   },
   {
     "grupo": "Geral",
     "nome": "Todas as ofertas do dia",
     "url": "https://www.mercadolivre.com.br/ofertas",
-    "ativo": false,
+    "ativo": true,
     "paginas": 3
   },
   {
     "grupo": "Fitness",
     "nome": "Esportes e Fitness",
     "url": "https://www.mercadolivre.com.br/ofertas?category=MLB1276&container_id=MLB779362-1",
-    "ativo": false,
+    "ativo": true,
     "paginas": 4
   },
   {
     "grupo": "Fitness",
     "nome": "Saúde (suplementos)",
     "url": "https://www.mercadolivre.com.br/ofertas?category=MLB264586&container_id=MLB779362-1",
-    "ativo": false,
+    "ativo": true,
     "paginas": 4
   },
   {
     "grupo": "Fitness",
     "nome": "Calçados, Roupas e Bolsas",
     "url": "https://www.mercadolivre.com.br/ofertas?category=MLB1430&container_id=MLB779362-1",
-    "ativo": false,
+    "ativo": true,
     "paginas": 4
   },
   {
     "grupo": "Fitness",
     "nome": "Celulares e Telefones (smartwatch)",
     "url": "https://www.mercadolivre.com.br/ofertas?category=MLB1051&container_id=MLB779362-1",
-    "ativo": false,
+    "ativo": true,
     "paginas": 2
   },
   {
     "grupo": "Fitness",
     "nome": "Eletrônicos, Áudio e Vídeo",
     "url": "https://www.mercadolivre.com.br/ofertas?category=MLB1000&container_id=MLB779362-1",
-    "ativo": false,
+    "ativo": true,
     "paginas": 2
   },
   {
     "grupo": "Fitness",
     "nome": "Joias e Relógios",
     "url": "https://www.mercadolivre.com.br/ofertas?category=MLB3937&container_id=MLB779362-1",
-    "ativo": false,
+    "ativo": true,
     "paginas": 2
   },
   {
     "grupo": "Fitness",
     "nome": "Ofertas Relâmpago (fitness)",
     "url": "https://www.mercadolivre.com.br/ofertas?container_id=MLB779362-1&promotion_type=lightning",
-    "ativo": false,
+    "ativo": true,
     "paginas": 2
   },
   {
@@ -87,28 +87,28 @@
     "grupo": "Perfumes",
     "nome": "Perfumes",
     "url": "https://www.mercadolivre.com.br/ofertas?category=MLB6284&container_id=MLB779362-1",
-    "ativo": false,
+    "ativo": true,
     "paginas": 4
   },
   {
     "grupo": "Perfumes",
     "nome": "Perfumes (relâmpago)",
     "url": "https://www.mercadolivre.com.br/ofertas?category=MLB6284&container_id=MLB779362-1&promotion_type=lightning",
-    "ativo": false,
+    "ativo": true,
     "paginas": 1
   },
   {
     "grupo": "Perfumes",
     "nome": "Beleza e Cuidado Pessoal (perfumes)",
     "url": "https://www.mercadolivre.com.br/ofertas?category=MLB1246&container_id=MLB779362-1",
-    "ativo": false,
+    "ativo": true,
     "paginas": 4
   },
   {
     "grupo": "Perfumes",
     "nome": "Beleza relâmpago (perfumes)",
     "url": "https://www.mercadolivre.com.br/ofertas?category=MLB1246&container_id=MLB779362-1&promotion_type=lightning",
-    "ativo": false,
+    "ativo": true,
     "paginas": 1
   }
 ]

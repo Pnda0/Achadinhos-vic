@@ -9,6 +9,7 @@ import { scrapeCategoria } from './ml/scraper.js';
 import { MLAffiliate } from './ml/affiliate.js';
 import { buscarOfertasAmazon } from './amazon.js';
 import { buscarCuponsAwin, loadAwin } from './awin.js';
+import { buscarOfertasShopee } from './shopee-busca.js';
 import { VENDAS_MINIMAS, motivoVendas } from './ml/vendas.js';
 import { evento, origemDe } from './eventos.js';
 import { preferenciaFeminina } from './genero.js';
@@ -65,7 +66,7 @@ export function motivoLinkInvalido(p) {
   return /(^|\.)mercadoli[vb]re\.com(\.br)?$/.test(host) && u.searchParams.get('matt_word') ? null : 'link do ML sem afiliado';
 }
 
-export async function coletar(store = new Store(), { amazon = buscarOfertasAmazon, awin = buscarCuponsAwin, categoriasML = null, raspar = scrapeCategoria, esperar = randomDelay } = {}) {
+export async function coletar(store = new Store(), { amazon = buscarOfertasAmazon, awin = buscarCuponsAwin, shopee = buscarOfertasShopee, categoriasML = null, raspar = scrapeCategoria, esperar = randomDelay } = {}) {
   const lista = loadGrupos();
   const grupos = Object.fromEntries(lista.map((g) => [g.nome, g]));
   const emEspera = lista.filter((g) => g.emEspera).map((g) => g.nome);
@@ -141,6 +142,37 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
     log(`❌ Amazon: ${amazonErro}`);
   }
 
+  // Shopee (API oficial de afiliados): busca própria por marca e palavra (config/shopee.json). Já vem com o link do dono.
+  let shopeeErro = null;
+  try {
+    const sh = await shopee({ grupos: lista, vez: (store.data.shopeeVez ??= {}) });
+    if (sh.motivo) {
+      if (!/desligada/.test(sh.motivo)) log(`🛍️  Shopee: ${sh.motivo}`);
+    } else {
+      log(`🛍️  Shopee: ${sh.produtos.length} oferta(s) encontrada(s).`);
+    }
+    for (const [nome, c] of Object.entries(sh.categorias || {})) porCategoria[nome] = c;
+    for (const p of sh.produtos || []) {
+      encontrados++;
+      const grupo = grupos[p.grupo];
+      if (!grupo?.ativo) continue;
+      const motivo = motivoRecusa(p, grupo.filtros, store);
+      if (motivo) {
+        recusas[motivo] = (recusas[motivo] || 0) + 1;
+        evento('recusado', p, motivo);
+        continue;
+      }
+      if (porCategoria[p.categoria]) porCategoria[p.categoria].aceitos++;
+      if (store.upsert(p)) {
+        novos++;
+        evento('na_fila', p);
+      }
+    }
+  } catch (e) {
+    shopeeErro = String(e.message).split('\n')[0];
+    log(`❌ Shopee: ${shopeeErro}`);
+  }
+
   // Awin (API oficial): cupons e promoções das lojas em que a conta foi aprovada. Já vêm com o link de afiliado.
   let awinErro = null;
   try {
@@ -168,7 +200,7 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
 
   log(`✅ Coleta: ${encontrados} visto(s), ${novos} novo(s). Recusados: ${JSON.stringify(recusas)}`);
   log(`   Por categoria (vistos → aprovados): ${Object.entries(porCategoria).map(([n, x]) => `${n} ${x.encontrados}→${x.aceitos}`).join(' | ')}`);
-  const resultado = { encontrados, novos, recusas, categorias: porCategoria, amazonErro, awinErro };
+  const resultado = { encontrados, novos, recusas, categorias: porCategoria, amazonErro, awinErro, shopeeErro };
   store.registrarColeta(resultado);
   store.save();
   return resultado;

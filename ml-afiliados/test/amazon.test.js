@@ -119,6 +119,7 @@ test('coletar: ofertas da Amazon entram na fila já PRONTAS (com link), passando
   const bom = produtoDeItem(itemCamel, { grupo: 'Geral', categoria: 'Amazon: Air fryer' });
   const ruim = { ...bom, id: 'AMZ-B0RUIM', asin: 'B0RUIM', descontoPct: 5, precoOriginal: null };
   const r = await coletar(store, {
+    shopee: async () => ({ produtos: [], categorias: {}, motivo: "desligada (teste)" }),
     amazon: async () => ({ produtos: [bom, ruim], categorias: { 'Amazon: Air fryer': { encontrados: 2, aceitos: 0 } } }),
     categoriasML: [],
   });
