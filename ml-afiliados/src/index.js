@@ -24,6 +24,8 @@ import { membrosDoDia, registrarMembros } from './analytics/membros.js';
 import { registrarAwin } from './analytics/ganhos.js';
 import { montarPainel } from './analytics/relatorio.js';
 import { destaquesDoDia, resumoSemanal } from './analytics/destaques.js';
+import { gravarSite } from './analytics/pagina.js';
+import { publicarPainel, urlPublicada } from './analytics/publicar.js';
 import { MSG_OUTRA_COPIA, travarInstancia } from './instancia.js';
 
 instalarLogEmArquivo('iniciar');
@@ -257,7 +259,7 @@ async function main() {
   );
   // O resumo não usa o "exclusivo": só lê a fila, pode sair mesmo com uma coleta em andamento.
   // O resumo ganha os destaques do analytics; se o analytics falhar, o resumo sai sem eles.
-  const urlPainel = () => process.env.PAINEL_URL?.trim() || null;
+  const urlPainel = () => process.env.PAINEL_URL?.trim() || analytics('url', () => urlPublicada()) || null;
   cron.schedule(
     settings.avisos.resumoCron,
     () => {
@@ -266,6 +268,22 @@ async function main() {
     },
     opts
   );
+  // Painel (data/analytics/site) gerado e publicado no Cloudflare só com a trava do Access confirmada.
+  // Fora do "exclusivo"; o wrangler tem 3 min no máximo; pula quando nada mudou.
+  let publicando = false;
+  const atualizarPainel = async () => {
+    if (publicando) return;
+    publicando = true;
+    try {
+      const hash = analytics('painel', () => gravarSite(montarPainel({ store })));
+      if (hash) await publicarPainel({ hash, avisos });
+    } catch (e) {
+      registrarErro('analytics-publicar', e);
+    } finally {
+      publicando = false;
+    }
+  };
+  for (const quando of ['5 8 * * *', '30 12 * * *', '30 17 * * *', '57 21 * * *']) cron.schedule(quando, atualizarPainel, opts);
   // Resumo da semana, toda segunda às 9h (só para o dono).
   cron.schedule(
     '0 9 * * 1',

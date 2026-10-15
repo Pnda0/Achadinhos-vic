@@ -245,6 +245,46 @@ npm run historico -- MLB4049279695
 npm run historico -- "creatina dark lab"
 ```
 
+## 3.15 Painel de números (analytics) — no PC e no celular
+
+O bot guarda, por grupo e por fonte, o que entrou, o que saiu, o que foi barrado e o que deu resultado (Awin), e monta um painel:
+
+- **No PC**: dois cliques em `4-relatorio.bat` (ou `npm run analytics -- 7d`, `-- 30d`, `-- hoje`, `-- 2026-10-14`). Só lê os dados; pode rodar com o bot ligado.
+- **No celular, de qualquer lugar**: https://achadinhos-vic-painel.pages.dev — um projeto **separado** do site público, **privado** (só o seu e-mail entra). O bot publica às 8h05, 12h30, 17h30 e 21h57, e só se conseguir confirmar que o painel está protegido.
+- **No Telegram**: o resumo das 21h58 traz 3–5 linhas de destaque (e o link do painel); toda segunda às 9h chega o resumo da semana.
+
+Arquivos em `data/analytics/` (fora do git): `dias/AAAA-MM-DD.json` (180 dias), `membros.json`, `awin.json`, `site/` (o que é publicado), `relatorio.html`.
+
+### Ligar a publicação (uma vez, ~10 min — precisa do seu login no Cloudflare)
+
+Entre em https://dash.cloudflare.com com a conta **alanribeiro8352@icloud.com** (a mesma do site).
+
+**1. Token para o bot publicar**
+1. Clique no bonequinho (canto de cima) → **Perfil** → **Tokens de API** → **Criar token** → **Criar token personalizado**.
+2. Nome: `painel do bot`. Em **Permissões**: `Conta` · `Cloudflare Pages` · `Editar`. Nada mais.
+3. **Continuar para o resumo** → **Criar token** → copie o token (ele aparece uma vez só).
+4. O **ID da conta** está na página inicial do painel do Cloudflare, na coluna da direita ("ID da conta" → copiar).
+5. No PC de casa, no arquivo `ml-afiliados/.env`, acrescente:
+   ```
+   CLOUDFLARE_API_TOKEN=<o token>
+   CLOUDFLARE_ACCOUNT_ID=<o id da conta>
+   ```
+6. Feche a janela do bot e abra o `3-iniciar.bat` (fora do minuto de envio). Na próxima publicação o bot cria o projeto `achadinhos-vic-painel` com uma página "Configurando…" — **sem nenhum número**.
+
+**2. Deixar o painel privado (Cloudflare Access, grátis)**
+1. No painel do Cloudflare, menu da esquerda → **Zero Trust** (na primeira vez ele pede um nome de equipe, ex.: `vic`, e o plano **Free** — não pede cartão para o Free; se pedir, escolha o Free e pule).
+2. **Access** → **Aplicativos** → **Adicionar um aplicativo** → **Auto-hospedado**.
+3. Nome: `Painel`. Em **Domínio** adicione os dois:
+   - `achadinhos-vic-painel.pages.dev`
+   - `*.achadinhos-vic-painel.pages.dev` (as prévias de cada publicação)
+4. **Avançar** → crie a política: nome `Só eu`, ação **Permitir**, regra **Incluir** → **E-mails** → `alanribeiro8352@icloud.com`.
+5. **Avançar** → em métodos de login deixe **Senha única (código por e-mail)** → **Adicionar aplicativo**.
+6. Teste: abra https://achadinhos-vic-painel.pages.dev numa aba anônima — deve pedir o e-mail e mandar um código. Pronto: na próxima publicação os números aparecem lá.
+
+**Trava de segurança do bot**: antes de cada publicação ele abre o painel sem login. Se não for redirecionado para a tela do Access (`*.cloudflareaccess.com`), **não publica os números** e avisa você no Telegram (1x por dia). Sem `CLOUDFLARE_API_TOKEN` o painel fica só no PC. O token nunca aparece no log.
+
+**Como ler**: "recusadas na busca" são ofertas que não passaram nos filtros do grupo e nem entraram na fila (não é perda); "barradas na hora de postar" estavam na fila e não saíram; os membros incluem você e o bot; o funil dos canais conta só mensagens novas lidas com o bot ligado; visualizações por post não existem (canais privados); a Awin mostra comissão **pendente** (pode ser cancelada) separada da **aprovada**; o Mercado Livre não tem relatório pela API — o painel leva ao painel do ML.
+
 ## 4. Uso
 
 Cada etapa também roda separada:
