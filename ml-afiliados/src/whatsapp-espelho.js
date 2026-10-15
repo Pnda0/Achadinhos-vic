@@ -7,8 +7,9 @@
  *  - Em cada vez: a oferta mais recente daquele grupo que já saiu no Telegram (na última hora) e ainda não foi
  *    para o WhatsApp — mesmo texto e mesma foto. Grupo sem oferta nova é pulado e a vez passa para o próximo.
  *  - Nunca repete no mesmo grupo: a oferta é marcada ANTES de enviar (sem resposta = não reenvia).
- *  - Os grupos do WhatsApp são achados pelo nome (o grupo com "Fitness" no nome é o Fitness...) e guardados em
- *    data/whatsapp-grupos.json.
+ *  - Cada grupo do bot só posta no grupo do WhatsApp com o nome EXATO de "whatsapp" em config/grupos.json
+ *    (maiúsculas e acentos não importam). Sem nome configurado ou sem grupo com esse nome, não posta — nunca
+ *    adivinha (em 15/10/2026 a adivinhação pelo nome mandou para o grupo errado).
  * Liga com WHATSAPP_ESPELHO=true no .env. Na 1ª vez abre o WhatsApp Web para escanear o QR code com o chip do bot.
  */
 import fs from 'node:fs';
@@ -28,16 +29,24 @@ export function lerGruposWhats(arquivo = ARQUIVO_GRUPOS) {
   }
 }
 
-/** Liga cada grupo do bot ao grupo do WhatsApp cujo nome tem o nome dele (só se for um único grupo). */
+/**
+ * Liga cada grupo do bot ao grupo do WhatsApp com o nome exato de `g.whatsapp` (maiúsculas, acentos e espaços
+ * sobrando não importam; emoji conta). Só liga se houver UM grupo com esse nome. Devolve { ligados, problemas }.
+ */
 export function ligarPorNome(gruposBot, gruposWhats) {
-  const palavras = (t) => normalizar(t).split(/[^a-z0-9]+/).filter(Boolean).map((p) => p.replace(/s$/, ''));
+  const chave = (t) => normalizar(t).replace(/\s+/g, ' ').trim();
   const ligados = {};
+  const problemas = [];
   for (const g of gruposBot) {
-    const alvo = palavras(g.nome).join(' ');
-    const achados = gruposWhats.filter((w) => palavras(w.nome).join(' ').split(' ').includes(alvo));
+    if (!g.whatsapp) {
+      problemas.push(`${g.nome}: sem nome de grupo do WhatsApp em config/grupos.json ("whatsapp")`);
+      continue;
+    }
+    const achados = gruposWhats.filter((w) => chave(w.nome) === chave(g.whatsapp));
     if (achados.length === 1) ligados[g.nome] = achados[0].jid;
+    else problemas.push(achados.length ? `${g.nome}: há ${achados.length} grupos chamados "${g.whatsapp}"` : `${g.nome}: não achei o grupo "${g.whatsapp}" no WhatsApp do bot`);
   }
-  return ligados;
+  return { ligados, problemas };
 }
 
 /** Horário em que o WhatsApp pode postar (o mesmo do envio do Telegram: 8h às 21h59, fuso do bot). */
@@ -57,18 +66,17 @@ export class EspelhoWhatsApp {
     this.agora = agora;
     this.esperar = esperar;
     this.vez = 0; // de qual grupo é a vez
-    this.jids = lerGruposWhats(arquivoGrupos);
+    this.jids = {}; // só depois de ligarGrupos() (nome exato), nunca de uma lista antiga
   }
 
-  /** Procura os grupos no WhatsApp pelo nome e guarda. Devolve { ligados, faltando }. */
+  /** Acha os grupos no WhatsApp pelo nome exato configurado (refeito a cada vez, nada velho fica). */
   async ligarGrupos() {
     const ativos = this.carregarGrupos().filter((g) => g.ativo !== false);
-    const achados = ligarPorNome(ativos, await this.sender.listGroups());
-    this.jids = { ...this.jids, ...achados };
+    const { ligados, problemas } = ligarPorNome(ativos, await this.sender.listGroups());
+    this.jids = ligados;
     fs.mkdirSync(path.dirname(this.arquivoGrupos), { recursive: true });
     fs.writeFileSync(this.arquivoGrupos, JSON.stringify(this.jids, null, 2) + '\n');
-    const faltando = ativos.map((g) => g.nome).filter((n) => !this.jids[n]);
-    return { ligados: Object.keys(this.jids), faltando };
+    return { ligados: Object.keys(this.jids), problemas, faltando: ativos.map((g) => g.nome).filter((n) => !this.jids[n]) };
   }
 
   /** A próxima oferta a espelhar, revezando os grupos. Null se nenhum grupo tem oferta nova. */

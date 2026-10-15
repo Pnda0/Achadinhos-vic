@@ -9,7 +9,12 @@ const { EspelhoWhatsApp, ligarPorNome, dentroDoHorario } = await import('../src/
 const { Store } = await import('../src/store.js');
 
 const pasta = () => fs.mkdtempSync(path.join(os.tmpdir(), 'mla-wa-'));
-const GRUPOS = [{ nome: 'Geral', ativo: true }, { nome: 'Fitness', ativo: true }, { nome: 'Beleza', ativo: true }, { nome: 'Perfumes', ativo: true }];
+const GRUPOS = [
+  { nome: 'Geral', ativo: true, whatsapp: 'Achadinhos Vic' },
+  { nome: 'Fitness', ativo: true, whatsapp: 'Achadinhos Vic Fitness 💪' },
+  { nome: 'Beleza', ativo: true, whatsapp: 'Beleza da Vic' },
+  { nome: 'Perfumes', ativo: true },
+];
 const MEIO_DIA = new Date('2026-10-15T12:00:00-03:00').getTime();
 
 function montar({ falhar = false } = {}) {
@@ -18,10 +23,10 @@ function montar({ falhar = false } = {}) {
   const sender = {
     typing: async () => {},
     listGroups: async () => [
-      { jid: 'G@g.us', nome: 'Achadinhos da Vic · Geral' },
-      { jid: 'F@g.us', nome: 'Achadinhos da Vic Fitness 💪' },
+      { jid: 'G@g.us', nome: 'Achadinhos Vic' },
+      { jid: 'F@g.us', nome: 'achadinhos vic fitness 💪 ' },
       { jid: 'B@g.us', nome: 'Beleza da Vic' },
-      { jid: 'X@g.us', nome: 'Família' },
+      { jid: 'X@g.us', nome: 'Promoções Geral' }, // tem "Geral" no nome, mas não é o grupo (o erro de 15/10/2026)
     ],
     sendImage: async (jid, img, txt) => {
       if (falhar) throw new Error('Evaluation failed');
@@ -36,14 +41,22 @@ function montar({ falhar = false } = {}) {
   return { store, enviados, e, publicar };
 }
 
-test('grupos do WhatsApp achados pelo nome (só quando é um único grupo)', () => {
-  const r = ligarPorNome(GRUPOS, [
-    { jid: 'G@g.us', nome: 'Achadinhos da Vic · Geral' },
-    { jid: 'P1@g.us', nome: 'Perfumes da Vic' },
-    { jid: 'P2@g.us', nome: 'Perfume importado' },
-    { jid: 'B@g.us', nome: 'Beleza' },
-  ]);
-  assert.deepEqual(r, { Geral: 'G@g.us', Beleza: 'B@g.us' }); // Perfumes: 2 grupos parecidos, não liga sozinho
+test('grupos do WhatsApp: só pelo nome EXATO configurado; sem nome ou com nome repetido não liga (nunca adivinha)', () => {
+  const r = ligarPorNome(
+    [{ nome: 'Geral', whatsapp: 'Achadinhos Vic' }, { nome: 'Fitness', whatsapp: 'Vic Fitness' }, { nome: 'Beleza' }, { nome: 'Perfumes', whatsapp: 'Perfumes' }],
+    [
+      { jid: 'G@g.us', nome: 'ACHADINHOS VIC' },
+      { jid: 'X@g.us', nome: 'Achadinhos Vic Geral' },
+      { jid: 'P1@g.us', nome: 'Perfumes' },
+      { jid: 'P2@g.us', nome: 'perfumes' },
+    ]
+  );
+  assert.deepEqual(r.ligados, { Geral: 'G@g.us' });
+  assert.equal(r.problemas.length, 3);
+  const texto = r.problemas.join(' | ');
+  assert.match(texto, /Fitness: não achei o grupo "Vic Fitness"/);
+  assert.match(texto, /Beleza: sem nome/);
+  assert.match(texto, /Perfumes: há 2 grupos/);
 });
 
 test('espelho: revezando os grupos, a oferta mais recente de cada um, igual ao Telegram, nunca repetida', async () => {

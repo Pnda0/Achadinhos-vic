@@ -134,10 +134,11 @@ async function iniciarWhatsApp() {
     log('📲 WhatsApp: conectando o número do bot (na 1ª vez, escaneie o QR code na janela do WhatsApp Web que abrir)...');
     await whats.init();
     espelhoWhats = new EspelhoWhatsApp({ sender: whats, store, carregarGrupos: loadGrupos, avisos, intervaloMin: settings.whatsappIntervaloMin });
-    const { ligados, faltando } = await espelhoWhats.ligarGrupos();
-    log(`📲 WhatsApp ligado: ${ligados.join(', ') || 'nenhum grupo'}${faltando.length ? ` | sem grupo no WhatsApp: ${faltando.join(', ')}` : ''} — 1 mensagem a cada ${settings.whatsappIntervaloMin} min.`);
-    if (faltando.length) {
-      await avisos.avisar('whatsapp-grupos', `*WhatsApp conectado* 📲\nNão achei grupo com o nome de: ${faltando.join(', ')}.\nCrie no WhatsApp um grupo com esse nome (ex.: "Achadinhos da Vic · ${faltando[0]}"), ponha o número do bot como admin e reinicie o bot.`, { sempre: true });
+    const { ligados, problemas } = await espelhoWhats.ligarGrupos();
+    log(`📲 WhatsApp ligado: ${ligados.map((n) => `${n} → "${loadGrupos().find((g) => g.nome === n)?.whatsapp}"`).join(', ') || 'nenhum grupo'} — 1 mensagem a cada ${settings.whatsappIntervaloMin} min.`);
+    for (const p of problemas) log(`   ⚠️  WhatsApp — ${p}`);
+    if (problemas.length) {
+      await avisos.avisar('whatsapp-grupos', `*WhatsApp conectado* 📲\nEsses grupos ficam sem WhatsApp por enquanto:\n${problemas.join('\n')}\nO nome tem que ser igual ao do grupo no WhatsApp (config/grupos.json, campo "whatsapp").`, { sempre: true });
     }
     espelhoWhats.rodar().catch((e) => registrarErro('whatsapp', e));
   } catch (e) {
