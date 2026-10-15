@@ -114,7 +114,8 @@ export function agregar(resumos, dias) {
       F.soRecusa = F.recusadas > 0 && F.naFila === 0 && F.publicadas === 0;
     }
   }
-  return { dias, grupos, funil, categorias };
+  const diasComDado = resumos.filter(Boolean).map((r) => r.dia).sort();
+  return { dias, diasComDado, grupos, funil, categorias };
 }
 
 /** Categorias do Mercado Livre que não publicaram nada no período (candidatas a sair). */
@@ -210,7 +211,7 @@ export function textoDoPainel(painel, periodo) {
   if (ag.categoriasParadas?.length) l.push('', `Categorias do ML sem nenhuma publicação no período: ${ag.categoriasParadas.join(', ')}`);
   l.push('', 'Dinheiro:');
   if (ag.awin) l.push(`  Awin: ${ag.awin.cliques} cliques | pendente ${brl(ag.awin.pendentes.comissao)} (${ag.awin.pendentes.vendas} vendas) | aprovado ${brl(ag.awin.aprovadas.comissao)} (${ag.awin.aprovadas.vendas} vendas)`);
-  else l.push('  Awin: sem relatório neste período ainda.');
+  else l.push('  Awin: aguardando a 1ª leitura do relatório (sai ao ligar, 12h30 e 21h52).');
   l.push(`  Mercado Livre: ver no painel do ML — ${painel.painelML}`);
   l.push('', ...painel.notas.map((n) => `ℹ️ ${n}`));
   return l.join('\n');

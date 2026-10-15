@@ -44,7 +44,7 @@ h3{font-size:18px;margin:0}
 .dica{position:fixed;pointer-events:none;background:var(--text);color:var(--bg);padding:6px 9px;border-radius:8px;font-size:13px;z-index:10;display:none;max-width:240px}
 .fontes{width:100%;border-collapse:collapse;font-size:14px}
 .fontes th,.fontes td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
-.fontes th:first-child,.fontes td:first-child,.fontes th:nth-child(2),.fontes td:nth-child(2){text-align:left}
+.fontes th:first-child,.fontes td:first-child{text-align:left}
 .fontes th{cursor:pointer;color:var(--text2);font-weight:600;white-space:nowrap;user-select:none}
 .fontes th[aria-sort="descending"]::after{content:" ▼"}
 .fontes th[aria-sort="ascending"]::after{content:" ▲"}
@@ -58,6 +58,11 @@ h3{font-size:18px;margin:0}
 }
 .lista{list-style:none;padding:0;margin:0}
 .lista li{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;overflow-wrap:anywhere}
+details.cartao{margin-bottom:8px;padding:0}
+details.cartao>summary{padding:14px;min-height:44px;cursor:pointer;list-style-position:inside}
+details.cartao>.tabela{padding:0 12px 12px;overflow-x:auto}
+.dobra>summary{cursor:pointer;list-style-position:inside}
+.dobra>summary h2{display:inline}
 .notas{color:var(--text2);font-size:13px;padding-left:18px}
 a{color:var(--bar)}
 .vazio{color:var(--text2);padding:12px 0}
@@ -122,7 +127,11 @@ function barras(pontos, titulo) {
 function cartaoGrupo(nome, G) {
   const m = D.membros[nome];
   const dias = Object.keys(G.porDia).sort();
-  const grafico = periodo === 'hoje' || dias.length === 1
+  const P = D.periodos[periodo];
+  const comeco = P.diasComDado?.[0];
+  const grafico = periodo !== 'hoje' && dias.length > 1 && (P.diasComDado?.length || 0) <= 1
+    ? '<p class="rotulo">' + (comeco ? 'Histórico começa em ' + dm(comeco) + ': o gráfico por dia aparece a partir do 2º dia.' : 'Ainda sem histórico neste período.') + '</p>'
+    : periodo === 'hoje' || dias.length === 1
     ? barras(Array.from({ length: 14 }, (_, i) => { const h = String(i + 8).padStart(2, '0'); return { r: h + 'h', v: G.porHora[h] || 0 }; }), 'Publicações por hora')
     : barras(dias.map((d) => ({ r: dm(d), v: G.porDia[d] })), 'Publicações por dia');
   const linha = (rot, val, cls) => '<dt>' + esc(rot) + '</dt><dd' + (cls ? ' class="' + cls + '"' : '') + '>' + val + '</dd>';
@@ -141,9 +150,10 @@ const COLS = [
   ['recusadas', 'Recusadas na busca'], ['aproveitamento', 'Aproveitamento'], ['motivo', 'Principal recusa'],
 ];
 let ordem = { col: 'publicadas', desc: true };
-function tabelaFontes(P) {
+function tabelaFontes(P, soGrupo) {
   const linhas = [];
   for (const [g, G] of Object.entries(P.grupos)) for (const [f, F] of Object.entries(G.fontes)) {
+    if (soGrupo && g !== soGrupo) continue;
     const motivo = Object.entries(F.recusas).sort((a, b) => b[1] - a[1])[0];
     linhas.push({ fonte: f, grupo: g, publicadas: F.publicadas, naFila: F.naFila, parteDaFila: F.parteDaFila, recusadas: F.recusadas, aproveitamento: F.aproveitamento, motivo: motivo ? motivo[0] + ' (' + motivo[1] + ')' : '', soRecusa: F.soRecusa });
   }
@@ -151,9 +161,10 @@ function tabelaFontes(P) {
   const { col, desc } = ordem;
   linhas.sort((a, b) => { const x = a[col] ?? -1, y = b[col] ?? -1; return (typeof x === 'string' ? x.localeCompare(y) : x - y) * (desc ? -1 : 1); });
   const pct = (v) => (v == null ? '—' : v + '%');
-  let s = '<table class="fontes"><thead><tr>' + COLS.map(([k, r]) => '<th data-col="' + k + '"' + (k === col ? ' aria-sort="' + (desc ? 'descending' : 'ascending') + '"' : '') + '>' + r + '</th>').join('') + '</tr></thead><tbody>';
+  const cols = soGrupo ? COLS.filter(([k]) => k !== 'grupo') : COLS;
+  let s = '<table class="fontes"><thead><tr>' + cols.map(([k, r]) => '<th data-col="' + k + '"' + (k === col ? ' aria-sort="' + (desc ? 'descending' : 'ascending') + '"' : '') + '>' + r + '</th>').join('') + '</tr></thead><tbody>';
   for (const l of linhas) {
-    s += '<tr><td>' + esc(l.fonte) + (l.soRecusa ? ' <span class="aviso">· só recusa</span>' : '') + '</td><td data-r="Grupo">' + esc(l.grupo) + '</td><td data-r="Publicadas">' + n(l.publicadas) + '</td><td data-r="Na fila">' + n(l.naFila) + '</td><td data-r="% da fila">' + pct(l.parteDaFila) +
+    s += '<tr><td>' + esc(l.fonte) + (l.soRecusa ? ' <span class="aviso">· só recusa</span>' : '') + '</td>' + (soGrupo ? '' : '<td data-r="Grupo">' + esc(l.grupo) + '</td>') + '<td data-r="Publicadas">' + n(l.publicadas) + '</td><td data-r="Na fila">' + n(l.naFila) + '</td><td data-r="% da fila">' + pct(l.parteDaFila) +
       '</td><td data-r="Recusadas na busca">' + n(l.recusadas) + '</td><td data-r="Aproveitamento">' + pct(l.aproveitamento) + '</td><td data-r="Principal recusa">' + esc(l.motivo || '—') + '</td></tr>';
   }
   return s + '</tbody></table>';
@@ -166,10 +177,10 @@ function desenhar() {
   const total = grupos.reduce((s, [, G]) => s + G.publicadas, 0);
   const aw = P.awin;
   $('#resumo').innerHTML = '<div class="cartao"><div class="grande">' + n(total) + '</div><div class="rotulo">ofertas publicadas nos ' + grupos.length + ' grupos</div>' +
-    '<dl class="linhas"><dt>Awin — pendente</dt><dd>' + (aw ? brl(aw.pendentes.comissao) : '—') + '</dd><dt>Awin — aprovado</dt><dd class="bom">' + (aw ? brl(aw.aprovadas.comissao) : '—') + '</dd><dt>Cliques nos links da Awin</dt><dd>' + (aw ? n(aw.cliques) : '—') + '</dd>' +
+    '<dl class="linhas">' + (aw ? '<dt>Awin — pendente</dt><dd>' + brl(aw.pendentes.comissao) + '</dd><dt>Awin — aprovado</dt><dd class="bom">' + brl(aw.aprovadas.comissao) + '</dd><dt>Cliques nos links da Awin</dt><dd>' + n(aw.cliques) + '</dd>' : '<dt>Awin</dt><dd class="rotulo">aguardando a 1ª leitura</dd>') +
     '<dt>Mercado Livre</dt><dd><a href="' + esc(D.painelML) + '" target="_blank" rel="noopener">ver no painel do ML</a></dd></dl></div>';
   $('#grupos').innerHTML = grupos.length ? grupos.map(([nome, G]) => cartaoGrupo(nome, G)).join('') : '<p class="vazio">Ainda não há dados neste período.</p>';
-  $('#fontes').innerHTML = tabelaFontes(P);
+  $('#fontes').innerHTML = grupos.length ? grupos.map(([g, G]) => '<details class="cartao" data-grupo="' + esc(g) + '"><summary><strong>' + esc(g) + '</strong> — ' + n(Object.keys(G.fontes).length) + (Object.keys(G.fontes).length === 1 ? ' fonte, ' : ' fontes, ') + n(G.publicadas) + ' publicadas</summary><div class="tabela">' + tabelaFontes(P, g) + '</div></details>').join('') : '<p class="vazio">Ainda não há dados neste período.</p>';
   const funil = Object.entries(P.funil).sort((a, b) => b[1].aceitas - a[1].aceitas);
   $('#funil').innerHTML = funil.length ? funil.map(([f, x]) => {
     const mot = Object.entries(x.motivos).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => esc(k) + ' ' + n(v)).join(' · ');
@@ -191,7 +202,8 @@ document.getElementById('fontes').addEventListener('click', (e) => {
   const th = e.target.closest('th');
   if (!th) return;
   ordem = { col: th.dataset.col, desc: ordem.col === th.dataset.col ? !ordem.desc : true };
-  $('#fontes').innerHTML = tabelaFontes(D.periodos[periodo]);
+  const det = th.closest('details');
+  det.querySelector('.tabela').innerHTML = tabelaFontes(D.periodos[periodo], det.dataset.grupo);
 });
 desenhar();
 `;
@@ -224,8 +236,9 @@ export function htmlDoPainel(painel) {
 <h2>Canais acompanhados</h2>
 <ul class="lista" id="funil"></ul>
 <section id="paradas"></section>
-<h2>Maiores descontos publicados</h2>
+<details class="dobra"><summary><h2>Maiores descontos publicados</h2></summary>
 <ul class="lista" id="top"></ul>
+</details>
 <h2>Como ler</h2>
 <ul class="notas">${painel.notas.map((n) => `<li>${escHtml(n)}</li>`).join('')}</ul>
 </main>
