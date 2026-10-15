@@ -29,6 +29,10 @@ const avisosFalsos = () => {
 test('trava: Access (redireciona para *.cloudflareaccess.com) = protegido; 404 = inexistente; 200 = aberto; outro = erro', async () => {
   assert.deepEqual(await verificarTrava({ fetchImpl: resposta(302, 'https://vic.cloudflareaccess.com/cdn-cgi/access/login/x') }), { trava: 'protegido' });
   assert.deepEqual(await verificarTrava({ fetchImpl: resposta(404) }), { trava: 'inexistente' });
+  // porteiro com senha: 401 pedindo Basic = protegido; 401 sem pedir senha não conta
+  const pedeSenha = async () => ({ status: 401, headers: { get: (h) => (h === 'www-authenticate' ? 'Basic realm="Painel da Vic"' : null) } });
+  assert.deepEqual(await verificarTrava({ fetchImpl: pedeSenha }), { trava: 'protegido' });
+  assert.equal((await verificarTrava({ fetchImpl: resposta(401) })).trava, 'erro');
   assert.deepEqual(await verificarTrava({ fetchImpl: resposta(200) }), { trava: 'aberto' });
   assert.equal((await verificarTrava({ fetchImpl: resposta(302, 'https://golpe.example.com/cloudflareaccess.com') })).trava, 'erro');
   assert.equal((await verificarTrava({ fetchImpl: async () => { throw new Error('fetch failed'); } })).trava, 'erro');
@@ -63,7 +67,7 @@ test('projeto inexistente: cria e publica só a página "configurando…", sem d
   assert.deepEqual(ex.chamadas.map((c) => c.slice(0, 2).join(' ')), ['pages project', 'pages deploy']);
   const pastaPublicada = ex.chamadas[1][2];
   assert.ok(pastaPublicada.endsWith('site-configurando'));
-  assert.deepEqual(fs.readdirSync(pastaPublicada).sort(), ['_headers', 'index.html', 'robots.txt']);
+  assert.deepEqual(fs.readdirSync(pastaPublicada).sort(), ['_headers', '_worker.js', 'index.html', 'robots.txt']); // _worker.js = o porteiro (senha)
   assert.doesNotMatch(fs.readFileSync(path.join(pastaPublicada, 'index.html'), 'utf8'), /publicadas|R\$|segredo/);
   assert.equal(urlPublicada(base), null);
 });

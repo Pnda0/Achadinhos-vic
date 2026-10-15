@@ -54,6 +54,8 @@ export async function verificarTrava({ url = URL_PAINEL, fetchImpl = fetch } = {
       } catch {}
       return host.endsWith('.cloudflareaccess.com') ? { trava: 'protegido' } : { trava: 'erro', detalhe: `redireciona para ${host || 'outro lugar'}` };
     }
+    // Porteiro com senha (_worker.js, src/analytics/porteiro-worker.js): 401 pedindo a senha = protegido.
+    if (res.status === 401 && /basic/i.test(res.headers?.get?.('www-authenticate') || '')) return { trava: 'protegido' };
     if (res.status === 404) return { trava: 'inexistente' };
     if (res.status === 200) return { trava: 'aberto' };
     return { trava: 'erro', detalhe: `HTTP ${res.status}` };
@@ -105,6 +107,13 @@ export function rodarWrangler(args, { env = process.env, tempo = TEMPO_MAXIMO } 
   });
 }
 
+/** Põe o porteiro (senha) na pasta que vai ser publicada: TODA publicação do painel sai com ele. */
+export function gravarPorteiro(pasta) {
+  fs.mkdirSync(pasta, { recursive: true });
+  fs.copyFileSync(new URL('./porteiro-worker.js', import.meta.url), path.join(pasta, '_worker.js'));
+  return pasta;
+}
+
 /** Página sem dados nenhum, para a 1ª publicação (antes de o dono ligar o Access). */
 export function gravarPaginaConfigurando(base = PASTA_ANALYTICS) {
   const pasta = path.join(base, 'site-configurando');
@@ -133,7 +142,7 @@ export async function publicarPainel({ hash, base = PASTA_ANALYTICS, env = proce
   }
   const estado = lerEstado(base);
   const segredos = [env.CLOUDFLARE_API_TOKEN];
-  const deploy = (pasta) => executar(['pages', 'deploy', pasta, '--project-name', projeto, '--branch', 'main', '--commit-dirty=true'], { env });
+  const deploy = (pasta) => executar(['pages', 'deploy', gravarPorteiro(pasta), '--project-name', projeto, '--branch', 'main', '--commit-dirty=true'], { env });
   const ultimaLinha = (r) => mascarar(r.saida.split('\n').filter(Boolean).at(-1) || 'erro', segredos);
   const dia = diaLocal(agora, settings.tz);
   /** Aviso ao dono: no máximo 1 por dia por assunto (a menos que `agora` seja urgente). */

@@ -294,7 +294,9 @@ Entre em https://dash.cloudflare.com com a conta **alanribeiro8352@icloud.com** 
    ```
 6. Feche a janela do bot e abra o `3-iniciar.bat` (fora do minuto de envio). Na próxima publicação o bot cria o projeto `achadinhos-vic-painel` com uma página "Configurando…" — **sem nenhum número**.
 
-**2. Deixar o painel privado (Cloudflare Access, grátis)**
+**Desde 15/10/2026 o painel é protegido por SENHA** (não precisa do Access): toda publicação leva um porteiro (`_worker.js`, código em `src/analytics/porteiro-worker.js`) que só abre com a senha `PAINEL_SENHA`, guardada como segredo do projeto no Cloudflare (cópia no PC de casa em `data/analytics/senha-painel.txt`). Qualquer nome de usuário serve. Sem o segredo, ninguém entra. Trocar a senha: `npx wrangler pages secret put PAINEL_SENHA --project-name achadinhos-vic-painel` (digite a nova) e avise quem usa. O passo 2 abaixo (Access por e-mail) é opcional, se um dia quiser login por e-mail no lugar da senha.
+
+**2. (Opcional) Login por e-mail no lugar da senha (Cloudflare Access, grátis)**
 1. No painel do Cloudflare, menu da esquerda → **Zero Trust** (na primeira vez ele pede um nome de equipe, ex.: `vic`, e o plano **Free** — não pede cartão para o Free; se pedir, escolha o Free e pule).
 2. **Access** → **Aplicativos** → **Adicionar um aplicativo** → **Auto-hospedado**.
 3. Nome: `Painel`. Em **Domínio** adicione os dois:
