@@ -10,7 +10,7 @@
   "canaisTelegram": {
     "ativo": true,
     "soAmazon": false,
-    "maxPorHora": 12,
+    "maxPorHora": 20,
     "intervaloSegundos": 60,
     "canais": [
       "urubupromo",

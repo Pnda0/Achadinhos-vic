@@ -1,7 +1,7 @@
 /**
  * Modo automático (npm start): faz o papel dos gatilhos agendados do n8n.
  *   CRON_COLETA  -> coleta ofertas e já gera os links
- *   CRON_ENVIO   -> envia 1 oferta por grupo (padrão do código: a cada 8 min das 8h às 21h59; no PC de casa o .env usa 5 min)
+ *   CRON_ENVIO   -> envia 1 oferta por grupo (padrão do código: a cada 8 min das 8h às 21h59; no PC de casa o .env usa 3 min)
  *   CRON_LIMPEZA -> esvazia a fila à meia-noite
  *   CRON_RESUMO  -> manda o resumo do dia no WhatsApp do dono (AVISOS_DESTINO)
  */

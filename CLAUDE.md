@@ -24,4 +24,4 @@ O dono fala português e prefere que o Claude **faça tudo sozinho** (inclusive 
 
 - Awin: nenhuma loja aprovada é de beleza/perfume ainda. Pedir **Phebo** (aceita pessoa física); **Granado** está em análise. Várias grandes (O Boticário, Natura, Eudora, Beleza na Web) só aceitam CNPJ.
 - Se o dono criou o serviço no Render, ele deve estar suspenso/apagado (senão posta em dobro).
-- O PC de casa precisa ficar ligado e acordado das 7h às 22h (busca às 7h/12h/17h; envio a cada 5 min das 8h às 21h59 — `CRON_ENVIO` no `.env` de casa, mudado a pedido do dono em 14/10/2026).
+- O PC de casa precisa ficar ligado e acordado das 7h às 22h (busca às 7h/12h/17h; envio a cada 3 min das 8h às 21h59 — `CRON_ENVIO` no `.env` de casa, mudado a pedido do dono em 15/10/2026).
