@@ -266,8 +266,8 @@ function vendasNoEnvio(p, grupo) {
  */
 export async function enviarProximo(sender, grupo, store = new Store()) {
   const dias = grupo.filtros?.diasSemRepetir || 5;
-  // Perfumes (público principal: meninas): femininos e unissex na frente, no máximo 1 masculino a cada 3 posts.
-  const preferencia = grupo.preferirFeminino ? preferenciaFeminina(store, grupo.nome) : {};
+  // Público principal: meninas. Femininos na frente, depois os neutros; masculino no máximo 1 a cada N posts.
+  const preferencia = grupo.preferirFeminino ? preferenciaFeminina(store, grupo.nome, grupo.preferirFeminino) : {};
   let p = null;
   // Cada candidato barrado sai da fila (muda de status), então o laço termina; null = fila realmente vazia.
   while (!p) {
@@ -286,7 +286,7 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
   }
   if (!p && preferencia.aceitar && store.proximo(grupo.nome)) {
     store.save();
-    log(`⏳ [${grupo.nome}] só masculinos na fila: esperando um feminino (no máximo 1 masculino a cada 3 posts).`);
+    log(`⏳ [${grupo.nome}] só masculinos na fila: esperando outro produto (público principal: meninas).`);
     return { esperando: true };
   }
   if (!p) {

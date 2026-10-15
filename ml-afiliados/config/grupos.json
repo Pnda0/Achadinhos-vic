@@ -19,7 +19,8 @@
       "ativo": true,
       "mensagemAdicional": "",
       "filtros": {},
-      "telegram": "-1003849571702"
+      "telegram": "-1003849571702",
+      "preferirFeminino": 4
     },
     {
       "nome": "Fitness",
@@ -30,7 +31,8 @@
         "descontoMinimo": 15
       },
       "nicho": "fitness",
-      "telegram": "-1004454980210"
+      "telegram": "-1004454980210",
+      "preferirFeminino": 4
     },
     {
       "nome": "Beleza",
@@ -39,7 +41,8 @@
       "mensagemAdicional": "",
       "filtros": {},
       "nicho": "beleza",
-      "telegram": "-1004455813335"
+      "telegram": "-1004455813335",
+      "preferirFeminino": 4
     },
     {
       "nome": "Perfumes",
@@ -51,7 +54,7 @@
       },
       "nicho": "perfumes",
       "telegram": "-1004316376505",
-      "preferirFeminino": true
+      "preferirFeminino": 3
     }
   ]
 }
