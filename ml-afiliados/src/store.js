@@ -182,9 +182,11 @@ export class Store {
    * Próximo produto PRONTO do grupo. Ofertas copiadas de outros grupos ("espelho") vão primeiro,
    * da mais nova para a mais antiga (elas vencem rápido); depois, as da busca própria, por desconto.
    */
-  proximo(grupo) {
-    const prontos = this.list((p) => p.grupo === grupo && p.status === 'PRONTO');
+  proximo(grupo, { aceitar = () => true, preferir = null } = {}) {
+    let prontos = this.list((p) => p.grupo === grupo && p.status === 'PRONTO' && aceitar(p));
     if (!prontos.length) return null;
+    // `preferir` (ex.: perfumes femininos no grupo Perfumes): os preferidos passam na frente; os outros só sem eles.
+    if (preferir && prontos.some(preferir)) prontos = prontos.filter(preferir);
     const espelho = prontos.filter((p) => p.origem === 'espelho');
     if (espelho.length) return espelho.sort((a, b) => String(b.coletadoEm).localeCompare(String(a.coletadoEm)))[0];
     // Cupons de loja parceira também passam na frente (são poucos por busca e têm prazo), mas nunca dois seguidos.

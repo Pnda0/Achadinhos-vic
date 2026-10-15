@@ -50,7 +50,8 @@
         "precoMinimo": 25
       },
       "nicho": "perfumes",
-      "telegram": "-1004316376505"
+      "telegram": "-1004316376505",
+      "preferirFeminino": true
     }
   ]
 }

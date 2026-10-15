@@ -11,6 +11,7 @@ import { buscarOfertasAmazon } from './amazon.js';
 import { buscarCuponsAwin, loadAwin } from './awin.js';
 import { VENDAS_MINIMAS, motivoVendas } from './ml/vendas.js';
 import { evento, origemDe } from './eventos.js';
+import { preferenciaFeminina } from './genero.js';
 import { BrowserSession, sessaoNavegador } from './browser.js';
 import { estiloDoProduto, gerarTitulo, montarLegenda, tituloCupom } from './caption.js';
 import { Store } from './store.js';
@@ -265,10 +266,12 @@ function vendasNoEnvio(p, grupo) {
  */
 export async function enviarProximo(sender, grupo, store = new Store()) {
   const dias = grupo.filtros?.diasSemRepetir || 5;
+  // Perfumes (público principal: meninas): femininos e unissex na frente, no máximo 1 masculino a cada 3 posts.
+  const preferencia = grupo.preferirFeminino ? preferenciaFeminina(store, grupo.nome) : {};
   let p = null;
   // Cada candidato barrado sai da fila (muda de status), então o laço termina; null = fila realmente vazia.
   while (!p) {
-    const candidato = store.proximo(grupo.nome);
+    const candidato = store.proximo(grupo.nome, preferencia);
     if (!candidato) break;
     const repetido = store.jaPublicado(candidato, dias);
     const linkRuim = !repetido && motivoLinkInvalido(candidato);
@@ -280,6 +283,11 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
       evento(repetido ? 'duplicado' : linkRuim ? 'link_invalido' : 'barrado', candidato, motivo); // "barrado" = na hora de postar (≠ recusado na busca)
       log(`  ⏭️  [${grupo.nome}] ${motivo} — pulando: ${candidato.nome.slice(0, 55)}`);
     }
+  }
+  if (!p && preferencia.aceitar && store.proximo(grupo.nome)) {
+    store.save();
+    log(`⏳ [${grupo.nome}] só masculinos na fila: esperando um feminino (no máximo 1 masculino a cada 3 posts).`);
+    return { esperando: true };
   }
   if (!p) {
     store.anotarFilaVazia?.(grupo.nome);

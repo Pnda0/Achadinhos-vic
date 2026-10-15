@@ -18,12 +18,17 @@
       "promobit",
       "gatunopromos",
       "promoloucas",
+      "oqcomprei",
       {
         "canal": "topfitachados",
         "destino": "Fitness"
       },
       {
         "canal": "promobigodeperfumes",
+        "destino": "Perfumes"
+      },
+      {
+        "canal": "perfumepromo",
         "destino": "Perfumes"
       }
     ],
