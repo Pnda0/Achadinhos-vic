@@ -114,11 +114,11 @@ export class Espelho {
     }
   }
 
-  /** O grupo já recebeu o máximo de ofertas do espelho nesta hora? */
-  noLimite(grupo) {
+  /** O grupo já recebeu o máximo de ofertas do espelho nesta hora? Um canal pode ter o próprio "maxPorHora". */
+  noLimite(grupo, fonte = null) {
     const recentes = (this.aceitasPorGrupo.get(grupo) || []).filter((t) => this.agora() - t < 60 * MIN);
     this.aceitasPorGrupo.set(grupo, recentes);
-    return recentes.length >= this.cfg.maxPorHora;
+    return recentes.length >= (fonte?.maxPorHora ?? this.cfg.maxPorHora);
   }
 
   contar(grupo) {
@@ -133,7 +133,7 @@ export class Espelho {
       const g = this.grupos.get(a.grupo);
       if (!g || g.ativo === false) continue;
       if (a.palavras?.length && !a.palavras.some((t) => casaTermo(normalizar(nome), t))) motivos.push('fora do nicho');
-      else if (this.noLimite(g.nome)) motivos.push('limite por hora');
+      else if (this.noLimite(g.nome, fonte)) motivos.push('limite por hora');
       else alvos.push(g);
     }
     return { alvos, motivos };
@@ -255,7 +255,7 @@ export class Espelho {
     }
 
     if (linksAmazon.length) return this.processarAmazon(m, linksAmazon[0], fonte, destino);
-    if (this.noLimite(destino.nome)) return 'limite por hora';
+    if (this.noLimite(destino.nome, fonte)) return 'limite por hora';
 
     try {
       await this.esperar(this.cfg.pausaEntreConsultasSeg * 1000);

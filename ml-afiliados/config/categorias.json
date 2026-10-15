@@ -87,28 +87,28 @@
     "grupo": "Perfumes",
     "nome": "Perfumes",
     "url": "https://www.mercadolivre.com.br/ofertas?category=MLB6284&container_id=MLB779362-1",
-    "ativo": true,
+    "ativo": false,
     "paginas": 4
   },
   {
     "grupo": "Perfumes",
     "nome": "Perfumes (relâmpago)",
     "url": "https://www.mercadolivre.com.br/ofertas?category=MLB6284&container_id=MLB779362-1&promotion_type=lightning",
-    "ativo": true,
+    "ativo": false,
     "paginas": 1
   },
   {
     "grupo": "Perfumes",
     "nome": "Beleza e Cuidado Pessoal (perfumes)",
     "url": "https://www.mercadolivre.com.br/ofertas?category=MLB1246&container_id=MLB779362-1",
-    "ativo": true,
+    "ativo": false,
     "paginas": 4
   },
   {
     "grupo": "Perfumes",
     "nome": "Beleza relâmpago (perfumes)",
     "url": "https://www.mercadolivre.com.br/ofertas?category=MLB1246&container_id=MLB779362-1&promotion_type=lightning",
-    "ativo": true,
+    "ativo": false,
     "paginas": 1
   }
 ]

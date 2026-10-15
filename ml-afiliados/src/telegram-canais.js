@@ -14,7 +14,7 @@ export const jidDoCanal = (nome) => PREFIXO + String(nome).trim().replace(/^(htt
 /**
  * As fontes do espelho a partir do bloco "canaisTelegram". Cada item de "canais" é o nome do canal (usa as opções
  * do bloco) ou um objeto que troca algumas delas:
- *   { "canal": "x", "destino": "Perfumes", "soAmazon": false, "exigirVendas": false, "fotoDoCanal": true }
+ *   { "canal": "x", "destino": "Perfumes", "soAmazon": false, "exigirVendas": false, "fotoDoCanal": true, "maxPorHora": 12 }
  * "exigirVendas": false = o dono liberou este canal da regra de mais de 50 vendas do ML (o espelho não lê vendas).
  * "fotoDoCanal": true = a oferta do ML sai com a foto da mensagem do canal, não com a do anúncio (fundo branco).
  */
@@ -31,7 +31,7 @@ export function fontesDosCanais(c, { destinoPadrao = 'Geral', nichos = {}, lojas
       const nome = `@${jid.slice(PREFIXO.length)}`;
       const soAmazon = (o.soAmazon ?? c.soAmazon) !== false;
       const proprios = o.destinos?.length ? comPalavras(o.destinos) : o.destino ? comPalavras([{ grupo: o.destino }]) : null;
-      return { nome, nomeWhats: nome, jid, destino: o.destino || destino, destinos: proprios || destinos, soAmazon, lojasParceiras, exigirVendas: o.exigirVendas !== false, fotoDoCanal: !!o.fotoDoCanal };
+      return { nome, nomeWhats: nome, jid, destino: o.destino || destino, destinos: proprios || destinos, soAmazon, lojasParceiras, exigirVendas: o.exigirVendas !== false, fotoDoCanal: !!o.fotoDoCanal, ...(Number.isInteger(o.maxPorHora) && { maxPorHora: o.maxPorHora }) };
     })
     .filter((f) => !f.soAmazon || lojasParceiras || amazonTag); // "só Amazon" sem etiqueta e sem Awin não aproveita nada
 }

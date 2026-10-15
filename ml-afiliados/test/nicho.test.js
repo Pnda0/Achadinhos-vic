@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { loadGrupos, loadNichos, loadCategorias } from '../src/config.js';
+import { loadGrupos, loadNichos, loadCategorias, loadFontes } from '../src/config.js';
 import { motivoRecusa } from '../src/pipeline.js';
 import { estiloDoProduto, tituloPronto } from '../src/caption.js';
 import { casaTermo, normalizar } from '../src/util.js';
@@ -41,7 +41,10 @@ test('site e bot: os três grupos de nicho existem, cada um com o seu nicho e t�
     const g = grupos.find((x) => x.nome === nome);
     assert.equal(g?.nicho, nicho, nome);
     assert.ok(g.titulos?.alto?.length && g.tema, `${nome} tem títulos e tema`);
-    assert.ok(loadCategorias().some((c) => c.ativo && c.grupo === nome), `${nome} tem categoria ativa`);
+    // Cada grupo precisa de alguma fonte: busca no ML ou um canal do Telegram que o alimente (o Perfumes, desde
+    // 15/10/2026, vive só do @promobigodeperfumes, a pedido do dono).
+    const canais = (loadFontes().cfg.canaisTelegram?.canais || []).filter((c) => typeof c === 'object' && c.destino === nome);
+    assert.ok(loadCategorias().some((c) => c.ativo && c.grupo === nome) || canais.length, `${nome} tem de onde tirar ofertas`);
   }
 });
 

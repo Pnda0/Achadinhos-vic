@@ -343,3 +343,25 @@ test('Caixa de entrada: oferta mandada pelo dono entra mesmo com desconto baixo,
   assert.match(respostas[1][1], /Me mande/);
   assert.match(respostas[2][1], /Não entrou na fila: já está na fila/);
 });
+
+test('limite por hora próprio do canal ("maxPorHora" no canal) troca o do bloco', async () => {
+  const agora = { t: 1_800_000_000_000 };
+  const msgs = [1, 2, 3, 4].map((i) => ({ id: `h${i}`, jid: 'A@g.us', t: seg(agora, 1), tipo: 'chat', texto: `oferta https://meli.la/X${i}` }));
+  let n = 0;
+  const resolver = async () => {
+    n++;
+    return { ...comVendas(parseSocialPage(fx('social-meli-la.html'))), id: `MLB9000${n}`, nome: `Perfume Diferente ${n}`, url: `https://p/${n}` };
+  };
+  const m = montar({ msgs: () => msgs, agora, resolver, cfg: { maxPorHora: 1 } });
+  m.espelho.fontes.get('A@g.us').maxPorHora = 3;
+  const r = await m.espelho.tick();
+  assert.deepEqual({ enfileiradas: r.enfileiradas, ignoradas: r.ignoradas }, { enfileiradas: 3, ignoradas: { 'limite por hora': 1 } });
+  const sem = montar({ msgs: () => msgs, agora, resolver, cfg: { maxPorHora: 1 } });
+  assert.equal((await sem.espelho.tick()).enfileiradas, 1, 'sem o do canal, vale o do bloco');
+});
+
+test('fontesDosCanais: maxPorHora do canal só quando informado', () => {
+  const [a, b] = fontesDosCanais({ canais: ['x', { canal: 'y', soAmazon: false, maxPorHora: 12 }] }, { lojasParceiras: true });
+  assert.equal(a.maxPorHora, undefined);
+  assert.equal(b.maxPorHora, 12);
+});
