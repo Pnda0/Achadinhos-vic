@@ -122,7 +122,8 @@ export class EspelhoWhatsApp {
    * ("preferirFeminino"), "só marcas" e palavras bloqueadas.
    */
   proxima() {
-    const grupos = this.carregarGrupos().filter((g) => g.ativo !== false && this.jids[g.nome]);
+    // "whatsappPausado": true (grupos.json) = o grupo segue no Telegram, mas não posta no WhatsApp.
+    const grupos = this.carregarGrupos().filter((g) => g.ativo !== false && !g.whatsappPausado && this.jids[g.nome]);
     const ja = (this.store.data.whatsapp ??= {});
     const marca = preferenciaDeMarca();
     for (let i = 0; i < grupos.length; i++) {

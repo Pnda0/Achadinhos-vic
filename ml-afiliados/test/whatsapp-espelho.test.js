@@ -121,3 +121,18 @@ test('espelho: mesmas regras do Telegram no WhatsApp — feminino e marca primei
   // o próximo masculino espera: já foi 1 nos últimos 2
   assert.equal(await e.enviarUma(), null);
 });
+
+test('espelho: grupo com "whatsappPausado" não posta no WhatsApp (os outros seguem)', async () => {
+  const { e, enviados, publicar } = montar();
+  await e.ligarGrupos();
+  GRUPOS[0].whatsappPausado = true;
+  try {
+    publicar('A1', 'Geral', 5);
+    publicar('F1', 'Fitness', 10);
+    await e.enviarUma();
+    await e.enviarUma();
+    assert.deepEqual(enviados.map(([jid]) => jid), ['F@g.us']);
+  } finally {
+    delete GRUPOS[0].whatsappPausado;
+  }
+});

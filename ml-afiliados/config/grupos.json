@@ -73,7 +73,8 @@
       "telegram": "-1003849571702",
       "preferirFeminino": 4,
       "whatsapp": "Achadinhos Vic - Geral",
-      "_comentarioFiltros": "Geral (público: meninas, pedido do dono 15/10/2026): fica de fora o que não é para elas — carro, peça de PC gamer, ferramenta, bebida... (os bloqueios padrão continuam aqui porque esta lista substitui a padrão)."
+      "_comentarioFiltros": "Geral (público: meninas, pedido do dono 15/10/2026): fica de fora o que não é para elas — carro, peça de PC gamer, ferramenta, bebida... (os bloqueios padrão continuam aqui porque esta lista substitui a padrão).",
+      "whatsappPausado": true
     },
     {
       "nome": "Fitness",
@@ -111,7 +112,7 @@
       },
       "nicho": "perfumes",
       "telegram": "-1004316376505",
-      "preferirFeminino": 3,
+      "preferirFeminino": 5,
       "whatsapp": "Achadinhos Vic - Perfumes",
       "soMarcas": true
     }
