@@ -83,10 +83,16 @@ test('painel aberto ou trava com erro: NÃO publica e avisa o dono 1x por dia', 
   assert.equal(lerEstado(base).trava, 'erro');
 });
 
-test('sem token: só local; nunca o site público; o token não aparece na saída', async () => {
-  const ex = executor();
-  const r = await publicarPainel({ hash: 'h', base: pasta(), env: {}, fetchImpl: resposta(302, 'https://x.cloudflareaccess.com'), executar: ex.fn });
+test('sem token: usa o login do wrangler do PC; sem login, só local; nunca o site público; o token não aparece na saída', async () => {
+  const semLogin = { chamadas: [], fn: async (args) => (semLogin.chamadas.push(args), { ok: false, saida: 'You are not authenticated' }) };
+  const r = await publicarPainel({ hash: 'h', base: pasta(), env: {}, fetchImpl: resposta(302, 'https://x.cloudflareaccess.com'), executar: semLogin.fn });
   assert.match(r.motivo, /só no PC/);
+  assert.deepEqual(semLogin.chamadas, [['whoami']]);
+  const logado = { chamadas: [], fn: async (args) => (logado.chamadas.push(args), { ok: true, saida: args[0] === 'whoami' ? 'You are logged in with an OAuth Token' : 'ok' }) };
+  const rl = await publicarPainel({ hash: 'h', base: pasta(), env: {}, fetchImpl: resposta(302, 'https://x.cloudflareaccess.com'), executar: logado.fn });
+  assert.equal(rl.publicado, true);
+  assert.deepEqual(logado.chamadas.map((c) => c[0]), ['whoami', 'pages']);
+  const ex = executor();
   const r2 = await publicarPainel({ hash: 'h', base: pasta(), env: ENV, projeto: 'achadinhos-vic', fetchImpl: resposta(302, 'https://x.cloudflareaccess.com'), executar: ex.fn });
   assert.match(r2.motivo, /proibido/);
   assert.equal(ex.chamadas.length, 0);

@@ -85,10 +85,11 @@ export function rodarWrangler(args, { env = process.env, tempo = TEMPO_MAXIMO } 
   const segredos = [env.CLOUDFLARE_API_TOKEN];
   return new Promise((resolve) => {
     let saida = '';
-    const p = spawn(process.execPath, [bin, ...args], {
-      env: { ...process.env, CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID, WRANGLER_SEND_METRICS: 'false', CI: 'true' },
-      windowsHide: true,
-    });
+    // Com token: só ele (CI). Sem token: o login do wrangler deste PC ("npx wrangler login", conta do site).
+    const filho = { ...process.env, WRANGLER_SEND_METRICS: 'false' };
+    if (env.CLOUDFLARE_API_TOKEN?.trim()) Object.assign(filho, { CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN, CI: 'true' }, env.CLOUDFLARE_ACCOUNT_ID ? { CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID } : {});
+    else delete filho.CLOUDFLARE_API_TOKEN;
+    const p = spawn(process.execPath, [bin, ...args], { env: filho, windowsHide: true });
     const juntar = (d) => (saida = (saida + d).slice(-4000));
     p.stdout.on('data', juntar);
     p.stderr.on('data', juntar);
@@ -125,7 +126,11 @@ export function gravarPaginaConfigurando(base = PASTA_ANALYTICS) {
  */
 export async function publicarPainel({ hash, base = PASTA_ANALYTICS, env = process.env, fetchImpl = fetch, executar = rodarWrangler, avisos = null, agora = new Date(), projeto = PROJETO } = {}) {
   if (projeto === PROIBIDO) return { publicado: false, motivo: 'projeto proibido (site público)' };
-  if (!env.CLOUDFLARE_API_TOKEN?.trim() || !env.CLOUDFLARE_ACCOUNT_ID?.trim()) return { publicado: false, motivo: 'sem CLOUDFLARE_API_TOKEN/CLOUDFLARE_ACCOUNT_ID: painel só no PC' };
+  // Sem token, usa o login do wrangler deste PC (o mesmo que publica o site), se houver.
+  if (!env.CLOUDFLARE_API_TOKEN?.trim()) {
+    const quem = await executar(['whoami'], { env });
+    if (!quem.ok || !/logged in/i.test(quem.saida)) return { publicado: false, motivo: 'sem CLOUDFLARE_API_TOKEN e sem login do wrangler: painel só no PC' };
+  }
   const estado = lerEstado(base);
   const segredos = [env.CLOUDFLARE_API_TOKEN];
   const deploy = (pasta) => executar(['pages', 'deploy', pasta, '--project-name', projeto, '--branch', 'main', '--commit-dirty=true'], { env });
@@ -159,7 +164,8 @@ export async function publicarPainel({ hash, base = PASTA_ANALYTICS, env = proce
 
   if (trava === 'inexistente') {
     // 1ª vez: cria o projeto e publica só a página "configurando…". Se o projeto já existia, só anota.
-    const c = await executar(['pages', 'project', 'create', projeto, '--production-branch', 'main'], { env });
+    // --force: Pages clássico (sem ele, o wrangler 4.13x tenta criar como Worker e falha)
+    const c = await executar(['pages', 'project', 'create', projeto, '--production-branch', 'main', '--force'], { env });
     const jaExistia = !c.ok && /already exists|já existe|8000002/i.test(c.saida);
     if (!c.ok && !jaExistia) {
       log(`📊 Painel: não consegui criar o projeto ${projeto} (${ultimaLinha(c)}).`);

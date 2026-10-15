@@ -282,7 +282,7 @@ Arquivos em `data/analytics/` (fora do git): `dias/AAAA-MM-DD.json` (180 dias), 
 
 Entre em https://dash.cloudflare.com com a conta **alanribeiro8352@icloud.com** (a mesma do site).
 
-**1. Token para o bot publicar**
+**1. Token para o bot publicar** — *opcional desde 15/10/2026*: sem token, o bot usa o login do wrangler do PC de casa (o mesmo do site, `npx wrangler login`). O projeto `achadinhos-vic-painel` já foi criado assim. Pule para o passo 2.
 1. Clique no bonequinho (canto de cima) → **Perfil** → **Tokens de API** → **Criar token** → **Criar token personalizado**.
 2. Nome: `painel do bot`. Em **Permissões**: `Conta` · `Cloudflare Pages` · `Editar`. Nada mais.
 3. **Continuar para o resumo** → **Criar token** → copie o token (ele aparece uma vez só).
@@ -300,7 +300,7 @@ Entre em https://dash.cloudflare.com com a conta **alanribeiro8352@icloud.com** 
 3. Nome: `Painel`. Em **Domínio** adicione os dois:
    - `achadinhos-vic-painel.pages.dev`
    - `*.achadinhos-vic-painel.pages.dev` (as prévias de cada publicação)
-4. **Avançar** → crie a política: nome `Só eu`, ação **Permitir**, regra **Incluir** → **E-mails** → `alanribeiro8352@icloud.com`.
+4. **Avançar** → crie a política: nome `Só eu`, ação **Permitir**, regra **Incluir** → **E-mails** → `alanribeiro8352@icloud.com` e o e-mail de quem mais puder ver (ex.: a prima/Victória). Para liberar alguém depois: Zero Trust → Access → Aplicativos → Painel → Políticas → acrescente o e-mail.
 5. **Avançar** → em métodos de login deixe **Senha única (código por e-mail)** → **Adicionar aplicativo**.
 6. Teste: abra https://achadinhos-vic-painel.pages.dev numa aba anônima — deve pedir o e-mail e mandar um código. Pronto: na próxima publicação os números aparecem lá.
 
