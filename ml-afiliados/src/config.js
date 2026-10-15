@@ -113,7 +113,7 @@ export const settings = {
   // Alertas e resumo diário: nome de um grupo do WhatsApp (ex.: "Avisos do bot") ou número com DDD (ex.: 5579999998888).
   avisos: {
     destino: (env.SENDER || '').toLowerCase() === 'telegram' ? env.AVISOS_DESTINO_TELEGRAM?.trim() || '' : env.AVISOS_DESTINO?.trim() || '',
-    resumoCron: env.CRON_RESUMO || '0 22 * * *',
+    resumoCron: env.CRON_RESUMO || '58 21 * * *', // antes das 22h: o PC pode desligar às 22h
   },
   userAgent:
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36',

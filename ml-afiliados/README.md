@@ -129,7 +129,7 @@ Com `AVISOS_DESTINO` no `.env`, o bot te avisa quando algo dá errado — em vez
 - **falha ao postar** no grupo; **espelho pausado** por verificação do ML;
 - **bot ligado** (confirmação a cada vez que liga).
 
-Cada tipo de alerta sai no máximo 1 vez a cada 3 horas. Às 22h (`CRON_RESUMO`) chega o **resumo do dia**: quantas ofertas foram postadas e de quais categorias, maior desconto, quantos produtos cada categoria trouxe e quantos foram aprovados, e os motivos de recusa. Para ver o resumo a qualquer hora: `npm run resumo`.
+Cada tipo de alerta sai no máximo 1 vez a cada 3 horas. Às 21h58 (`CRON_RESUMO`, antes de o PC poder desligar às 22h) chega o **resumo do dia**: quantas ofertas foram postadas e de quais categorias, maior desconto, quantos produtos cada categoria trouxe e quantos foram aprovados, e os motivos de recusa. Para ver o resumo a qualquer hora: `npm run resumo`.
 
 Destino recomendado: crie um grupo **"Avisos do bot"** só com você e o número do bot e ponha `AVISOS_DESTINO=Avisos do bot`. Também aceita o seu número (`5579999998888`). Se o WhatsApp do bot cair, ele não consegue avisar por lá — nesse caso só o log (`data/bot.log`) registra.
 
