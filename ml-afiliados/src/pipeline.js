@@ -66,8 +66,10 @@ export function motivoLinkInvalido(p) {
   return /(^|\.)mercadoli[vb]re\.com(\.br)?$/.test(host) && u.searchParams.get('matt_word') ? null : 'link do ML sem afiliado';
 }
 
-export async function coletar(store = new Store(), { amazon = buscarOfertasAmazon, awin = buscarCuponsAwin, shopee = buscarOfertasShopee, categoriasML = null, raspar = scrapeCategoria, esperar = randomDelay, grupos: gruposDados = null } = {}) {
-  const lista = gruposDados ?? loadGrupos(); // `grupos`: só nos testes (não dependem de qual grupo está pausado)
+export async function coletar(store = new Store(), { amazon = buscarOfertasAmazon, awin = buscarCuponsAwin, shopee = buscarOfertasShopee, categoriasML = null, raspar = scrapeCategoria, esperar = randomDelay, grupos: gruposDados = null, apenasGrupos = null } = {}) {
+  // `grupos`: só nos testes (não dependem de qual grupo está pausado). `apenasGrupos`: busca de reposição, só desses grupos.
+  const so = Array.isArray(apenasGrupos) && apenasGrupos.length ? new Set(apenasGrupos) : null;
+  const lista = (gruposDados ?? loadGrupos()).map((g) => (so && !so.has(g.nome) ? { ...g, ativo: false } : g));
   const grupos = Object.fromEntries(lista.map((g) => [g.nome, g]));
   const emEspera = lista.filter((g) => g.emEspera).map((g) => g.nome);
   if (emEspera.length) log(`⏸️  Em espera (ligado, mas sem canal): ${emEspera.join(', ')} — nada é buscado para ele(s).`);
@@ -202,6 +204,8 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
   log(`   Por categoria (vistos → aprovados): ${Object.entries(porCategoria).map(([n, x]) => `${n} ${x.encontrados}→${x.aceitos}`).join(' | ')}`);
   const resultado = { encontrados, novos, recusas, categorias: porCategoria, amazonErro, awinErro, shopeeErro };
   store.registrarColeta(resultado);
+  const agora = new Date().toISOString(); // quando cada grupo foi buscado (a reposição conta por grupo)
+  for (const g of lista.filter((x) => x.ativo)) (store.data.coletaPorGrupo ??= {})[g.nome] = agora;
   store.save();
   return resultado;
 }

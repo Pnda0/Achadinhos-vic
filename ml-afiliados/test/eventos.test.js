@@ -86,3 +86,28 @@ test('funil do espelho e horários com fila vazia: contadores por dia, 14 dias, 
   s.limparDia();
   assert.ok(s.data.funil['2026-10-14'] && s.data.filaVazia['2026-10-14']);
 });
+
+test('coleta de reposição: "apenasGrupos" busca só os grupos pedidos e anota quando cada grupo foi buscado', async () => {
+  const { coletar } = await import('../src/pipeline.js');
+  const { Store } = await import('../src/store.js');
+  const s = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-')), 'db.json'));
+  const grupos = ['Geral', 'Perfumes'].map((nome) => ({ nome, ativo: true, filtros: {} }));
+  const baixadas = [];
+  const buscouShopee = [];
+  await coletar(s, {
+    grupos,
+    apenasGrupos: ['Perfumes'],
+    categoriasML: [
+      { grupo: 'Geral', nome: 'G', url: 'https://ml/g', paginas: 1, ativo: true },
+      { grupo: 'Perfumes', nome: 'P', url: 'https://ml/p', paginas: 1, ativo: true },
+    ],
+    raspar: async (cat) => (baixadas.push(cat.nome), []),
+    esperar: async () => {},
+    shopee: async ({ grupos: g }) => (buscouShopee.push(...g.filter((x) => x.ativo).map((x) => x.nome)), { produtos: [], categorias: {} }),
+    amazon: async () => ({ produtos: [], categorias: {}, motivo: 'desligada' }),
+    awin: async () => ({ produtos: [], categorias: {}, motivo: 'desligada' }),
+  });
+  assert.deepEqual(baixadas, ['P']);
+  assert.deepEqual(buscouShopee, ['Perfumes']);
+  assert.deepEqual(Object.keys(s.data.coletaPorGrupo), ['Perfumes']);
+});

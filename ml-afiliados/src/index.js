@@ -44,12 +44,12 @@ let parando = false; // reinício pedido: nenhuma tarefa nova começa
 let whatsSender = null;
 
 /** Evita que duas tarefas rodem ao mesmo tempo (ex.: coleta demorada + envio). */
-const exclusivo = (nome, fn) => async () => {
+const exclusivo = (nome, fn) => async (...args) => {
   if (parando) return;
   if (ocupado) return log(`⏭️  ${nome}: outra tarefa em andamento, pulando.`);
   ocupado = true;
   try {
-    await fn();
+    await fn(...args);
   } catch (e) {
     registrarErro(nome, e);
     log(`❌ ${nome}: ${e.message}`);
@@ -59,10 +59,11 @@ const exclusivo = (nome, fn) => async () => {
   }
 };
 
-const cicloColeta = exclusivo('coleta', async () => {
+// `apenasGrupos`: busca de reposição só dos grupos vazios (o node-cron passa outra coisa no 1º argumento: ignorada).
+const cicloColeta = exclusivo('coleta', async (apenasGrupos) => {
   const reabertas = store.reabrirErros(); // falhas com recusa clara voltam para a fila (até 3 tentativas)
   if (reabertas) log(`♻️  ${reabertas} oferta(s) que tinham falhado no envio voltaram para a fila.`);
-  const r = await coletar(store);
+  const r = await coletar(store, { apenasGrupos: Array.isArray(apenasGrupos) ? apenasGrupos : null });
   if (!r.encontrados) await avisos.coletaVazia();
   if (r.amazonErro) await avisos.avisar('amazon', `*Amazon fora do ar no bot* ⚠️\n${r.amazonErro}`);
   if (r.awinErro) await avisos.avisar('awin', `*Awin fora do ar no bot* ⚠️\n${r.awinErro}`);
@@ -85,11 +86,12 @@ function gruposSemFila() {
   return ativos.filter((nome) => !store.list((p) => p.grupo === nome && (p.status === 'PRONTO' || p.status === 'PENDENTE')).length);
 }
 async function reporSePreciso(quando) {
-  const vazios = gruposSemFila();
-  const ultima = Date.parse(store.data.ultimaColeta || 0) || 0;
-  if (!vazios.length || Date.now() - ultima < REPOSICAO_MIN * 60_000) return;
-  log(`🔁 Busca de reposição (${quando}): sem ofertas na fila de ${vazios.join(', ')}.`);
-  await cicloColeta();
+  // Conta por grupo: um grupo que nunca foi buscado (ex.: acabou de ganhar busca própria) é buscado na hora.
+  const porGrupo = store.data.coletaPorGrupo || {};
+  const vazios = gruposSemFila().filter((g) => Date.now() - (Date.parse(porGrupo[g] || 0) || 0) >= REPOSICAO_MIN * 60_000);
+  if (!vazios.length) return;
+  log(`🔁 Busca de reposição (${quando}): sem ofertas na fila de ${vazios.join(', ')} — buscando só ${vazios.length > 1 ? 'esses grupos' : 'esse grupo'}.`);
+  await cicloColeta(vazios);
 }
 
 /** Analytics (data/analytics/): só lê e grava arquivos de relatório; uma falha aqui nunca derruba o bot. */
