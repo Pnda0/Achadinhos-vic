@@ -68,3 +68,16 @@ test('grupo "soMarcas" (Fitness, Beleza, Perfumes): só marca da lista entra e s
   assert.equal(await enviarProximo(sender, grupo, store), null);
   assert.equal(store.list((x) => x.id === 'A')[0].status, 'REJEITADO');
 });
+
+test('na hora de postar: o que está na fila fora do nicho (ex.: rack "Dior" no Perfumes) não sai; cupom passa', async () => {
+  const store = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-')), 'db.json'));
+  const pronto = (id, nome, extra = {}) => store.upsert({ id, grupo: 'Perfumes', nome, status: 'PRONTO', url: `https://x/${id}`, loja: 'shopee', linkAfiliado: `https://s.shopee.com.br/${id}`, descontoPct: 30, coletadoEm: '2026-10-16T10:00:00Z', ...extra });
+  pronto('R', 'Rack Suspenso para TV Off White Dior');
+  pronto('P', 'Perfume Dior J adore Feminino 100ml');
+  const enviados = [];
+  const sender = { sendImage: async (j, i, t) => (enviados.push(t), { comImagem: true }), sendText: async (j, t) => enviados.push(t) };
+  const grupo = { nome: 'Perfumes', jid: 'P', soMarcas: true, filtros: { diasSemRepetir: 5, palavrasObrigatorias: ['perfume', 'parfum'] } };
+  assert.equal((await enviarProximo(sender, grupo, store))?.nome, 'Perfume Dior J adore Feminino 100ml');
+  assert.equal(await enviarProximo(sender, grupo, store), null);
+  assert.equal(store.list((x) => x.id === 'R')[0].erro, 'fora do nicho');
+});

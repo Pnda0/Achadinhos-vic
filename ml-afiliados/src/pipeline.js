@@ -286,6 +286,19 @@ async function simularDigitando(sender, jid) {
   }
 }
 
+/**
+ * Nicho e palavras bloqueadas do grupo valem de novo na hora de postar: o que entrou antes de uma correção não sai
+ * (16/10/2026: um rack de TV "Off White Dior" entrou no Perfumes pela busca "Dior"). Cupom e caixa de entrada passam.
+ */
+function nichoNoEnvio(p, grupo) {
+  if (p.manual || p.tipo === 'cupom' || origemDe(p) === 'caixa') return null;
+  const f = grupo.filtros || {};
+  const nome = normalizar(p.nome);
+  if (f.palavrasObrigatorias?.length && !f.palavrasObrigatorias.some((t) => casaTermo(nome, t))) return 'fora do nicho';
+  if ((f.palavrasBloqueadas || []).some((w) => casaTermo(nome, w))) return 'palavra bloqueada';
+  return null;
+}
+
 /** Grupo "soMarcas": o que entrou na fila antes do filtro (ou sem marca) não sai. Cupom e caixa de entrada passam. */
 function marcaNoEnvio(p, grupo) {
   if (!grupo.soMarcas || p.manual || p.tipo === 'cupom' || origemDe(p) === 'caixa') return null;
@@ -324,7 +337,7 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
     if (!candidato) break;
     const repetido = store.jaPublicado(candidato, dias);
     const linkRuim = !repetido && motivoLinkInvalido(candidato);
-    const vendas = !repetido && !linkRuim && (vendasNoEnvio(candidato, grupo) || marcaNoEnvio(candidato, grupo));
+    const vendas = !repetido && !linkRuim && (vendasNoEnvio(candidato, grupo) || marcaNoEnvio(candidato, grupo) || nichoNoEnvio(candidato, grupo));
     if (!repetido && !linkRuim && !vendas) p = candidato;
     else {
       const motivo = repetido || linkRuim || vendas;
