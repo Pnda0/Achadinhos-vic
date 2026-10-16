@@ -1,7 +1,7 @@
 {
   "_comentario": "BUSCA PRÓPRIA NA SHOPEE (pedido do dono, 15/10/2026: 'vamos pegar nós mesmos as promoções'). Roda junto com a busca do ML (CRON_COLETA) e precisa de SHOPEE_APP_ID/SHOPEE_SECRET no .env. Em cada grupo: 'marcas' = as listas de config/marcas.json que viram buscas (uma busca por marca), 'buscas' = palavras a mais. Os mais vendidos vêm primeiro. Só entra produto com pelo menos 'vendasMinimas' vendas, nota 'notaMinima' e 'descontoMinimo'% de desconto (além dos filtros do grupo: nicho, só marcas, não repetir). 'buscasPorColeta' = quantas buscas por grupo em cada coleta (revezando a lista, para não repetir sempre as mesmas). Depois de mexer aqui, reinicie o bot.",
   "ativo": true,
-  "buscasPorColeta": 12,
+  "buscasPorColeta": 30,
   "porBusca": 20,
   "vendasMinimas": 50,
   "notaMinima": 4.5,
