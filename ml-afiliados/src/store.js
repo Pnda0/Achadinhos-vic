@@ -23,6 +23,34 @@ const NA_FILA = new Set(['PENDENTE', 'PRONTO', 'ENVIANDO']);
 /** Chave do produto pelo nome, para achar o mesmo produto anunciado com outro id (outro vendedor/anúncio). */
 export const chaveNome = (p) => normalizar(p.nome); // mantém números e unidades: "100ml" ≠ "50ml", "kit 3" ≠ "kit 2"
 
+/**
+ * Mesmo produto com nome escrito de outro jeito (na Shopee cada vendedor escreve o seu — visto em 16/10/2026:
+ * "Perfume Árabe Sabah Al Ward Al Wataniah 100ml" e "Eau De Parfum Feminino Sabah Al Ward 100ml Al Wataniah Arabe"
+ * saíram 6 vezes). Compara as palavras que dizem QUAL é o produto (sem "perfume", "feminino", "original"...):
+ * 70% em comum = o mesmo. Tamanhos diferentes nos dois nomes ("100ml" x "30ml") = produtos diferentes.
+ */
+const PALAVRAS_GENERICAS = new Set(
+  'perfume perfumes arabe feminino feminina masculino masculina unissex unisex eau de du da do das dos e ou o a em com para por parfum toilette cologne edp edt colonia deo spray original originais importado importada envio agora imediato pronta entrega lancamento novo nova kit fragrancia fixacao alta longa duracao promocao oferta frete gratis'.split(' ')
+);
+const TAMANHO = /^\d+([.,]\d+)?(ml|l|g|kg|mg|un|und|unid|pcs|caps|capsulas)?$/;
+function palavrasDoProduto(nome) {
+  const palavras = new Set();
+  const tamanhos = new Set();
+  for (const t of normalizar(nome).split(' ')) {
+    if (TAMANHO.test(t)) tamanhos.add(t);
+    else if (t && !PALAVRAS_GENERICAS.has(t)) palavras.add(t);
+  }
+  return { palavras, tamanhos };
+}
+export function parecido(a, b) {
+  const A = palavrasDoProduto(a);
+  const B = palavrasDoProduto(b);
+  if (A.tamanhos.size && B.tamanhos.size && ![...A.tamanhos].some((t) => B.tamanhos.has(t))) return false;
+  const comuns = [...A.palavras].filter((t) => B.palavras.has(t)).length;
+  const todas = new Set([...A.palavras, ...B.palavras]).size;
+  return comuns >= 2 && comuns / todas >= 0.7;
+}
+
 /** Guarda só os últimos `dias` dias de um mapa { "AAAA-MM-DD": ... } (as chaves ordenam como datas). */
 function podarDias(mapa, dias = 14) {
   for (const k of Object.keys(mapa).sort().slice(0, -dias)) delete mapa[k];
@@ -94,13 +122,17 @@ export class Store {
   /** Um produto com o MESMO nome (outro id) saiu neste grupo nos últimos N dias? */
   nomeRecente(p, dias) {
     const t = this.data.nomes?.[`${p.grupo}:${chaveNome(p)}`];
-    return !!t && Date.now() - new Date(t).getTime() < dias * 86_400_000;
+    if (t && Date.now() - new Date(t).getTime() < dias * 86_400_000) return true;
+    // O mesmo produto com o nome escrito de outro jeito (outro vendedor).
+    const prefixo = `${p.grupo}:`;
+    const limite = Date.now() - dias * 86_400_000;
+    return Object.entries(this.data.nomes || {}).some(([k, quando]) => k.startsWith(prefixo) && new Date(quando).getTime() >= limite && parecido(k.slice(prefixo.length), p.nome));
   }
 
-  /** Outro anúncio com o mesmo nome já está na fila deste grupo? */
+  /** Outro anúncio do mesmo produto (mesmo nome, ou escrito de outro jeito) já está na fila deste grupo? */
   duplicadoNaFila(p) {
     const chave = chaveNome(p);
-    return this.list((x) => x.grupo === p.grupo && x.id !== p.id && NA_FILA.has(x.status) && chaveNome(x) === chave).length > 0;
+    return this.list((x) => x.grupo === p.grupo && x.id !== p.id && NA_FILA.has(x.status) && (chaveNome(x) === chave || parecido(x.nome, p.nome))).length > 0;
   }
 
   /** Última checagem antes de postar. Devolve o motivo (já saiu) ou null. */

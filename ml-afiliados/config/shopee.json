@@ -66,7 +66,10 @@
       "buscas": [
         "perfume feminino importado",
         "perfume árabe feminino"
-      ]
+      ],
+      "prefixo": "perfume"
     }
-  }
+  },
+  "maxPorBusca": 4,
+  "_comentarioPrefixo": "\"prefixo\" num grupo vai na frente de cada busca (Perfumes: \"perfume Dior\", não só \"Dior\", que trouxe rack e roupa em 16/10/2026). \"maxPorBusca\": no máximo N produtos por busca, um de cada (a Shopee traz o mesmo perfume de vários vendedores)."
 }

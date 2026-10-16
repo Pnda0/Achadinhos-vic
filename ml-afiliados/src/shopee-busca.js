@@ -6,12 +6,18 @@
  */
 import { loadMarcas, loadShopee } from './config.js';
 import { Shopee } from './shopee.js';
-import { log, sleep } from './util.js';
+import { parecido } from './store.js';
+import { log, normalizar, sleep } from './util.js';
 
-/** As buscas do grupo: uma por marca das listas pedidas (o nome da marca) + as palavras extras, sem repetir. */
+/**
+ * As buscas do grupo: uma por marca das listas pedidas + as palavras extras, sem repetir. "prefixo" (ex.: "perfume")
+ * vai na frente da busca que não tem a palavra: buscar só "Dior" trouxe rack de TV e roupa (16/10/2026).
+ */
 export function buscasDoGrupo(cfgGrupo = {}, marcas = loadMarcas()) {
   const daMarca = (cfgGrupo.marcas || []).flatMap((lista) => (marcas[lista] || []).map((m) => (typeof m === 'string' ? m : m.marca)));
-  return [...new Set([...daMarca, ...(cfgGrupo.buscas || [])].filter(Boolean))];
+  const prefixo = cfgGrupo.prefixo ? String(cfgGrupo.prefixo) : '';
+  const comPrefixo = (t) => (prefixo && !normalizar(t).split(' ').includes(normalizar(prefixo)) ? `${prefixo} ${t}` : t);
+  return [...new Set([...daMarca, ...(cfgGrupo.buscas || [])].filter(Boolean).map(comPrefixo))];
 }
 
 /**
@@ -41,12 +47,16 @@ export async function buscarOfertasShopee({ grupos, api = new Shopee(), cfg = lo
         if (/signature|credential|10020|10031|auth/i.test(e.message)) throw e; // credencial errada: não adianta seguir
         continue;
       }
+      const desta = []; // a mesma busca traz o mesmo produto de vários vendedores: um de cada, até "maxPorBusca"
       for (const it of itens) {
         c.encontrados++;
+        if (desta.length >= (cfg.maxPorBusca ?? 4)) continue;
         if (!it.itemId || !it.linkAfiliado || !it.nome) continue;
         if (it.vendas < (cfg.vendasMinimas ?? 50)) continue;
         if (it.nota && it.nota < (cfg.notaMinima ?? 4.5)) continue;
         if ((it.descontoPct || 0) < (cfg.descontoMinimo ?? 15)) continue;
+        if (desta.some((x) => parecido(x.nome, it.nome))) continue;
+        desta.push(it);
         const { itemId, shopId, vendas, ...resto } = it;
         produtos.push({ ...resto, id: `SHP-${itemId}`, loja: 'shopee', grupo: g.nome, categoria: `Shopee: ${g.nome}`, busca: termo });
       }

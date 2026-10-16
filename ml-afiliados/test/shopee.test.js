@@ -129,3 +129,28 @@ test('busca própria na Shopee: marcas da lista + palavras, só produto forte, r
   const sem = await buscarOfertasShopee({ grupos, api: { ligada: () => false }, cfg });
   assert.match(sem.motivo, /SHOPEE_APP_ID/);
 });
+
+test('Shopee: o mesmo produto de vendedores diferentes conta como repetido; Perfumes busca "perfume <marca>"', async () => {
+  const { parecido } = await import('../src/store.js');
+  const { buscasDoGrupo, buscarOfertasShopee } = await import('../src/shopee-busca.js');
+  assert.equal(parecido('Perfume Árabe Sabah Al Ward Al Wataniah ou Sugar 100ml Feminino', 'Eau De Parfum Feminino Sabah Al Ward 100ml Al Wataniah Arabe'), true);
+  assert.equal(parecido('Perfume Al Wataniah Durrat Al Aroos', 'Perfume Árabe Sabah Al Ward Al Wataniah'), false);
+  assert.equal(parecido('Perfume Mini Yara Lattafa 30ml', 'Perfume Lattafa Yara 100ml'), false, 'tamanhos diferentes = outro produto');
+  assert.deepEqual(buscasDoGrupo({ marcas: ['perfumes'], buscas: ['perfume árabe feminino'], prefixo: 'perfume' }, { perfumes: ['Dior', 'Lattafa'] }), ['perfume Dior', 'perfume Lattafa', 'perfume árabe feminino']);
+
+  const nomes = ['Perfume Sabah Al Ward Al Wataniah 100ml', 'Eau de Parfum Sabah Al Ward Al Wataniah 100ml Feminino', 'Perfume Durrat Al Aroos Al Wataniah', 'Perfume Ameerati Al Wataniah', 'Perfume Watani Al Wataniah', 'Perfume Shagaf Al Ward Al Wataniah'];
+  const api = { ligada: () => true, buscar: async () => nomes.map((nome, i) => ({ itemId: String(i), nome, vendas: 500, nota: 4.9, descontoPct: 30, linkAfiliado: `https://s.shopee.com.br/${i}` })) };
+  const r = await buscarOfertasShopee({ grupos: [{ nome: 'Perfumes', ativo: true }], api, cfg: { maxPorBusca: 4, grupos: { Perfumes: { buscas: ['x'] } } }, esperar: async () => {} });
+  assert.deepEqual(r.produtos.map((p) => p.nome), [nomes[0], nomes[2], nomes[3], nomes[4]]); // sem o Sabah repetido, no máximo 4
+});
+
+test('fila: o mesmo produto escrito de outro jeito não sai de novo (nem fica duas vezes na fila)', async () => {
+  const { Store } = await import('../src/store.js');
+  const s = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-')), 'db.json'));
+  const p = (id, nome) => ({ id, grupo: 'Perfumes', nome, status: 'PRONTO', linkAfiliado: `https://s.shopee.com.br/${id}` });
+  s.upsert(p('1', 'Perfume Árabe Sabah Al Ward Al Wataniah 100ml'));
+  assert.equal(s.duplicadoNaFila(p('2', 'Eau De Parfum Feminino Sabah Al Ward 100ml Al Wataniah')), true);
+  s.setStatus(s.list()[0], 'ENVIADO', { enviadoEm: new Date().toISOString() });
+  assert.match(s.jaPublicado(p('3', 'Perfume Arabe Al Wataniah Feminino Sabah Al Ward'), 5), /mesmo produto/);
+  assert.equal(s.jaPublicado(p('4', 'Perfume Al Wataniah Durrat Al Aroos'), 5), null);
+});
