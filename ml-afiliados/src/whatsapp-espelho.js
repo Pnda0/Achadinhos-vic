@@ -21,7 +21,9 @@ import { marcaDoProduto, preferenciaDeMarca } from './marcas.js';
 import { casaTermo, log, normalizar, sleep } from './util.js';
 
 const ARQUIVO_GRUPOS = path.join(DATA_DIR, 'whatsapp-grupos.json');
-const UMA_HORA = 3_600_000;
+// Até quantas horas depois de sair no Telegram a oferta ainda vai para o WhatsApp. Era 1 h, mas o Telegram posta
+// rápido e esvazia a fila: o Perfumes ficava 2 h sem nada para o WhatsApp mandar (16/10/2026).
+const JANELA = 4 * 3_600_000;
 
 export function lerGruposWhats(arquivo = ARQUIVO_GRUPOS) {
   try {
@@ -132,7 +134,7 @@ export class EspelhoWhatsApp {
       const semMasculino = cadaN && this.ultimosNoWhats(g.nome, cadaN - 1).some((x) => generoDoProduto(x) === 'm');
       const nota = (x) => (cadaN ? ({ f: 2, m: 0 }[generoDoProduto(x)] ?? 1) : 0) + marca(x);
       const p = this.store
-        .list((x) => x.grupo === g.nome && x.status === 'ENVIADO' && x.legenda && x.enviadoEm && this.agora() - new Date(x.enviadoEm).getTime() < UMA_HORA && !ja[`${g.nome}:${x.id}`])
+        .list((x) => x.grupo === g.nome && x.status === 'ENVIADO' && x.legenda && x.enviadoEm && this.agora() - new Date(x.enviadoEm).getTime() < JANELA && !ja[`${g.nome}:${x.id}`])
         .filter((x) => valeNoGrupo(x, g) && !(semMasculino && generoDoProduto(x) === 'm'))
         .sort((a, b) => nota(b) - nota(a) || String(b.enviadoEm).localeCompare(String(a.enviadoEm)))[0];
       if (p) {
@@ -152,6 +154,7 @@ export class EspelhoWhatsApp {
     const jid = this.jids[grupo.nome];
     // Marca ANTES de enviar: se o WhatsApp não responder, não reenvia (melhor perder uma do que repetir).
     this.store.data.whatsapp[`${grupo.nome}:${p.id}`] = new Date(this.agora()).toISOString();
+    this.store.data.whatsappUltimoEnvio = new Date(this.agora()).toISOString(); // o ritmo vale mesmo se o bot reiniciar
     this.store.save();
     try {
       await this.sender.typing?.(jid, 4 + Math.random() * 6).catch(() => {});
@@ -176,8 +179,18 @@ export class EspelhoWhatsApp {
     for (const [k, t] of Object.entries(this.store.data.whatsapp || {})) if (new Date(t).getTime() < limite) delete this.store.data.whatsapp[k];
   }
 
-  /** Laço: uma postagem, espera o intervalo (com até 60 s de variação), de novo. Nunca derruba o bot. */
+  /**
+   * Laço: uma postagem, espera o intervalo (com até 60 s de variação), de novo. Nunca derruba o bot.
+   * Ao ligar, espera o que falta do intervalo desde a última mensagem: reiniciar o bot não pode encurtar o ritmo
+   * (em 16/10/2026 três reinícios seguidos mandaram 3 mensagens em 3 minutos — risco de banir o chip).
+   */
   async rodar({ parar = () => false } = {}) {
+    const ultimo = Date.parse(this.store.data.whatsappUltimoEnvio || 0) || 0;
+    const falta = ultimo + this.intervaloMs - this.agora();
+    if (falta > 0) {
+      log(`📲 WhatsApp: a última mensagem foi há pouco; a próxima sai em ${Math.ceil(falta / 60_000)} min.`);
+      await this.esperar(falta);
+    }
     while (!parar()) {
       try {
         await this.enviarUma();

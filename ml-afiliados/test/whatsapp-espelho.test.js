@@ -66,7 +66,7 @@ test('espelho: revezando os grupos, a oferta mais recente de cada um, igual ao T
   publicar('A1', 'Geral', 30);
   publicar('A2', 'Geral', 5);
   publicar('F1', 'Fitness', 10);
-  publicar('V1', 'Geral', 90); // saiu há mais de 1 hora: não vai
+  publicar('V1', 'Geral', 300); // saiu há mais de 4 horas: não vai
   publicar('P1', 'Perfumes', 1); // Perfumes sem grupo no WhatsApp
   await e.enviarUma();
   await e.enviarUma();
@@ -135,4 +135,21 @@ test('espelho: grupo com "whatsappPausado" não posta no WhatsApp (os outros seg
   } finally {
     delete GRUPOS[0].whatsappPausado;
   }
+});
+
+test('espelho: reiniciar o bot não encurta o ritmo — espera o que falta desde a última mensagem', async () => {
+  const store = new Store(path.join(pasta(), 'db.json'));
+  store.data.whatsappUltimoEnvio = new Date(MEIO_DIA - 2 * 60_000).toISOString(); // saiu uma há 2 min
+  const esperas = [];
+  const e = new EspelhoWhatsApp({ sender: { listGroups: async () => [] }, store, carregarGrupos: () => [], intervaloMin: 6, agora: () => MEIO_DIA, esperar: async (ms) => esperas.push(ms) });
+  let voltas = 0;
+  await e.rodar({ parar: () => voltas++ >= 1 });
+  assert.equal(esperas[0], 4 * 60_000, 'espera os 4 min que faltam antes da 1ª');
+  // sem mensagem recente, começa na hora
+  const store2 = new Store(path.join(pasta(), 'db.json'));
+  const esperas2 = [];
+  const e2 = new EspelhoWhatsApp({ sender: { listGroups: async () => [] }, store: store2, carregarGrupos: () => [], intervaloMin: 6, agora: () => MEIO_DIA, esperar: async (ms) => esperas2.push(ms) });
+  let v2 = 0;
+  await e2.rodar({ parar: () => v2++ >= 1 });
+  assert.ok(esperas2[0] >= 6 * 60_000, 'a 1ª espera é a do intervalo, depois de tentar mandar');
 });
