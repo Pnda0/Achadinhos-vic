@@ -32,6 +32,7 @@ import { gravarSite } from './analytics/pagina.js';
 import { publicarPainel, urlPublicada } from './analytics/publicar.js';
 import { MSG_OUTRA_COPIA, travarInstancia } from './instancia.js';
 import { EspelhoWhatsApp } from './whatsapp-espelho.js';
+import { generoDoProduto } from './genero.js';
 
 instalarLogEmArquivo('iniciar');
 
@@ -43,8 +44,14 @@ let ocupado = false;
 let parando = false; // reinício pedido: nenhuma tarefa nova começa
 let whatsSender = null;
 
-/** Evita que duas tarefas rodem ao mesmo tempo (ex.: coleta demorada + envio). */
-const exclusivo = (nome, fn) => async (...args) => {
+/**
+ * Evita que duas tarefas rodem ao mesmo tempo (ex.: coleta demorada + envio). Envio ocupado = pula (outro vem em 3
+ * min). A coleta ESPERA a vez (até 10 min): às 12h e 17h ela cai no mesmo minuto do envio (*\/3) e era pulada
+ * inteira quando o envio começava primeiro (visto em 15 e 16/10/2026).
+ */
+const exclusivo = (nome, fn, { esperarVez = false } = {}) => async (...args) => {
+  if (parando) return;
+  for (let s = 0; esperarVez && ocupado && !parando && s < 600; s += 5) await sleep(5000);
   if (parando) return;
   if (ocupado) return log(`⏭️  ${nome}: outra tarefa em andamento, pulando.`);
   ocupado = true;
@@ -68,7 +75,7 @@ const cicloColeta = exclusivo('coleta', async (apenasGrupos) => {
   if (r.amazonErro) await avisos.avisar('amazon', `*Amazon fora do ar no bot* ⚠️\n${r.amazonErro}`);
   if (r.awinErro) await avisos.avisar('awin', `*Awin fora do ar no bot* ⚠️\n${r.awinErro}`);
   await gerarLinks(store);
-});
+}, { esperarVez: true });
 
 /**
  * Busca de reposição (pedido do dono, 15/10/2026: "acabaram as ofertas do Beleza e do Fitness"): grupo que tem
@@ -83,7 +90,9 @@ function gruposSemFila() {
     ...(shopee.ativo === false ? [] : Object.entries(shopee.grupos || {}).filter(([, g]) => g.ativo !== false).map(([n]) => n)),
   ]);
   const ativos = loadGrupos().filter((g) => g.ativo && comBusca.has(g.nome)).map((g) => g.nome);
-  return ativos.filter((nome) => !store.list((p) => p.grupo === nome && (p.status === 'PRONTO' || p.status === 'PENDENTE')).length);
+  // Só masculinos na fila conta como vazio: eles esperam a vez (1 a cada N) e o grupo fica parado (16/10/2026).
+  const temOferta = (p) => (p.status === 'PRONTO' || p.status === 'PENDENTE') && generoDoProduto(p) !== 'm';
+  return ativos.filter((nome) => !store.list((p) => p.grupo === nome && temOferta(p)).length);
 }
 async function reporSePreciso(quando) {
   // Conta por grupo: um grupo que nunca foi buscado (ex.: acabou de ganhar busca própria) é buscado na hora.
