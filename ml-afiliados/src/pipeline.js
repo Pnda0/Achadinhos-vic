@@ -10,6 +10,8 @@ import { MLAffiliate } from './ml/affiliate.js';
 import { buscarOfertasAmazon } from './amazon.js';
 import { buscarCuponsAwin, loadAwin } from './awin.js';
 import { buscarOfertasShopee } from './shopee-busca.js';
+import { HistoricoDePrecos } from './precos.js';
+import path from 'node:path';
 import { VENDAS_MINIMAS, motivoVendas } from './ml/vendas.js';
 import { evento, origemDe } from './eventos.js';
 import { preferenciaFeminina } from './genero.js';
@@ -66,7 +68,19 @@ export function motivoLinkInvalido(p) {
   return /(^|\.)mercadoli[vb]re\.com(\.br)?$/.test(host) && u.searchParams.get('matt_word') ? null : 'link do ML sem afiliado';
 }
 
-export async function coletar(store = new Store(), { amazon = buscarOfertasAmazon, awin = buscarCuponsAwin, shopee = buscarOfertasShopee, categoriasML = null, raspar = scrapeCategoria, esperar = randomDelay, grupos: gruposDados = null, apenasGrupos = null } = {}) {
+export async function coletar(store = new Store(), { amazon = buscarOfertasAmazon, awin = buscarCuponsAwin, shopee = buscarOfertasShopee, categoriasML = null, raspar = scrapeCategoria, esperar = randomDelay, grupos: gruposDados = null, apenasGrupos = null, precos = null } = {}) {
+  // Histórico de preços (src/precos.js), ao lado do db.json desta fila (nos testes, numa pasta temporária).
+  const historico = precos ?? new HistoricoDePrecos({ arquivo: path.join(path.dirname(store.file), 'precos.json') });
+  /** Filtros do grupo + o histórico de preço: já esteve bem mais barato = não é oferta de verdade. Anota o preço visto. */
+  const recusa = (p, filtros) => {
+    const h = historico.avaliar(p);
+    historico.anotar(p);
+    const motivo = motivoRecusa(p, filtros, store);
+    if (motivo) return motivo;
+    if (h.caro) return 'já esteve mais barato (30 dias)';
+    if (h.menorEm30Dias) p.menorPreco30d = true;
+    return null;
+  };
   // `grupos`: só nos testes (não dependem de qual grupo está pausado). `apenasGrupos`: busca de reposição, só desses grupos.
   const so = Array.isArray(apenasGrupos) && apenasGrupos.length ? new Set(apenasGrupos) : null;
   const lista = (gruposDados ?? loadGrupos()).map((g) => (so && !so.has(g.nome) ? { ...g, ativo: false } : g));
@@ -95,7 +109,7 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
     for (const bruto of paginas.get(chave)) {
       const p = { ...bruto, grupo: cat.grupo, categoria: cat.nome };
       c.encontrados++;
-      const motivo = motivoRecusa(p, grupo.filtros, store);
+      const motivo = recusa(p, grupo.filtros);
       if (motivo) {
         recusas[motivo] = (recusas[motivo] || 0) + 1;
         evento('recusado', p, motivo);
@@ -127,7 +141,7 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
       encontrados++;
       const grupo = grupos[p.grupo];
       if (!grupo?.ativo) continue;
-      const motivo = motivoRecusa(p, grupo.filtros, store);
+      const motivo = recusa(p, grupo.filtros);
       if (motivo) {
         recusas[motivo] = (recusas[motivo] || 0) + 1;
         evento('recusado', p, motivo);
@@ -158,7 +172,7 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
       encontrados++;
       const grupo = grupos[p.grupo];
       if (!grupo?.ativo) continue;
-      const motivo = motivoRecusa(p, grupo.filtros, store);
+      const motivo = recusa(p, grupo.filtros);
       if (motivo) {
         recusas[motivo] = (recusas[motivo] || 0) + 1;
         evento('recusado', p, motivo);
@@ -203,6 +217,7 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
   log(`✅ Coleta: ${encontrados} visto(s), ${novos} novo(s). Recusados: ${JSON.stringify(recusas)}`);
   log(`   Por categoria (vistos → aprovados): ${Object.entries(porCategoria).map(([n, x]) => `${n} ${x.encontrados}→${x.aceitos}`).join(' | ')}`);
   const resultado = { encontrados, novos, recusas, categorias: porCategoria, amazonErro, awinErro, shopeeErro };
+  historico.salvar();
   store.registrarColeta(resultado);
   const agora = new Date().toISOString(); // quando cada grupo foi buscado (a reposição conta por grupo)
   for (const g of lista.filter((x) => x.ativo)) (store.data.coletaPorGrupo ??= {})[g.nome] = agora;

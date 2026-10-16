@@ -15,6 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DATA_DIR, settings } from './config.js';
 import { diaLocal, log, normalizar } from './util.js';
+import { lerVendas } from './ml/vendas.js';
 
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 const MAX_TENTATIVAS = 3;
@@ -49,6 +50,18 @@ export function parecido(a, b) {
   const comuns = [...A.palavras].filter((t) => B.palavras.has(t)).length;
   const todas = new Set([...A.palavras, ...B.palavras]).size;
   return comuns >= 2 && comuns / todas >= 0.7;
+}
+
+/**
+ * Nota de qualidade de uma oferta, para escolher a próxima da fila (16/10/2026, inspirado nos grandes grupos de ofertas:
+ * desconto de verdade, produto que vende e é bem avaliado, preço no menor patamar). Desconto (até 80) + vendas
+ * (10 por casa decimal: 1 mil vendidos = 30) + nota (4,9 = +8; 4,0 = -10) + menor preço em 30 dias (+15).
+ */
+export function notaDeQualidade(p) {
+  const desconto = Math.min(80, Math.max(0, Number(p.descontoPct) || 0));
+  const vendas = lerVendas(p.vendidos)?.minimo || 0;
+  const nota = Number(p.nota) > 0 ? (Number(p.nota) - 4.5) * 20 : 0;
+  return desconto + 10 * Math.log10(1 + vendas) + nota + (p.menorPreco30d ? 15 : 0);
 }
 
 /** Guarda só os últimos `dias` dias de um mapa { "AAAA-MM-DD": ... } (as chaves ordenam como datas). */
@@ -233,8 +246,9 @@ export class Store {
       const produtos = prontos.filter((p) => !p.prioridade);
       if (produtos.length) fila = produtos;
     }
-    fila.sort((a, b) => (b.descontoPct || 0) - (a.descontoPct || 0));
-    const top = fila.slice(0, 5);
+    // As melhores pela nota de qualidade; sorteia entre as 3 primeiras para não ficar previsível.
+    fila.sort((a, b) => notaDeQualidade(b) - notaDeQualidade(a));
+    const top = fila.slice(0, 3);
     return top[Math.floor(Math.random() * top.length)];
   }
 

@@ -20,6 +20,7 @@ O dono fala português e prefere que o Claude **faça tudo sozinho** (inclusive 
 - Segredos **não** vão para o git: `ml-afiliados/.env` e `ml-afiliados/data/` (inclui `data/cookies.txt`, a sessão do ML). Num PC novo eles não existem — e não precisam, porque o bot não roda lá.
 - **Sessão do Mercado Livre**: o ML bloqueia login em janela aberta pelo bot. Quando vencer (o bot avisa no Telegram), o dono copia o header `cookie` do Link Builder pelo F12 do navegador dele e cola em `ml-afiliados/data/cookies.txt` **no PC de casa**.
 - Testes: `cd ml-afiliados && npm test` (Node 18.17+; no PC de casa está o Node 24).
+- **Skills do projeto** (`.claude/skills/`): `curadoria-de-ofertas` (padrão de qualidade, onde está cada regra, o que fazer quando aparece produto ruim) e `operar-o-bot` (reiniciar, investigar, onde fica cada coisa). Histórico de preço e nota de qualidade: README 3.13h.
 - Mais detalhes: `ml-afiliados/README.md` (seções 3.6b nichos, 3.12 canais, 3.13 Awin).
 
 ## Pendências (14/10/2026)

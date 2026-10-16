@@ -240,6 +240,12 @@ Desde 15/10/2026 (`src/shopee.js`), post de canal com link da Shopee entra na fi
 - O post sai igual ao do canal, como os do ML; sem a regra de vendas. Post do ML que também tem link da Shopee: os dois são trocados.
 - Sem as credenciais, nada muda: o link da Shopee continua saindo do post.
 
+## 3.13h Histórico de preço e nota de qualidade
+
+Inspirado nos grandes grupos (o Promobit compara cada oferta com um preço de referência das ofertas anteriores), desde 16/10/2026:
+- **Histórico de preço** (`src/precos.js`, `data/precos.json`): cada busca anota o preço de cada produto visto. Se ele já esteve **mais de 10% mais barato nos últimos 30 dias**, a "oferta" de agora fica de fora (recusa "já esteve mais barato (30 dias)") — é o desconto inflado. Se o preço de agora é o **menor dos 30 dias** (e já foi visto mais caro), o post ganha "📉 Menor preço dos últimos 30 dias". O histórico vai se formando com as buscas: nos primeiros dias quase nada é recusado por isso.
+- **Nota de qualidade** (`notaDeQualidade` em `src/store.js`): depois das preferências (feminino, marca), a próxima oferta é escolhida pela nota — desconto (até 80) + vendas (1 mil vendidos = 30) + avaliação (4,9 = +8; 4,0 = −10) + menor preço (+15) — sorteando entre as 3 melhores.
+
 ## 3.13g Reiniciar o bot com calma
 
 `npm run reiniciar` (na pasta do bot, no PC de casa): o bot não começa tarefa nova, espera o envio/coleta em andamento (até 90 s), grava a fila, fecha o WhatsApp Web e sai deixando `data/.reiniciar`; o `3-iniciar.bat` vê o aviso e liga de novo **na mesma janela**, com `git pull` e `npm install`. Sem bot rodando, o comando abre o `3-iniciar.bat`. O pedido vai pela porta da trava (127.0.0.1:47831), então só funciona no próprio PC.

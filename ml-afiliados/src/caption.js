@@ -169,6 +169,7 @@ export function montarLegenda(p, { titulo, mensagemAdicional = '' } = {}) {
   }
 
   const extras = [];
+  if (p.menorPreco30d) extras.push('📉 Menor preço dos últimos 30 dias'); // pelo histórico do bot (src/precos.js)
   if (p.cupom) extras.push(p.loja === 'amazon' || p.loja === 'awin' || p.loja === 'shopee' ? linhaCodigo(p.cupom) : linhaCupomML(p));
   if (p.frete) extras.push(`🚚 ${p.frete}${p.full ? ' ⚡FULL' : ''}`);
   extras.push(linhaProva(p));
