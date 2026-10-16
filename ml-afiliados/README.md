@@ -240,6 +240,10 @@ Desde 15/10/2026 (`src/shopee.js`), post de canal com link da Shopee entra na fi
 - O post sai igual ao do canal, como os do ML; sem a regra de vendas. Post do ML que também tem link da Shopee: os dois são trocados.
 - Sem as credenciais, nada muda: o link da Shopee continua saindo do post.
 
+## 3.13g Reiniciar o bot com calma
+
+`npm run reiniciar` (na pasta do bot, no PC de casa): o bot não começa tarefa nova, espera o envio/coleta em andamento (até 90 s), grava a fila, fecha o WhatsApp Web e sai deixando `data/.reiniciar`; o `3-iniciar.bat` vê o aviso e liga de novo **na mesma janela**, com `git pull` e `npm install`. Sem bot rodando, o comando abre o `3-iniciar.bat`. O pedido vai pela porta da trava (127.0.0.1:47831), então só funciona no próprio PC.
+
 ## 3.13f Busca de reposição
 
 Desde 15/10/2026: grupo com busca própria (categorias do ML ou Shopee) que fica com a fila vazia ganha uma busca extra — conferido ao ligar e a cada 10 min das 8h às 21h, no máximo uma busca extra a cada 2 horas (`REPOSICAO_MIN` em `src/index.js`). Assim, horário de coleta perdido (PC desligado, bot reiniciando) não deixa o grupo parado até o dia seguinte.

@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { loadGrupos } from '../src/config.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -120,6 +121,7 @@ test('coletar: ofertas da Amazon entram na fila já PRONTAS (com link), passando
   const ruim = { ...bom, id: 'AMZ-B0RUIM', asin: 'B0RUIM', descontoPct: 5, precoOriginal: null };
   const r = await coletar(store, {
     shopee: async () => ({ produtos: [], categorias: {}, motivo: "desligada (teste)" }),
+    grupos: loadGrupos().map((g) => (g.nome === 'Geral' ? { ...g, ativo: true, emEspera: false } : g)), // o Geral pode estar pausado no arquivo
     amazon: async () => ({ produtos: [bom, ruim], categorias: { 'Amazon: Air fryer': { encontrados: 2, aceitos: 0 } } }),
     categoriasML: [],
   });

@@ -231,7 +231,7 @@ test('Telegram: o canal se liga ao grupo em espera cujo nome está no título', 
 });
 
 test('Coleta: grupo em espera não é buscado e a mesma página de ofertas é baixada uma vez só', async () => {
-  const grupos = loadGrupos();
+  const grupos = loadGrupos().map((g) => (g.nome === 'Geral' ? { ...g, ativo: true, emEspera: false } : g)); // o Geral pode estar pausado no arquivo
   const geral = grupos.find((g) => g.nome === 'Geral');
   const espera = grupos.find((g) => g.emEspera);
   assert.equal(geral.ativo, true);
@@ -240,6 +240,7 @@ test('Coleta: grupo em espera não é buscado e a mesma página de ofertas é ba
   const raspar = async (cat) => (baixadas.push(cat.url), [{ id: 'MLB1', nome: 'Fone Bluetooth', url: 'https://p/1', precoAtual: 99, descontoPct: 40, nota: 4.8, grupo: cat.grupo, categoria: cat.nome }]);
   const r = await coletar(tmpStore(), {
     shopee: async () => ({ produtos: [], categorias: {}, motivo: "desligada (teste)" }),
+    grupos,
     categoriasML: [
       { grupo: 'Geral', nome: 'A', url: 'https://ml/ofertas', paginas: 1, ativo: true },
       { grupo: 'Geral', nome: 'B', url: 'https://ml/ofertas', paginas: 1, ativo: true },

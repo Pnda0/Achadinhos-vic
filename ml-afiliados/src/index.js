@@ -5,8 +5,10 @@
  *   CRON_LIMPEZA -> esvazia a fila à meia-noite
  *   CRON_RESUMO  -> manda o resumo do dia no WhatsApp do dono (AVISOS_DESTINO)
  */
+import fs from 'node:fs';
+import path from 'node:path';
 import cron from 'node-cron';
-import { loadCategorias, loadFontes, loadGrupos, loadNichos, loadShopee, settings, vincularCanal } from './config.js';
+import { DATA_DIR, loadCategorias, loadFontes, loadGrupos, loadNichos, loadShopee, settings, vincularCanal } from './config.js';
 import { Avisos } from './avisos.js';
 import { Awin } from './awin.js';
 import { Shopee } from './shopee.js';
@@ -18,7 +20,8 @@ import { MLAffiliate } from './ml/affiliate.js';
 import { coletar, filaDeOutroDia, gerarLinks, enviarParaTodos, limpar } from './pipeline.js';
 import { createSender } from './senders.js';
 import { Store } from './store.js';
-import { diaLocal, log } from './util.js';
+import { diaLocal, log, sleep } from './util.js';
+
 import { instalarLogEmArquivo, registrarErro } from './logfile.js';
 import { gerarDia, porEmDia } from './analytics/dia.js';
 import { membrosDoDia, registrarMembros } from './analytics/membros.js';
@@ -37,9 +40,12 @@ let store;
 let sender;
 let avisos;
 let ocupado = false;
+let parando = false; // reinício pedido: nenhuma tarefa nova começa
+let whatsSender = null;
 
 /** Evita que duas tarefas rodem ao mesmo tempo (ex.: coleta demorada + envio). */
 const exclusivo = (nome, fn) => async () => {
+  if (parando) return;
   if (ocupado) return log(`⏭️  ${nome}: outra tarefa em andamento, pulando.`);
   ocupado = true;
   try {
@@ -157,6 +163,7 @@ async function iniciarWhatsApp() {
   if (!settings.whatsappEspelho) return;
   try {
     const whats = createSender('wwebjs');
+    whatsSender = whats;
     log('📲 WhatsApp: conectando o número do bot (na 1ª vez, escaneie o QR code na janela do WhatsApp Web que abrir)...');
     await whats.init();
     espelhoWhats = new EspelhoWhatsApp({ sender: whats, store, carregarGrupos: loadGrupos, avisos, intervaloMin: settings.whatsappIntervaloMin });
@@ -218,8 +225,25 @@ async function iniciarEspelho() {
   }
 }
 
+/**
+ * Reinício com calma (`npm run reiniciar`, pela porta da trava): não começa tarefa nova, espera o envio/coleta em
+ * andamento (até 90 s), grava a fila e sai deixando o aviso data/.reiniciar — o 3-iniciar.bat vê o aviso e liga o
+ * bot de novo na mesma janela, já com o que foi para o GitHub.
+ */
+let aoPedirParada = () => {};
+async function reiniciarComCalma(sair) {
+  if (parando) return;
+  parando = true;
+  log('🔁 Reinício pedido: termino o que estiver fazendo e ligo de novo.');
+  for (let i = 0; i < 90 && ocupado; i++) await sleep(1000);
+  try {
+    fs.writeFileSync(path.join(DATA_DIR, '.reiniciar'), new Date().toISOString());
+  } catch {}
+  await sair('reinício pedido');
+}
+
 async function main() {
-  const trava = await travarInstancia();
+  const trava = await travarInstancia({ aoPedirParada: () => aoPedirParada() });
   if (!trava.ok) {
     log(`❌ ${MSG_OUTRA_COPIA}`);
     process.exit(1);
@@ -242,9 +266,11 @@ async function main() {
       log(`⚠️  Não consegui gravar a fila ao sair: ${String(e.message).split('\n')[0]}`);
     }
     await sender?.close();
+    await Promise.race([whatsSender?.close?.(), sleep(15_000)]).catch(() => {}); // fecha o WhatsApp Web direito
     process.exit(0);
   };
   for (const sinal of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sinal, sair);
+  aoPedirParada = () => reiniciarComCalma(sair).catch((e) => registrarErro('reiniciar', e));
   log(`🚀 ml-afiliados iniciando (envio via "${settings.sender}")`);
   // Envio que ficou pela metade quando o bot parou: pode ter saído — vira INCERTO e entra no histórico (antes de limpar).
   const incertos = store.recuperarEnvios();

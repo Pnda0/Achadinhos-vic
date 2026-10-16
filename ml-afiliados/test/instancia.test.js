@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import net from 'node:net';
-import { travarInstancia } from '../src/instancia.js';
+import { botRodando, pedirParada, travarInstancia } from '../src/instancia.js';
 
 const PORTA = 47999; // porta só dos testes (o bot usa a 47831)
 
@@ -60,4 +60,20 @@ test('trava de cópia única: vale entre PROCESSOS (duas janelas do bot) e o sis
   const depois = await travarInstancia({ porta: PORTA });
   assert.equal(depois.ok, true);
   depois.soltar();
+});
+
+test('reinício com calma: "npm run reiniciar" pede pela porta e o bot recebe; sem bot, ninguém responde', async () => {
+  const porta = 47998;
+  assert.equal(await pedirParada({ porta, timeoutMs: 500 }), false);
+  assert.equal(await botRodando({ porta, timeoutMs: 500 }), false);
+  let pedidos = 0;
+  const t = await travarInstancia({ porta, aoPedirParada: () => pedidos++ });
+  try {
+    assert.equal(await botRodando({ porta }), true);
+    assert.equal(pedidos, 0, 'só perguntar quem é não pede parada');
+    assert.equal(await pedirParada({ porta }), true);
+    assert.equal(pedidos, 1);
+  } finally {
+    t.soltar();
+  }
 });

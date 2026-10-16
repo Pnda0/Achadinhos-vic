@@ -7,6 +7,7 @@ if not exist "node_modules" (
   pause
   exit /b 1
 )
+:inicio
 rem Pega as mudancas que foram para o GitHub (feitas de outro PC). Sem internet ou sem git, segue com a versao atual.
 rem O "git pull" pode trocar ESTE arquivo enquanto ele roda: por isso o pull e o salto ficam na mesma linha,
 rem e o "goto" acha o rotulo :depois_pull de novo no arquivo novo. Nao mude o nome dos rotulos.
@@ -30,6 +31,13 @@ echo O bot fica rodando enquanto esta janela estiver aberta.
 echo Para parar: feche a janela ou aperte Ctrl+C.
 echo.
 call npm start --silent
+rem Reinicio pedido (npm run reiniciar): o bot saiu deixando data\.reiniciar - liga de novo nesta janela, com git pull.
+if exist "data\.reiniciar" (
+  del "data\.reiniciar"
+  echo.
+  echo Reiniciando o bot...
+  goto :inicio
+)
 echo.
 echo O bot parou. Veja a mensagem acima.
 pause

@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { loadGrupos } from '../src/config.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -17,6 +18,7 @@ test('histórico por produto: cada etapa deixa rastro, sem link nem dado sensív
   const base = { grupo: 'Geral', precoAtual: 99, descontoPct: 50, nota: 4.7, imagem: 'https://img/x.jpg' };
   const r = await coletar(s, {
     shopee: async () => ({ produtos: [], categorias: {}, motivo: "desligada (teste)" }),
+    grupos: loadGrupos().map((g) => (g.nome === 'Geral' ? { ...g, ativo: true, emEspera: false } : g)), // o Geral pode estar pausado no arquivo
     categoriasML: [{ grupo: 'Geral', nome: 'A', url: 'https://ml/ofertas', paginas: 1, ativo: true }],
     raspar: async () => [
       { ...base, id: 'MLB10', nome: 'Fone Bom', url: 'https://p/10', vendidos: '+1000 vendidos' },

@@ -66,8 +66,8 @@ export function motivoLinkInvalido(p) {
   return /(^|\.)mercadoli[vb]re\.com(\.br)?$/.test(host) && u.searchParams.get('matt_word') ? null : 'link do ML sem afiliado';
 }
 
-export async function coletar(store = new Store(), { amazon = buscarOfertasAmazon, awin = buscarCuponsAwin, shopee = buscarOfertasShopee, categoriasML = null, raspar = scrapeCategoria, esperar = randomDelay } = {}) {
-  const lista = loadGrupos();
+export async function coletar(store = new Store(), { amazon = buscarOfertasAmazon, awin = buscarCuponsAwin, shopee = buscarOfertasShopee, categoriasML = null, raspar = scrapeCategoria, esperar = randomDelay, grupos: gruposDados = null } = {}) {
+  const lista = gruposDados ?? loadGrupos(); // `grupos`: só nos testes (não dependem de qual grupo está pausado)
   const grupos = Object.fromEntries(lista.map((g) => [g.nome, g]));
   const emEspera = lista.filter((g) => g.emEspera).map((g) => g.nome);
   if (emEspera.length) log(`⏸️  Em espera (ligado, mas sem canal): ${emEspera.join(', ')} — nada é buscado para ele(s).`);

@@ -8,7 +8,7 @@
   "fontes": [],
   "_comentarioCanais": "CANAIS DO TELEGRAM (desde 15/10/2026, a pedido do dono, a fonte principal): canais PÚBLICOS de ofertas que o bot lê sozinho (página t.me/s/<canal>). 'copiarTexto': true = o post sai IGUAL ao do canal (texto e foto), só com os links do Mercado Livre, da Amazon e das lojas da Awin trocados pelos do dono; convites e @ do outro canal e links de outras lojas (AliExpress...) saem (os da Shopee são trocados pelos do dono quando há SHOPEE_APP_ID/SHOPEE_SECRET no .env). 'exigirVendas': false = sem a regra de mais de 50 vendas (o espelho não lê vendas; o dono pediu para copiar tudo). Continuam valendo: nicho do grupo, palavras bloqueadas e não repetir. 'destinos' = para quais grupos vão as ofertas dos canais gerais; com 'nicho', só entra naquele grupo se o texto casar com as palavras do nicho (config/nichos.json). Um canal pode ter opções próprias: {\"canal\": \"nome\", \"destino\": \"Perfumes\", \"maxPorHora\": 12, ...}. 'maxPorHora' = quantas ofertas desses canais entram por hora EM CADA grupo. Amazon só entra com AMAZON_PARTNER_TAG no .env. Depois de mexer aqui, reinicie o bot.",
   "canaisTelegram": {
-    "ativo": true,
+    "ativo": false,
     "soAmazon": false,
     "maxPorHora": 20,
     "intervaloSegundos": 60,
@@ -72,6 +72,7 @@
     "copiarTexto": true,
     "exigirVendas": false,
     "fotoDoCanal": true,
-    "_comentarioAmazon": "15/10/2026 (noite), pedido do dono: o Perfumes copia só o @promobigodeperfumes; dos outros canais o bot pega SÓ as ofertas da Amazon (\"apenasAmazon\") e monta o post no formato dele (\"copiarTexto\": false), com a etiqueta do dono (AMAZON_PARTNER_TAG) — sem abrir o site da Amazon. Elas vão para o Geral e, se casarem com o nicho, para o Fitness/Beleza (com os filtros de cada grupo: só marcas, desconto, feminino)."
+    "_comentarioAmazon": "15/10/2026 (noite), pedido do dono: o Perfumes copia só o @promobigodeperfumes; dos outros canais o bot pega SÓ as ofertas da Amazon (\"apenasAmazon\") e monta o post no formato dele (\"copiarTexto\": false), com a etiqueta do dono (AMAZON_PARTNER_TAG) — sem abrir o site da Amazon. Elas vão para o Geral e, se casarem com o nicho, para o Fitness/Beleza (com os filtros de cada grupo: só marcas, desconto, feminino).",
+    "_comentarioPausa": "Desligado em 16/10/2026 a pedido do dono: \"pare de copiar dos outros, ficou com muito produto ruim\" — o bot busca tudo nas lojas (ML, Shopee, Awin). Nem o @promobigodeperfumes nem a Amazon dos canais entram."
   }
 }

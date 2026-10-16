@@ -6,6 +6,7 @@
  * sozinho quando o processo morre (até em queda de energia) — não sobra arquivo de trava velho.
  * Quem segura a trava responde "ml-afiliados" a quem se conectar: se outro programa qualquer estiver usando
  * a porta, o bot percebe que não é ele e liga mesmo assim (só sem essa proteção).
+ * Quem mandar "parar" pela porta (só do próprio PC: `npm run reiniciar`) pede um reinício com calma (index.js).
  */
 import net from 'node:net';
 
@@ -36,11 +37,19 @@ function ehOBot(porta, timeoutMs) {
  * Se a porta não puder ser usada por outro motivo (outro programa nela, porta reservada pelo Windows), devolve
  * { ok: true, semTrava: motivo } — o bot liga mesmo assim, só sem essa proteção.
  */
-export function travarInstancia({ porta = PORTA_TRAVA, timeoutMs = 1500 } = {}) {
+export function travarInstancia({ porta = PORTA_TRAVA, timeoutMs = 1500, aoPedirParada = null } = {}) {
   return new Promise((resolve) => {
     const servidor = net.createServer((conexao) => {
       conexao.on('error', () => {}); // quem perguntou pode desconectar antes de ler: não derruba o bot
-      conexao.end(`${ASSINATURA}\n`);
+      conexao.setTimeout(3000, () => conexao.end());
+      conexao.write(`${ASSINATURA}\n`);
+      let lido = '';
+      conexao.on('data', (d) => {
+        lido += d;
+        if (!/\bparar\b/.test(lido)) return;
+        conexao.end('ok\n');
+        aoPedirParada?.();
+      });
     });
     servidor.once('error', async (e) => {
       if (e.code !== 'EADDRINUSE') return resolve({ ok: true, semTrava: e.code || e.message, soltar: () => {} });
@@ -53,6 +62,33 @@ export function travarInstancia({ porta = PORTA_TRAVA, timeoutMs = 1500 } = {}) 
     });
   });
 }
+
+/** Pede ao bot que está rodando neste PC para reiniciar com calma. true = havia um bot e ele recebeu o pedido. */
+export function pedirParada({ porta = PORTA_TRAVA, timeoutMs = 3000 } = {}) {
+  return new Promise((resolve) => {
+    let lido = '';
+    let pediu = false;
+    const s = net.connect({ port: porta, host: '127.0.0.1' });
+    const fim = (r) => {
+      s.destroy();
+      resolve(r);
+    };
+    s.setTimeout(timeoutMs, () => fim(false));
+    s.on('data', (d) => {
+      lido += d;
+      if (lido.includes(ASSINATURA) && !pediu) {
+        pediu = true;
+        s.write('parar\n');
+      }
+      if (/\bok\b/.test(lido)) fim(true);
+    });
+    s.on('end', () => fim(/\bok\b/.test(lido)));
+    s.on('error', () => fim(false));
+  });
+}
+
+/** O bot está rodando neste PC? */
+export const botRodando = ({ porta = PORTA_TRAVA, timeoutMs = 1500 } = {}) => ehOBot(porta, timeoutMs);
 
 export const MSG_OUTRA_COPIA =
   'Já tem um bot rodando neste PC (outra janela do 3-iniciar.bat). Feche ESTA janela — duas cópias postariam cada oferta duas vezes.';

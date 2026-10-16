@@ -16,7 +16,7 @@
     {
       "nome": "Geral",
       "jid": "120363409515576601@g.us",
-      "ativo": true,
+      "ativo": false,
       "mensagemAdicional": "",
       "filtros": {
         "palavrasBloqueadas": [
@@ -74,7 +74,8 @@
       "preferirFeminino": 4,
       "whatsapp": "Achadinhos Vic - Geral",
       "_comentarioFiltros": "Geral (público: meninas, pedido do dono 15/10/2026): fica de fora o que não é para elas — carro, peça de PC gamer, ferramenta, bebida... (os bloqueios padrão continuam aqui porque esta lista substitui a padrão).",
-      "whatsappPausado": true
+      "whatsappPausado": true,
+      "_comentarioPausa": "Pausado em 16/10/2026 a pedido do dono (\"pausa o grupo Geral por enquanto\"): não busca nem posta, no Telegram e no WhatsApp. Para voltar: \"ativo\": true."
     },
     {
       "nome": "Fitness",
