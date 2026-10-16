@@ -313,9 +313,18 @@ export class Espelho {
     return this.enfileirarDoTexto(m, fonte, destinos, d, base, () => this.awin.gerarLink(anunciante, url), (u) => links.includes(u) || u === url);
   }
 
+  /** Fonte com "destinos" (ex.: a caixa de entrada com o Geral pausado): o 1º grupo ligado cujo nicho casa com o nome. */
+  grupoPeloNome(fonte, nome) {
+    for (const d of fonte.destinos || []) {
+      const g = this.grupos.get(d.grupo);
+      if (g && g.ativo !== false && (!d.palavras?.length || d.palavras.some((t) => casaTermo(normalizar(nome), t)))) return g;
+    }
+    return null;
+  }
+
   async processar(m) {
     const fonte = this.fontes.get(m.jid);
-    const destino = this.grupos.get(fonte?.destino || this.cfg.destinoPadrao);
+    let destino = this.grupos.get(fonte?.destino || this.cfg.destinoPadrao);
     if (!fonte || !destino) return 'sem destino';
 
     // Fonte "soAmazon": dali só interessam as ofertas da Amazon (o ML já tem a busca própria).
@@ -338,7 +347,12 @@ export class Espelho {
       // semRegraVendas: canal que o dono liberou da regra de vendas (fontes.json, "exigirVendas": false) — vale também
       // na conferência final antes de postar (pipeline.js).
       const semRegraVendas = fonte.exigirVendas === false;
-      const produto = { ...(await this.resolver(links[0])), grupo: destino.nome, categoria: `Espelho: ${fonte.nomeWhats || fonte.nome}`, origem: 'espelho', manual: !!fonte.manual, semRegraVendas };
+      const lido = await this.resolver(links[0]);
+      if (fonte.manual && fonte.destinos?.length) {
+        destino = this.grupoPeloNome(fonte, lido.nome);
+        if (!destino) return 'fora do nicho dos grupos';
+      }
+      const produto = { ...lido, grupo: destino.nome, categoria: `Espelho: ${fonte.nomeWhats || fonte.nome}`, origem: 'espelho', manual: !!fonte.manual, semRegraVendas };
       // "fotoDoCanal": usa a foto da mensagem (ex.: perfume num ambiente) no lugar da foto de fundo branco do ML —
       // só quando o preço da mensagem bate com o do anúncio, porque a arte do canal pode ter o preço escrito nela.
       // A URL é do cdn do t.me e pode expirar; se o Telegram não conseguir baixar, o envio cai para texto com prévia.

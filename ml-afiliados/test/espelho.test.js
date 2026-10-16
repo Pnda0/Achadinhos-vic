@@ -426,3 +426,23 @@ test('canal com "fotoDoCanal": false (foto com a marca do canal): o post copiado
   assert.equal((await m.espelho.tick()).enfileiradas, 1);
   assert.equal(m.store.list()[0].imagem, 'https://http2.mlstatic.com/foto-do-anuncio.jpg');
 });
+
+test('caixa de entrada com o grupo padrão pausado: a oferta vai para o grupo cujo nicho casa com o produto', async () => {
+  const agora = { t: 1_800_000_000_000 };
+  const msg = (id) => [{ id, jid: 'A@g.us', t: seg(agora, 1), tipo: 'chat', texto: 'olha https://meli.la/1JC7ZMh' }];
+  const comNome = (nome) => async () => ({ ...comVendas(parseSocialPage(fx('social-meli-la.html'))), nome });
+  const preparar = (id, nome) => {
+    const m = montar({ msgs: () => msg(id), agora, resolver: comNome(nome), manual: true });
+    m.espelho.grupos.get('Geral').ativo = false;
+    m.espelho.grupos.set('Fitness', { nome: 'Fitness', ativo: true, filtros: {} });
+    m.espelho.grupos.set('Perfumes', { nome: 'Perfumes', ativo: true, filtros: {} });
+    m.espelho.fontes.get('A@g.us').destinos = [{ grupo: 'Fitness', palavras: ['whey'] }, { grupo: 'Perfumes', palavras: ['perfume'] }];
+    m.espelho.responder = async () => {};
+    return m;
+  };
+  const a = preparar('cx1', 'Perfume Lattafa Yara 100ml');
+  assert.equal((await a.espelho.tick()).enfileiradas, 1);
+  assert.equal(a.store.list()[0].grupo, 'Perfumes');
+  const b = preparar('cx2', 'Air Fryer Mondial 4L');
+  assert.deepEqual((await b.espelho.tick()).ignoradas, { 'fora do nicho dos grupos': 1 });
+});

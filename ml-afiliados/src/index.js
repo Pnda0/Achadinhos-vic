@@ -148,11 +148,19 @@ function iniciarCaixaDeEntrada(cfg) {
   const dono = avisos.jid;
   if (!dono) return log('📥 Caixa de entrada desligada (preencha AVISOS_DESTINO_TELEGRAM com o chat id da sua conversa com o bot).');
   if (loadGrupos().some((g) => g.jid === dono)) return log('📥 Caixa de entrada desligada: AVISOS_DESTINO_TELEGRAM é o próprio canal de envio.');
-  const destino = cfg.destinoPadrao || 'Geral';
-  const fontes = [{ nome: 'Caixa de entrada', nomeWhats: 'Caixa de entrada', jid: dono, destino, manual: true }];
+  // Com o grupo padrão pausado (o Geral, 16/10/2026), cada oferta vai para o grupo cujo nicho casa com o produto.
+  const ativos = loadGrupos().filter((g) => g.ativo);
+  const padrao = cfg.destinoPadrao || 'Geral';
+  const nichos = loadNichos();
+  const porNicho = !ativos.some((g) => g.nome === padrao);
+  const destino = porNicho ? ativos.map((g) => g.nome).join('/') : padrao;
+  const fontes = [{
+    nome: 'Caixa de entrada', nomeWhats: 'Caixa de entrada', jid: dono, destino: porNicho ? ativos[0]?.nome : padrao, manual: true,
+    ...(porNicho && { destinos: ativos.map((g) => ({ grupo: g.nome, palavras: g.nicho ? nichos[g.nicho]?.obrigatorias || [] : null })) }),
+  }];
   sender.aoVirarAdmin = (canal) => ligarCanalNovo(canal).catch((e) => registrarErro('canal-novo', e));
   agendarEspelho(new Espelho({ sender, store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), carregarGrupos: loadGrupos, cfg: { ...cfg, janelaMinutos: 180 }, avisos, awin, shopee }), 10);
-  log(`📥 Caixa de entrada ligada: mande um link da Amazon, do Mercado Livre${shopee.ligada() ? ', da Shopee' : ''}${awin.ligada() ? ' ou de loja parceira da Awin' : ''} no privado do bot que ele entra na fila do grupo "${destino}".`);
+  log(`📥 Caixa de entrada ligada: mande um link da Amazon, do Mercado Livre${shopee.ligada() ? ', da Shopee' : ''}${awin.ligada() ? ' ou de loja parceira da Awin' : ''} no privado do bot que ele entra na fila ${porNicho ? `do grupo do nicho (${destino})` : `do grupo "${destino}"`}.`);
 }
 
 /**
