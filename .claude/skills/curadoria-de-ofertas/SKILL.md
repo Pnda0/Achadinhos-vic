@@ -21,6 +21,9 @@ sem repetir, foto boa, texto limpo. Pouca oferta boa vale mais que muita oferta 
 | Repetido | mesmo id, mesmo nome, ou mesmo produto escrito de outro jeito (70% das palavras) em 5 dias | `parecido()` em `src/store.js` |
 | Ordem | femininos > neutros > masculino (1 a cada 4; 1 a cada 5 no Perfumes), marca +1,5; dentro disso, **nota de qualidade** (desconto + vendas + avaliação + menor preço), sorteio entre as 3 melhores | `src/genero.js`, `notaDeQualidade()` em `src/store.js` |
 | Na hora de postar | confere de novo: repetido, link, vendas, só marcas, nicho e palavras bloqueadas | `enviarProximo()` em `src/pipeline.js` |
+| Equilíbrio de lojas | depois de uma oferta de uma loja, a vez é de outra loja do mesmo nível (alterna ML e Shopee quando as duas têm oferta) | `proximo()` em `src/store.js` |
+| Cupom do dia | pelo menos 1 cupom de loja (Awin) por dia em cada grupo: o do tema/loja do grupo, senão o melhor genérico que não exclua o grupo; passa na frente na fila, nunca dois seguidos | `buscarCuponsAwin()` em `src/awin.js`, `cupomDoDia()` em `src/index.js` |
+| ML com calma | ~22 páginas por busca; bloqueio (verificação de tráfego suspeito) = 6 h sem pedir páginas ao ML; reposição vai ao ML no máx. a cada 3 h | `ErroBloqueioML` em `src/ml/scraper.js`, `coletar()` |
 | WhatsApp | mesmas regras, 1 mensagem a cada 6 min no total (só os melhores; o dono escolheu assim) | `src/whatsapp-espelho.js` |
 
 Regras que **não se afrouxam sem o dono**: vendas mínimas, não repetir, público feminino, só marcas, ritmo do WhatsApp (risco de banir o chip), não copiar canais.

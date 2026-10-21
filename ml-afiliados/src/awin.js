@@ -403,7 +403,7 @@ export function ofertaDeCupom(promo, anunciante, grupo, { agora = Date.now() } =
  * Cada loja manda os cupons para os grupos dela (config/awin.json) e para o grupo geral; no máximo
  * `maxPorColeta` cupons novos por grupo a cada busca, primeiro os que têm código.
  */
-export async function buscarCuponsAwin({ api = new Awin(), grupos = [], jaTem = () => false } = {}) {
+export async function buscarCuponsAwin({ api = new Awin(), grupos = [], jaTem = () => false, temCupomHoje = () => false } = {}) {
   const cfg = api.config;
   if (!cfg.ativo || !cfg.cupons?.ativo) return { produtos: [], categorias: {}, motivo: 'desligada em config/awin.json' };
   if (!api.configurada()) return { produtos: [], categorias: {}, motivo: 'falta AWIN_API_TOKEN no .env' };
@@ -420,17 +420,31 @@ export async function buscarCuponsAwin({ api = new Awin(), grupos = [], jaTem = 
   const nichos = grupos.filter((g) => g.ativo && g.filtros?.palavrasObrigatorias?.length);
   const doTema = (texto) =>
     nichos.filter((g) => g.filtros.palavrasObrigatorias.some((t) => casaTermo(texto, t)) && !(g.filtros.palavrasBloqueadas || []).some((t) => casaTermo(texto, t))).map((g) => g.nome);
-  for (const promo of promos) {
-    const loja = porId.get(Number(promo.advertiser?.id));
-    if (!loja) continue;
-    // Só o título, e sem as ressalvas: "10% OFF - não aplica em perfumes" NÃO é cupom de perfume.
-    const texto = normalizar(promo.title).replace(/\b(nao|exceto|exclu\w*|menos|salvo|fora)\b.*$/, '');
-    for (const grupo of new Set([...(loja.grupos || []), ...doTema(texto), cfg.grupoGeral].filter((g) => g && ativos.has(g)))) {
-      if ((porGrupo[grupo] || 0) >= max) continue;
-      const p = ofertaDeCupom(promo, loja, grupo);
-      if (!p || jaTem(p)) continue;
-      porGrupo[grupo] = (porGrupo[grupo] || 0) + 1;
-      produtos.push(p);
+  // A ressalva do cupom ("não aplica em perfumes, maquiagem..."): o grupo cujo tema aparece nela fica sem esse cupom.
+  const RESSALVA = /\b(nao|exceto|exclu\w*|menos|salvo|fora)\b(.*)$/;
+  const porNome = new Map(grupos.map((g) => [g.nome, g]));
+  const excluiGrupo = (promo, nome) => {
+    const m = normalizar(promo.title).match(RESSALVA);
+    return !!m && (porNome.get(nome)?.filtros?.palavrasObrigatorias || []).some((t) => casaTermo(m[2], t));
+  };
+  // 1ª passada: lojas do grupo e cupons do tema dele. 2ª passada (pedido do dono, 21/10/2026: "pelo menos 1 cupom de
+  // loja por dia"): grupo que ainda está sem cupom hoje recebe o melhor cupom de qualquer loja aprovada que não o exclua.
+  for (const passada of [1, 2]) {
+    for (const promo of promos) {
+      const loja = porId.get(Number(promo.advertiser?.id));
+      if (!loja) continue;
+      // Só o título, e sem as ressalvas: "10% OFF - não aplica em perfumes" NÃO é cupom de perfume.
+      const texto = normalizar(promo.title).replace(RESSALVA, '');
+      const tema = doTema(texto);
+      // 2ª passada: só grupo que ficou sem nenhum cupom, e só cupom sem tema de OUTRO nicho ("Perfumes 20% OFF" não vai pro Fitness).
+      const alvos = passada === 1 ? [...(loja.grupos || []), ...tema, cfg.grupoGeral] : [...ativos].filter((g) => !porGrupo[g] && (!tema.length || tema.includes(g)));
+      for (const grupo of new Set(alvos.filter((g) => g && ativos.has(g)))) {
+        if ((porGrupo[grupo] || 0) >= max || temCupomHoje(grupo) || excluiGrupo(promo, grupo)) continue;
+        const p = ofertaDeCupom(promo, loja, grupo);
+        if (!p || jaTem(p) || produtos.some((x) => x.id === p.id && x.grupo === grupo)) continue;
+        porGrupo[grupo] = (porGrupo[grupo] || 0) + 1;
+        produtos.push(p);
+      }
     }
   }
   // Link curto oficial (tidd.ly) para a página do cupom, uma vez por promoção; se não der, fica o link de rastreio da API.

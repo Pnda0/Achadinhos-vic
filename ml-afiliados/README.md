@@ -330,6 +330,12 @@ Entre em https://dash.cloudflare.com com a conta **alanribeiro8352@icloud.com** 
 
 **Como ler**: "recusadas na busca" são ofertas que não passaram nos filtros do grupo e nem entraram na fila (não é perda); "barradas na hora de postar" estavam na fila e não saíram; os membros incluem você e o bot; o funil dos canais conta só mensagens novas lidas com o bot ligado; visualizações por post não existem (canais privados); a Awin mostra comissão **pendente** (pode ser cancelada) separada da **aprovada**; o Mercado Livre não tem relatório pela API — o painel leva ao painel do ML.
 
+## 3.15b Equilíbrio de lojas, cupom do dia e o Mercado Livre com calma (21/10/2026)
+
+- **Equilíbrio**: na fila, depois de uma oferta de uma loja, a vez é de outra loja do mesmo nível (feminino/marca) — alterna Mercado Livre e Shopee quando as duas têm oferta. Só uma loja na fila: segue com ela.
+- **Cupom do dia**: cada grupo recebe pelo menos 1 cupom de loja da Awin por dia — primeiro o da loja/tema do grupo (Nike e C&A Esportivo no Fitness, C&A beleza no Beleza…), senão o melhor cupom de qualquer loja aprovada que não exclua o grupo ("não aplica em perfumes" não vai ao Perfumes). O cupom passa na frente na fila (nunca dois seguidos). Grupo sem cupom hoje dispara uma busca só de cupons (a cada 2 h no máximo, das 8h às 20h). O mesmo cupom pode voltar depois de 3 dias (`cupons.diasSemRepetir` em `config/awin.json`).
+- **Mercado Livre com calma**: muitas páginas fazem o ML marcar o acesso como suspeito (verificação "negative_traffic", todas as páginas bloqueadas — aconteceu em 21/10/2026). Agora: ~22 páginas por busca (eram ~46; páginas repetidas entre grupos baixam uma vez só), e ao primeiro bloqueio o bot fica **6 h sem pedir páginas ao ML** (`PAUSA_ML_HORAS`) e avisa no Telegram; a busca de reposição vai ao ML no máximo a cada 3 h. Se o bloqueio durar dias, abra o ML no navegador do PC de casa e passe pela verificação.
+
 ## 3.16 Servidor Linux (VPS)
 
 Para tirar o bot do PC de casa (21/10/2026). Servidor com **2 GB de memória** (o WhatsApp Web roda num navegador e usa ~1 GB; o bot em si, ~90 MB), 1–2 núcleos e ~10 GB de disco, Ubuntu 22.04/24.04 ou Debian 12 de 64 bits.

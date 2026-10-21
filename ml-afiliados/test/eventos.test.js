@@ -111,3 +111,28 @@ test('coleta de reposição: "apenasGrupos" busca só os grupos pedidos e anota 
   assert.deepEqual(buscouShopee, ['Perfumes']);
   assert.deepEqual(Object.keys(s.data.coletaPorGrupo), ['Perfumes']);
 });
+
+test('Mercado Livre bloqueou (verificação): para de pedir páginas na hora e fica em pausa; reposição vai ao ML no máx. a cada 3 h', async () => {
+  const { coletar, PAUSA_ML_HORAS } = await import('../src/pipeline.js');
+  const { ErroBloqueioML } = await import('../src/ml/scraper.js');
+  const { Store } = await import('../src/store.js');
+  const s = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-')), 'db.json'));
+  const grupos = [{ nome: 'Beleza', ativo: true, filtros: {} }];
+  const cats = ['A', 'B', 'C'].map((nome) => ({ grupo: 'Beleza', nome, url: `https://ml/${nome}`, paginas: 1, ativo: true }));
+  const pedidas = [];
+  const desligado = async () => ({ produtos: [], categorias: {}, motivo: 'desligada' });
+  const base = { grupos, categoriasML: cats, esperar: async () => {}, shopee: desligado, amazon: desligado, awin: desligado };
+  const r = await coletar(s, { ...base, raspar: async (c) => { pedidas.push(c.nome); throw new ErroBloqueioML('o Mercado Livre pediu verificação'); } });
+  assert.equal(pedidas.length, 1, 'parou na primeira página bloqueada');
+  assert.match(r.mlBloqueado, /verificação/);
+  assert.ok(Date.parse(s.data.mlPausadoAte) > Date.now() + (PAUSA_ML_HORAS - 1) * 3_600_000);
+  await coletar(s, { ...base, raspar: async (c) => (pedidas.push(c.nome), []) });
+  assert.equal(pedidas.length, 1, 'em pausa: nem tenta');
+
+  // reposição: ML no máximo a cada 3 h
+  const s2 = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-')), 'db.json'));
+  const vez = [];
+  await coletar(s2, { ...base, raspar: async (c) => (vez.push(c.nome), []) });
+  await coletar(s2, { ...base, mlMinIntervaloH: 3, raspar: async (c) => (vez.push(c.nome), []) });
+  assert.equal(vez.length, 3, 'a 2ª (reposição logo depois) não foi ao ML');
+});

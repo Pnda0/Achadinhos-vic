@@ -5,7 +5,10 @@
  *   enviarProximo()-> "ENVIAR PRODUTOS PARA O GRUPO" (título + legenda + imagem + digitando...)
  */
 import { loadCategorias, loadGrupos, settings } from './config.js';
-import { scrapeCategoria } from './ml/scraper.js';
+import { ErroBloqueioML, scrapeCategoria } from './ml/scraper.js';
+
+/** Quanto tempo o bot fica sem pedir páginas ao ML depois de um bloqueio (verificação de tráfego suspeito). */
+export const PAUSA_ML_HORAS = 6;
 import { MLAffiliate } from './ml/affiliate.js';
 import { buscarOfertasAmazon } from './amazon.js';
 import { buscarCuponsAwin, loadAwin } from './awin.js';
@@ -68,7 +71,8 @@ export function motivoLinkInvalido(p) {
   return /(^|\.)mercadoli[vb]re\.com(\.br)?$/.test(host) && u.searchParams.get('matt_word') ? null : 'link do ML sem afiliado';
 }
 
-export async function coletar(store = new Store(), { amazon = buscarOfertasAmazon, awin = buscarCuponsAwin, shopee = buscarOfertasShopee, categoriasML = null, raspar = scrapeCategoria, esperar = randomDelay, grupos: gruposDados = null, apenasGrupos = null, precos = null } = {}) {
+export async function coletar(store = new Store(), { amazon = buscarOfertasAmazon, awin = buscarCuponsAwin, shopee = buscarOfertasShopee, categoriasML = null, raspar = scrapeCategoria, esperar = randomDelay, grupos: gruposDados = null, apenasGrupos = null, precos = null, mlMinIntervaloH = 0, soCupons = false } = {}) {
+  // `soCupons`: só os cupons da Awin (garantia de 1 cupom por dia em cada grupo), sem ML, Shopee nem Amazon.
   // Histórico de preços (src/precos.js), ao lado do db.json desta fila (nos testes, numa pasta temporária).
   const historico = precos ?? new HistoricoDePrecos({ arquivo: path.join(path.dirname(store.file), 'precos.json') });
   /** Filtros do grupo + o histórico de preço: já esteve bem mais barato = não é oferta de verdade. Anota o preço visto. */
@@ -87,14 +91,27 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
   const grupos = Object.fromEntries(lista.map((g) => [g.nome, g]));
   const emEspera = lista.filter((g) => g.emEspera).map((g) => g.nome);
   if (emEspera.length) log(`⏸️  Em espera (ligado, mas sem canal): ${emEspera.join(', ')} — nada é buscado para ele(s).`);
-  const categorias = shuffle((categoriasML ?? loadCategorias()).filter((c) => c.ativo && grupos[c.grupo]?.ativo !== false));
-  log(`🔎 Coletando ${categorias.length} categoria(s) ativa(s)...`);
+  // Mercado Livre com calma (21/10/2026: páginas demais = acesso marcado como suspeito): quando ele bloqueia, para
+  // por PAUSA_ML_HORAS; nas buscas de reposição, no máximo uma ida ao ML a cada `mlMinIntervaloH` horas.
+  let mlBloqueado = null;
+  const agoraMs = Date.now();
+  const pausadoAte = Date.parse(store.data.mlPausadoAte || 0) || 0;
+  const ultimaML = Date.parse(store.data.ultimaColetaML || 0) || 0;
+  let pularML = null;
+  if (pausadoAte > agoraMs) pularML = `em pausa até ${new Date(pausadoAte).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: settings.tz })} (o ML bloqueou)`;
+  else if (mlMinIntervaloH && agoraMs - ultimaML < mlMinIntervaloH * 3_600_000) pularML = `última ida ao ML há menos de ${mlMinIntervaloH} h`;
+  if (soCupons) pularML = 'só cupons nesta busca';
+  const categorias = pularML ? [] : shuffle((categoriasML ?? loadCategorias()).filter((c) => c.ativo && grupos[c.grupo]?.ativo !== false));
+  if (pularML) log(`🔎 Mercado Livre: pulado nesta busca (${pularML}).`);
+  else log(`🔎 Coletando ${categorias.length} categoria(s) ativa(s)...`);
+  if (categorias.length) store.data.ultimaColetaML = new Date(agoraMs).toISOString();
   let novos = 0;
   let encontrados = 0;
   const recusas = {};
   const porCategoria = {};
   const paginas = new Map(); // a mesma página de ofertas serve a mais de um grupo: baixa uma vez só
   for (const cat of categorias) {
+    if (mlBloqueado) break;
     const grupo = grupos[cat.grupo];
     if (!grupo) {
       log(`  ⚠️  Categoria "${cat.nome}" aponta para o grupo "${cat.grupo}", que não existe em grupos.json`);
@@ -104,8 +121,17 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
     const antes = c.encontrados;
     const chave = `${cat.url}|${cat.paginas || 1}`;
     const jaBaixada = paginas.has(chave);
-    if (!jaBaixada) paginas.set(chave, await raspar(cat));
-    else log(`  ${cat.nome} (${cat.grupo}): reaproveitando a página já baixada.`);
+    if (!jaBaixada) {
+      try {
+        paginas.set(chave, await raspar(cat));
+      } catch (e) {
+        if (!(e instanceof ErroBloqueioML)) throw e;
+        mlBloqueado = e.message;
+        store.data.mlPausadoAte = new Date(Date.now() + PAUSA_ML_HORAS * 3_600_000).toISOString();
+        log(`⛔ Mercado Livre bloqueou (${e.message}): sem novas páginas do ML por ${PAUSA_ML_HORAS} h. Shopee e Awin seguem normais.`);
+        break;
+      }
+    } else log(`  ${cat.nome} (${cat.grupo}): reaproveitando a página já baixada.`);
     for (const bruto of paginas.get(chave)) {
       const p = { ...bruto, grupo: cat.grupo, categoria: cat.nome };
       c.encontrados++;
@@ -130,7 +156,7 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
   // Amazon (API oficial). Só roda com config/amazon.json ativo e credenciais no .env.
   let amazonErro = null;
   try {
-    const az = await amazon(undefined, undefined, { gruposAtivos: new Set(lista.filter((g) => g.ativo).map((g) => g.nome)) });
+    const az = soCupons ? { produtos: [], categorias: {}, motivo: 'desligada' } : await amazon(undefined, undefined, { gruposAtivos: new Set(lista.filter((g) => g.ativo).map((g) => g.nome)) });
     if (az.motivo) {
       if (!/desligada/.test(az.motivo)) log(`🛒 Amazon: ${az.motivo}`);
     } else {
@@ -161,7 +187,7 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
   // Shopee (API oficial de afiliados): busca própria por marca e palavra (config/shopee.json). Já vem com o link do dono.
   let shopeeErro = null;
   try {
-    const sh = await shopee({ grupos: lista, vez: (store.data.shopeeVez ??= {}) });
+    const sh = soCupons ? { produtos: [], categorias: {}, motivo: 'desligada' } : await shopee({ grupos: lista, vez: (store.data.shopeeVez ??= {}) });
     if (sh.motivo) {
       if (!/desligada/.test(sh.motivo)) log(`🛍️  Shopee: ${sh.motivo}`);
     } else {
@@ -193,7 +219,11 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
   let awinErro = null;
   try {
     const dias = loadAwin().cupons.diasSemRepetir || 7;
-    const aw = await awin({ grupos: lista, jaTem: (p) => store.conhecido(p.id, p.grupo) || store.enviadoRecentemente(p.id, p.grupo, dias) });
+    // Um cupom de loja por grupo por dia: grupo que já postou (ou tem na fila) um cupom hoje não recebe outro.
+    const hoje = diaLocal(new Date(), settings.tz);
+    const temCupomHoje = (g) =>
+      store.list((p) => p.grupo === g && p.tipo === 'cupom' && (p.status === 'PRONTO' || p.status === 'PENDENTE' || p.status === 'ENVIANDO' || (p.status === 'ENVIADO' && p.enviadoEm && diaLocal(new Date(p.enviadoEm), settings.tz) === hoje))).length > 0;
+    const aw = await awin({ grupos: lista, jaTem: (p) => store.conhecido(p.id, p.grupo) || store.enviadoRecentemente(p.id, p.grupo, dias), temCupomHoje });
     if (aw.motivo) {
       if (!/desligada|falta AWIN/.test(aw.motivo)) log(`🎟️ Awin: ${aw.motivo}`);
     } else {
@@ -216,11 +246,11 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
 
   log(`✅ Coleta: ${encontrados} visto(s), ${novos} novo(s). Recusados: ${JSON.stringify(recusas)}`);
   log(`   Por categoria (vistos → aprovados): ${Object.entries(porCategoria).map(([n, x]) => `${n} ${x.encontrados}→${x.aceitos}`).join(' | ')}`);
-  const resultado = { encontrados, novos, recusas, categorias: porCategoria, amazonErro, awinErro, shopeeErro };
+  const resultado = { encontrados, novos, recusas, categorias: porCategoria, amazonErro, awinErro, shopeeErro, mlBloqueado };
   historico.salvar();
   store.registrarColeta(resultado);
   const agora = new Date().toISOString(); // quando cada grupo foi buscado (a reposição conta por grupo)
-  for (const g of lista.filter((x) => x.ativo)) (store.data.coletaPorGrupo ??= {})[g.nome] = agora;
+  if (!soCupons) for (const g of lista.filter((x) => x.ativo)) (store.data.coletaPorGrupo ??= {})[g.nome] = agora;
   store.save();
   return resultado;
 }

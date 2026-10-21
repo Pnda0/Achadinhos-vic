@@ -5,33 +5,285 @@
   "linkCurto": true,
   "cupons": {
     "ativo": true,
-    "maxPorColeta": 2,
-    "diasSemRepetir": 7
+    "maxPorColeta": 1,
+    "diasSemRepetir": 3,
+    "_comentario": "Pelo menos 1 cupom de loja por dia em cada grupo (pedido do dono, 21/10/2026): 1 por busca, só se o grupo ainda não teve cupom hoje; primeiro o do tema/loja do grupo, senão o melhor cupom de qualquer loja aprovada que não exclua o grupo. O mesmo cupom pode voltar ao grupo depois de diasSemRepetir dias (lembrete, enquanto vale)."
   },
   "anunciantes": [
-    { "id": 17648, "nome": "C&A", "dominios": ["cea.com.br"], "grupos": [], "pf": "?", "obs": "Aprovada. Moda: cupom vai ao Geral e, se o texto for do tema (esportivo, perfume, maquiagem...), ao grupo do nicho." },
-    { "id": 20946, "nome": "StudioZ", "dominios": [], "grupos": ["Fitness"], "pf": "?", "obs": "Aprovada. Tênis e streetwear." },
-    { "id": 70694, "nome": "Renner", "dominios": [], "grupos": [], "pf": "?", "obs": "Aprovada (Favoritos Renner + Ashua). Moda." },
-    { "id": 86587, "nome": "Riachuelo", "dominios": [], "grupos": [], "pf": "?", "obs": "Aprovada. Moda." },
-    { "id": 79926, "nome": "adidas", "dominios": ["adidas.com.br"], "grupos": ["Fitness"], "pf": "sim", "obs": "Paga 7% para grupos de ofertas no WhatsApp/Telegram. Cupom que não veio da Awin zera a comissão." },
-    { "id": 65354, "nome": "Soldiers Nutrition", "dominios": ["soldiersnutrition.com.br"], "grupos": ["Fitness"], "pf": "sim", "obs": "Suplementos. 7,5%." },
-    { "id": 17697, "nome": "Dafiti", "dominios": ["dafiti.com.br"], "grupos": ["Fitness"], "pf": "sim", "obs": "Moda e esportivo. 6% para pessoa física." },
-    { "id": 17806, "nome": "Centauro", "dominios": ["centauro.com.br"], "grupos": ["Fitness"], "pf": "?", "obs": "11% sem cupom, 6% com cupom. Só conta a compra feita em até 1 dia depois do clique." },
-    { "id": 19296, "nome": "Decathlon", "dominios": ["decathlon.com.br"], "grupos": ["Fitness"], "pf": "?", "obs": "2,1% a 6,8% conforme o esporte." },
-    { "id": 17652, "nome": "Nike", "dominios": ["nike.com.br"], "grupos": ["Fitness"], "pf": "?", "obs": "A própria Nike aprova cada afiliado. 5%." },
-    { "id": 17698, "nome": "Olympikus", "dominios": ["olympikus.com.br"], "grupos": ["Fitness"], "pf": "?" },
-    { "id": 28775, "nome": "Authentic Feet", "dominios": ["authenticfeet.com.br"], "grupos": ["Fitness"], "pf": "?", "obs": "Tênis (Nike, adidas, Puma...)." },
-    { "id": 28773, "nome": "ArtWalk", "dominios": ["artwalk.com.br"], "grupos": ["Fitness"], "pf": "?", "obs": "Tênis." },
-    { "id": 76326, "nome": "Granado", "dominios": ["granado.com.br"], "grupos": ["Beleza", "Perfumes"], "pf": "?", "obs": "Aceita cupons e fóruns de ofertas. 5%." },
-    { "id": 76328, "nome": "Phebo", "dominios": ["phebo.com.br"], "grupos": ["Beleza", "Perfumes"], "pf": "sim", "obs": "Perfumaria e cosméticos. 5%." },
-    { "id": 23993, "nome": "Avon", "dominios": ["avon.com.br"], "grupos": ["Beleza", "Perfumes"], "pf": "?", "obs": "8%." },
-    { "id": 24288, "nome": "Amend", "dominios": ["amend.com.br"], "grupos": ["Beleza"], "pf": "?", "obs": "Cabelo. 5,6%." },
-    { "id": 85419, "nome": "Adcos", "dominios": [], "grupos": ["Beleza"], "pf": "?", "obs": "Dermocosméticos." },
-    { "id": 76888, "nome": "Doce Beleza", "dominios": [], "grupos": ["Beleza"], "pf": "?" },
-    { "id": 29407, "nome": "Beleza na Web", "dominios": ["belezanaweb.com.br"], "grupos": ["Beleza", "Perfumes"], "pf": "nao", "obs": "Só com CNPJ. 10% social, 4% cupom." },
-    { "id": 17659, "nome": "O Boticário", "dominios": ["boticario.com.br"], "grupos": ["Beleza", "Perfumes"], "pf": "nao", "obs": "Só com CNPJ. 10%." },
-    { "id": 17837, "nome": "Eudora", "dominios": ["eudora.com.br"], "grupos": ["Beleza", "Perfumes"], "pf": "nao", "obs": "Só com CNPJ. 9% a 13%." },
-    { "id": 17658, "nome": "Natura", "dominios": ["natura.com.br"], "grupos": ["Beleza", "Perfumes"], "pf": "nao", "obs": "Só com CNPJ. 4,4%. Cupom que não veio da Awin zera a comissão." },
-    { "id": 84621, "nome": "O.U.i Paris", "dominios": [], "grupos": ["Perfumes"], "pf": "nao", "obs": "Só com CNPJ. Alta perfumaria do Grupo Boticário." }
+    {
+      "id": 17648,
+      "nome": "C&A",
+      "dominios": [
+        "cea.com.br"
+      ],
+      "grupos": [],
+      "pf": "?",
+      "obs": "Aprovada. Moda: cupom vai ao Geral e, se o texto for do tema (esportivo, perfume, maquiagem...), ao grupo do nicho."
+    },
+    {
+      "id": 20946,
+      "nome": "StudioZ",
+      "dominios": [],
+      "grupos": [
+        "Fitness"
+      ],
+      "pf": "?",
+      "obs": "Aprovada. Tênis e streetwear."
+    },
+    {
+      "id": 70694,
+      "nome": "Renner",
+      "dominios": [],
+      "grupos": [],
+      "pf": "?",
+      "obs": "Aprovada (Favoritos Renner + Ashua). Moda."
+    },
+    {
+      "id": 86587,
+      "nome": "Riachuelo",
+      "dominios": [],
+      "grupos": [],
+      "pf": "?",
+      "obs": "Aprovada. Moda."
+    },
+    {
+      "id": 79926,
+      "nome": "adidas",
+      "dominios": [
+        "adidas.com.br"
+      ],
+      "grupos": [
+        "Fitness"
+      ],
+      "pf": "sim",
+      "obs": "Paga 7% para grupos de ofertas no WhatsApp/Telegram. Cupom que não veio da Awin zera a comissão."
+    },
+    {
+      "id": 65354,
+      "nome": "Soldiers Nutrition",
+      "dominios": [
+        "soldiersnutrition.com.br"
+      ],
+      "grupos": [
+        "Fitness"
+      ],
+      "pf": "sim",
+      "obs": "Suplementos. 7,5%."
+    },
+    {
+      "id": 17697,
+      "nome": "Dafiti",
+      "dominios": [
+        "dafiti.com.br"
+      ],
+      "grupos": [
+        "Fitness"
+      ],
+      "pf": "sim",
+      "obs": "Moda e esportivo. 6% para pessoa física."
+    },
+    {
+      "id": 17806,
+      "nome": "Centauro",
+      "dominios": [
+        "centauro.com.br"
+      ],
+      "grupos": [
+        "Fitness"
+      ],
+      "pf": "?",
+      "obs": "11% sem cupom, 6% com cupom. Só conta a compra feita em até 1 dia depois do clique."
+    },
+    {
+      "id": 19296,
+      "nome": "Decathlon",
+      "dominios": [
+        "decathlon.com.br"
+      ],
+      "grupos": [
+        "Fitness"
+      ],
+      "pf": "?",
+      "obs": "2,1% a 6,8% conforme o esporte."
+    },
+    {
+      "id": 17652,
+      "nome": "Nike",
+      "dominios": [
+        "nike.com.br"
+      ],
+      "grupos": [
+        "Fitness"
+      ],
+      "pf": "?",
+      "obs": "A própria Nike aprova cada afiliado. 5%."
+    },
+    {
+      "id": 17698,
+      "nome": "Olympikus",
+      "dominios": [
+        "olympikus.com.br"
+      ],
+      "grupos": [
+        "Fitness"
+      ],
+      "pf": "?"
+    },
+    {
+      "id": 28775,
+      "nome": "Authentic Feet",
+      "dominios": [
+        "authenticfeet.com.br"
+      ],
+      "grupos": [
+        "Fitness"
+      ],
+      "pf": "?",
+      "obs": "Tênis (Nike, adidas, Puma...)."
+    },
+    {
+      "id": 28773,
+      "nome": "ArtWalk",
+      "dominios": [
+        "artwalk.com.br"
+      ],
+      "grupos": [
+        "Fitness"
+      ],
+      "pf": "?",
+      "obs": "Tênis."
+    },
+    {
+      "id": 76326,
+      "nome": "Granado",
+      "dominios": [
+        "granado.com.br"
+      ],
+      "grupos": [
+        "Beleza",
+        "Perfumes"
+      ],
+      "pf": "?",
+      "obs": "Aceita cupons e fóruns de ofertas. 5%."
+    },
+    {
+      "id": 76328,
+      "nome": "Phebo",
+      "dominios": [
+        "phebo.com.br"
+      ],
+      "grupos": [
+        "Beleza",
+        "Perfumes"
+      ],
+      "pf": "sim",
+      "obs": "Perfumaria e cosméticos. 5%."
+    },
+    {
+      "id": 23993,
+      "nome": "Avon",
+      "dominios": [
+        "avon.com.br"
+      ],
+      "grupos": [
+        "Beleza",
+        "Perfumes"
+      ],
+      "pf": "?",
+      "obs": "8%."
+    },
+    {
+      "id": 24288,
+      "nome": "Amend",
+      "dominios": [
+        "amend.com.br"
+      ],
+      "grupos": [
+        "Beleza"
+      ],
+      "pf": "?",
+      "obs": "Cabelo. 5,6%."
+    },
+    {
+      "id": 85419,
+      "nome": "Adcos",
+      "dominios": [],
+      "grupos": [
+        "Beleza"
+      ],
+      "pf": "?",
+      "obs": "Dermocosméticos."
+    },
+    {
+      "id": 76888,
+      "nome": "Doce Beleza",
+      "dominios": [],
+      "grupos": [
+        "Beleza"
+      ],
+      "pf": "?"
+    },
+    {
+      "id": 29407,
+      "nome": "Beleza na Web",
+      "dominios": [
+        "belezanaweb.com.br"
+      ],
+      "grupos": [
+        "Beleza",
+        "Perfumes"
+      ],
+      "pf": "nao",
+      "obs": "Só com CNPJ. 10% social, 4% cupom."
+    },
+    {
+      "id": 17659,
+      "nome": "O Boticário",
+      "dominios": [
+        "boticario.com.br"
+      ],
+      "grupos": [
+        "Beleza",
+        "Perfumes"
+      ],
+      "pf": "nao",
+      "obs": "Só com CNPJ. 10%."
+    },
+    {
+      "id": 17837,
+      "nome": "Eudora",
+      "dominios": [
+        "eudora.com.br"
+      ],
+      "grupos": [
+        "Beleza",
+        "Perfumes"
+      ],
+      "pf": "nao",
+      "obs": "Só com CNPJ. 9% a 13%."
+    },
+    {
+      "id": 17658,
+      "nome": "Natura",
+      "dominios": [
+        "natura.com.br"
+      ],
+      "grupos": [
+        "Beleza",
+        "Perfumes"
+      ],
+      "pf": "nao",
+      "obs": "Só com CNPJ. 4,4%. Cupom que não veio da Awin zera a comissão."
+    },
+    {
+      "id": 84621,
+      "nome": "O.U.i Paris",
+      "dominios": [],
+      "grupos": [
+        "Perfumes"
+      ],
+      "pf": "nao",
+      "obs": "Só com CNPJ. Alta perfumaria do Grupo Boticário."
+    }
   ]
 }

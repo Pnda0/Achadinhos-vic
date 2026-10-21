@@ -17,7 +17,7 @@ import { iniciarHeartbeat } from './heartbeat.js';
 import { Espelho, resolverFontes } from './espelho.js';
 import { LeitorDeCanais, fontesDosCanais } from './telegram-canais.js';
 import { MLAffiliate } from './ml/affiliate.js';
-import { coletar, filaDeOutroDia, gerarLinks, enviarParaTodos, limpar } from './pipeline.js';
+import { PAUSA_ML_HORAS, coletar, filaDeOutroDia, gerarLinks, enviarParaTodos, limpar } from './pipeline.js';
 import { createSender } from './senders.js';
 import { Store } from './store.js';
 import { diaLocal, log, sleep } from './util.js';
@@ -70,8 +70,11 @@ const exclusivo = (nome, fn, { esperarVez = false } = {}) => async (...args) => 
 const cicloColeta = exclusivo('coleta', async (apenasGrupos) => {
   const reabertas = store.reabrirErros(); // falhas com recusa clara voltam para a fila (até 3 tentativas)
   if (reabertas) log(`♻️  ${reabertas} oferta(s) que tinham falhado no envio voltaram para a fila.`);
-  const r = await coletar(store, { apenasGrupos: Array.isArray(apenasGrupos) ? apenasGrupos : null });
-  if (!r.encontrados) await avisos.coletaVazia();
+  const reposicao = Array.isArray(apenasGrupos);
+  // Busca de reposição vai ao Mercado Livre no máximo a cada 3 h (páginas demais fazem o ML bloquear o acesso).
+  const r = await coletar(store, { apenasGrupos: reposicao ? apenasGrupos : null, mlMinIntervaloH: reposicao ? 3 : 0 });
+  if (r.mlBloqueado) await avisos.avisar('ml-bloqueio', `*Mercado Livre bloqueou a busca* ⛔\n${r.mlBloqueado}.\nO bot fica ${PAUSA_ML_HORAS} h sem pedir páginas ao ML (insistir piora) e segue com a Shopee e os cupons. Se continuar por dias, abra o ML no navegador deste PC e passe pela verificação.`);
+  if (!r.encontrados && !r.mlBloqueado) await avisos.coletaVazia();
   if (r.amazonErro) await avisos.avisar('amazon', `*Amazon fora do ar no bot* ⚠️\n${r.amazonErro}`);
   if (r.awinErro) await avisos.avisar('awin', `*Awin fora do ar no bot* ⚠️\n${r.awinErro}`);
   await gerarLinks(store);
@@ -98,9 +101,28 @@ async function reporSePreciso(quando) {
   // Conta por grupo: um grupo que nunca foi buscado (ex.: acabou de ganhar busca própria) é buscado na hora.
   const porGrupo = store.data.coletaPorGrupo || {};
   const vazios = gruposSemFila().filter((g) => Date.now() - (Date.parse(porGrupo[g] || 0) || 0) >= REPOSICAO_MIN * 60_000);
-  if (!vazios.length) return;
-  log(`🔁 Busca de reposição (${quando}): sem ofertas na fila de ${vazios.join(', ')} — buscando só ${vazios.length > 1 ? 'esses grupos' : 'esse grupo'}.`);
-  await cicloColeta(vazios);
+  if (vazios.length) {
+    log(`🔁 Busca de reposição (${quando}): sem ofertas na fila de ${vazios.join(', ')} — buscando só ${vazios.length > 1 ? 'esses grupos' : 'esse grupo'}.`);
+    await cicloColeta(vazios);
+  }
+  await cupomDoDia(quando);
+}
+
+/**
+ * Pelo menos 1 cupom de loja por dia em cada grupo (pedido do dono, 21/10/2026): grupo ligado sem cupom hoje (nem
+ * postado nem na fila) ganha uma busca só de cupons da Awin — no máximo a cada 2 h, das 8h às 20h.
+ */
+const cicloCupons = exclusivo('cupons', (grupos) => coletar(store, { apenasGrupos: grupos, soCupons: true }), { esperarVez: true });
+async function cupomDoDia(quando) {
+  const hora = Number(new Date().toLocaleString('en-GB', { hour: '2-digit', hour12: false, timeZone: settings.tz }));
+  if (hora < 8 || hora > 20 || Date.now() - (Date.parse(store.data.ultimaBuscaCupons || 0) || 0) < 2 * 3_600_000) return;
+  const hoje = diaLocal(new Date(), settings.tz);
+  const temCupom = (g) => store.list((p) => p.grupo === g && p.tipo === 'cupom' && (['PRONTO', 'PENDENTE', 'ENVIANDO'].includes(p.status) || (p.status === 'ENVIADO' && p.enviadoEm && diaLocal(new Date(p.enviadoEm), settings.tz) === hoje))).length > 0;
+  const semCupom = loadGrupos().filter((g) => g.ativo && !temCupom(g.nome)).map((g) => g.nome);
+  if (!semCupom.length) return;
+  store.data.ultimaBuscaCupons = new Date().toISOString();
+  log(`🎟️ Cupom do dia (${quando}): ${semCupom.join(', ')} ainda sem cupom de loja hoje — buscando cupons da Awin.`);
+  await cicloCupons(semCupom);
 }
 
 /** Analytics (data/analytics/): só lê e grava arquivos de relatório; uma falha aqui nunca derruba o bot. */

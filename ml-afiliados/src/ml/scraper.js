@@ -4,6 +4,13 @@ import { loadCookies } from './affiliate.js';
 import { findBrowserPath, sessaoNavegador } from '../browser.js';
 import { log, randomDelay } from '../util.js';
 
+/**
+ * O ML marcou o acesso como suspeito ("account-verification" / "negative_traffic", visto em 21/10/2026): toda página
+ * cai na verificação, até pelo navegador. Insistir só piora — quem recebe este erro para de pedir páginas ao ML.
+ */
+export class ErroBloqueioML extends Error {}
+const VERIFICACAO = /gz\/account-verification|negative_traffic/;
+
 /** Monta a URL da página N de uma listagem de ofertas. */
 export function pageUrl(url, page) {
   if (page <= 1) return url;
@@ -51,15 +58,27 @@ export async function fetchHtml(url, { cookies } = {}) {
 export async function obterProdutos(url, { http = fetchHtml, navegador = sessaoNavegador, temNavegador = !!findBrowserPath() } = {}) {
   let motivo;
   try {
-    const r = parseOffersPage(await http(url, { cookies: loadCookies() }));
+    const html = await http(url, { cookies: loadCookies() });
+    if (VERIFICACAO.test(html)) throw new ErroBloqueioML('o Mercado Livre pediu verificação (marcou o acesso como suspeito)');
+    const r = parseOffersPage(html);
     if (r.produtos.length) return r;
     motivo = 'página sem produtos via HTTP';
   } catch (e) {
+    if (e instanceof ErroBloqueioML) throw e;
     motivo = e.message;
   }
   if (!temNavegador) throw new Error(motivo);
   log(`  ↪ ${motivo} — tentando pelo navegador...`);
-  const r = parseOffersPage(await navegador.html(url));
+  let html;
+  try {
+    html = await navegador.html(url);
+  } catch (e) {
+    // 403 também no navegador = bloqueio, não página quebrada
+    if (/HTTP 403/.test(e.message)) throw new ErroBloqueioML(`o Mercado Livre recusou também pelo navegador (${e.message.split('\n')[0]})`);
+    throw e;
+  }
+  if (VERIFICACAO.test(html)) throw new ErroBloqueioML('o Mercado Livre pediu verificação também no navegador');
+  const r = parseOffersPage(html);
   return { ...r, fonte: `${r.fonte}, navegador` };
 }
 
@@ -75,6 +94,7 @@ export async function scrapeCategoria(cat) {
       todos.push(...produtos.map((x) => ({ ...x, grupo: cat.grupo, categoria: cat.nome })));
       if (!produtos.length) break;
     } catch (e) {
+      if (e instanceof ErroBloqueioML) throw e; // a coleta para de pedir páginas ao ML (pipeline.js)
       log(`  ⚠️  ${cat.nome} p.${p}: ${e.message}`);
       break;
     }

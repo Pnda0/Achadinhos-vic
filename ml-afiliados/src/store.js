@@ -230,6 +230,13 @@ export class Store {
   proximo(grupo, { aceitar = () => true, preferir = null } = {}) {
     let prontos = this.list((p) => p.grupo === grupo && p.status === 'PRONTO' && aceitar(p));
     if (!prontos.length) return null;
+    const enviados = this.list((p) => p.grupo === grupo && p.status === 'ENVIADO' && p.enviadoEm).sort((a, b) => String(a.enviadoEm).localeCompare(String(b.enviadoEm)));
+    const ultimo = enviados.at(-1);
+    // Cupom de loja (Awin) passa na frente ANTES das preferências (ele não tem gênero nem marca no nome e perdia a vez
+    // para sempre — 21/10/2026), mas nunca dois seguidos. O dono quer pelo menos 1 cupom por dia em cada grupo.
+    const cupom = prontos.find((p) => p.prioridade);
+    if (cupom && !ultimo?.prioridade) return cupom;
+    if (cupom) prontos = prontos.filter((p) => !p.prioridade).length ? prontos.filter((p) => !p.prioridade) : prontos;
     // `preferir` dá uma nota a cada oferta (ex.: feminino 2, neutro 1, masculino 0): só as de nota mais alta concorrem.
     if (preferir) {
       const melhor = Math.max(...prontos.map((p) => Number(preferir(p))));
@@ -237,14 +244,13 @@ export class Store {
     }
     const espelho = prontos.filter((p) => p.origem === 'espelho');
     if (espelho.length) return espelho.sort((a, b) => String(b.coletadoEm).localeCompare(String(a.coletadoEm)))[0];
-    // Cupons de loja parceira também passam na frente (são poucos por busca e têm prazo), mas nunca dois seguidos.
-    const cupom = prontos.find((p) => p.prioridade);
+    // Equilíbrio entre as lojas (21/10/2026: "Shopee demais"): se a última postagem foi de uma loja e há oferta do
+    // mesmo nível de outra, a vez é da outra — alterna Mercado Livre e Shopee quando as duas têm oferta.
     let fila = prontos;
-    if (cupom) {
-      const ultimo = this.list((p) => p.grupo === grupo && p.status === 'ENVIADO' && p.enviadoEm).sort((a, b) => String(a.enviadoEm).localeCompare(String(b.enviadoEm))).at(-1);
-      if (!ultimo?.prioridade) return cupom;
-      const produtos = prontos.filter((p) => !p.prioridade);
-      if (produtos.length) fila = produtos;
+    const lojaDe = (p) => p.loja || 'ml';
+    if (ultimo) {
+      const outras = fila.filter((p) => lojaDe(p) !== lojaDe(ultimo));
+      if (outras.length) fila = outras;
     }
     // As melhores pela nota de qualidade; sorteia entre as 3 primeiras para não ficar previsível.
     fila.sort((a, b) => notaDeQualidade(b) - notaDeQualidade(a));

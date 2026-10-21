@@ -146,7 +146,12 @@ test('Awin cupons: cada loja manda para os grupos dela e para o Geral, com limit
   assert.deepEqual((await buscarCuponsAwin({ api: moda.api, grupos: nicho })).produtos.map((p) => p.grupo).sort(), ['Geral', 'Perfumes']);
   // ressalva não conta como tema (cupom real da Riachuelo, out/2026)
   const ressalva = apiFalsa({ promos: [{ promotionId: 8, advertiser: { id: 55555 }, title: '10% DE DESCONTO (NÃO APLICA EM DEMARCADOS) - não aplicado em perfumes, marketplace', endDate: '2099-12-31T00:00:00.000', urlTracking: 'https://www.awin1.com/cread.php?o=8', voucher: { code: 'GANHE10' } }] });
-  assert.deepEqual((await buscarCuponsAwin({ api: ressalva.api, grupos: nicho })).produtos.map((p) => p.grupo), ['Geral']);
+  // ...e o grupo que ficou sem cupom recebe esse cupom genérico — menos o Perfumes, que a ressalva exclui
+  assert.deepEqual((await buscarCuponsAwin({ api: ressalva.api, grupos: nicho })).produtos.map((p) => p.grupo), ['Geral', 'Fitness']);
+
+  // pelo menos 1 cupom por dia em cada grupo (21/10/2026): quem já teve cupom hoje não recebe outro
+  const todos = await buscarCuponsAwin({ api: moda.api, grupos: nicho, temCupomHoje: (g) => g === 'Geral' });
+  assert.deepEqual(todos.produtos.map((p) => p.grupo), ['Perfumes'], 'cupom de perfume não vira cupom "qualquer" no Fitness');
 
   // o que já está na fila ou saiu há pouco não volta
   const deNovo = await buscarCuponsAwin({ api, grupos, jaTem: (p) => p.id === 'AWP-1' });
@@ -264,4 +269,24 @@ test('arte do cupom: a da loja quando existe (logo em destaque), senão a genér
   assert.equal(arteDoCupom(17648, 'promo'), 'assets/promo-17648.jpg');
   assert.equal(arteDoCupom(99999, 'cupom'), 'assets/cupom.jpg');
   assert.equal(arteDoCupom(99999, 'promo'), 'assets/promo.jpg');
+});
+
+test('fila: o cupom do dia passa na frente mesmo com produtos femininos de marca na fila (antes ele perdia a vez)', async () => {
+  const s = tmpStore();
+  s.upsert({ id: 'P1', grupo: 'Beleza', nome: 'Batom Ruby Rose Feminino', status: 'PRONTO', linkAfiliado: 'https://meli.la/1', descontoPct: 40 });
+  s.upsert({ id: 'AWP-9', grupo: 'Beleza', nome: '8% OFF em beleza', tipo: 'cupom', prioridade: true, status: 'PRONTO', linkAfiliado: 'https://tidd.ly/x' });
+  const preferir = (p) => (/feminino/i.test(p.nome) ? 3.5 : 1);
+  assert.equal(s.proximo('Beleza', { preferir }).id, 'AWP-9');
+});
+
+test('fila: alterna as lojas — depois de uma da Shopee, a vez é do Mercado Livre se houver', async () => {
+  const s = tmpStore();
+  s.upsert({ id: 'S0', grupo: 'G', nome: 'Antigo', status: 'PRONTO', loja: 'shopee', linkAfiliado: 'https://s.shopee.com.br/0' });
+  s.setStatus(s.list()[0], 'ENVIADO', { enviadoEm: new Date().toISOString() });
+  for (let i = 1; i <= 4; i++) s.upsert({ id: `S${i}`, grupo: 'G', nome: `Shopee ${i}`, status: 'PRONTO', loja: 'shopee', linkAfiliado: `https://s.shopee.com.br/${i}`, descontoPct: 60 });
+  s.upsert({ id: 'M1', grupo: 'G', nome: 'Mercado Livre 1', status: 'PRONTO', linkAfiliado: 'https://meli.la/m', descontoPct: 20 });
+  assert.equal(s.proximo('G').id, 'M1');
+  // só Shopee na fila: segue com ela (melhor que ficar parado)
+  s.setStatus(s.list((p) => p.id === 'M1')[0], 'ENVIADO', { enviadoEm: new Date().toISOString() });
+  assert.match(s.proximo('G').id, /^S/);
 });
