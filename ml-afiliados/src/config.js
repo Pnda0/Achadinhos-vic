@@ -133,6 +133,8 @@ export const settings = {
   // Espelho no WhatsApp (src/whatsapp-espelho.js): o que sai no Telegram vai também, 1 mensagem a cada N minutos.
   whatsappEspelho: bool(env.WHATSAPP_ESPELHO, false),
   whatsappIntervaloMin: Number(env.WHATSAPP_INTERVALO_MIN) || 6,
+  // Número do chip do bot (só dígitos, com 55): conecta por código de 8 letras em vez de QR code (servidor sem tela).
+  whatsappNumero: String(env.WHATSAPP_NUMERO || '').replace(/[^0-9]/g, ''),
   enviarSemImagem: bool(env.ENVIAR_SEM_IMAGEM, true),
   llm: { baseUrl: env.LLM_BASE_URL, apiKey: env.LLM_API_KEY, model: env.LLM_MODEL },
   cron: {

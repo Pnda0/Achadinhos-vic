@@ -2,3 +2,4 @@
 *.sh text eol=lf
 # Os .bat rodam no cmd do Windows: com LF o "goto" pode não achar os rótulos (o 3-iniciar.bat depende disso).
 *.bat text eol=crlf
+*.service text eol=lf

@@ -10,7 +10,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, settings } from './config.js';
-import { requireBrowserPath } from './browser.js';
+import { ARGS_LEVES, requireBrowserPath } from './browser.js';
 import { garantirPatchWwebjs } from './patch-wwebjs.js';
 import { log, sleep } from './util.js';
 import { TelegramSender } from './telegram.js';
@@ -82,9 +82,16 @@ class WWebJsSender {
       authStrategy: new wweb.LocalAuth({ clientId: 'ml-afiliados' }),
       puppeteer: {
         executablePath: requireBrowserPath(), // Chrome/Edge já instalado no PC
-        headless: !settings.whatsappJanela,
-        args: process.platform === 'linux' ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] : [],
+        // Servidor Linux sem tela (VPS): sempre sem janela; o QR code sai no log e no Telegram do dono.
+        headless: !settings.whatsappJanela || (process.platform === 'linux' && !process.env.DISPLAY),
+        args: ARGS_LEVES,
       },
+      // Com WHATSAPP_NUMERO: conecta por código (digitado no celular do chip), sem precisar escanear QR code.
+      ...(settings.whatsappNumero && { pairWithPhoneNumber: { phoneNumber: settings.whatsappNumero, showNotification: true } }),
+    });
+    this.client.on('code', (codigo) => {
+      log(`📱 Código para conectar o WhatsApp do bot: ${codigo} (celular do chip > Aparelhos conectados > Conectar com número de telefone).`);
+      this.aoCodigo?.(codigo);
     });
     this.client.on('qr', (qr) => {
       log('📱 Escaneie o QR code com o WhatsApp do celular (Aparelhos conectados > Conectar um aparelho).');

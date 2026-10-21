@@ -51,6 +51,27 @@ export function requireBrowserPath() {
   return p;
 }
 
+/**
+ * Opções que deixam o navegador mais leve (16/10/2026: o WhatsApp Web sozinho usava ~1 GB): sem GPU, sem
+ * extensões nem tarefas de fundo, menos processos por site e cache de disco pequeno. No Linux, também sem sandbox
+ * (servidor sem usuário gráfico) e sem a memória compartilhada /dev/shm (pequena em VPS/Docker).
+ */
+export const ARGS_LEVES = [
+  '--no-first-run',
+  '--no-default-browser-check',
+  '--disable-gpu',
+  '--disable-extensions',
+  '--disable-background-networking',
+  '--disable-background-timer-throttling',
+  '--disable-default-apps',
+  '--disable-sync',
+  '--mute-audio',
+  '--disable-features=Translate,MediaRouter,OptimizationHints,site-per-process',
+  '--renderer-process-limit=2',
+  '--disk-cache-size=33554432',
+  ...(process.platform === 'linux' ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] : []),
+];
+
 export async function launch({ headless = true, userDataDir = PERFIL_ML } = {}) {
   const { default: puppeteer } = await import('puppeteer');
   fs.mkdirSync(userDataDir, { recursive: true });
@@ -59,12 +80,7 @@ export async function launch({ headless = true, userDataDir = PERFIL_ML } = {}) 
     headless,
     userDataDir,
     defaultViewport: null,
-    args: [
-      '--no-first-run',
-      '--no-default-browser-check',
-      ...(process.platform === 'linux' ? ['--no-sandbox', '--disable-dev-shm-usage'] : []),
-      ...(headless ? [] : ['--window-size=1100,800']),
-    ],
+    args: [...ARGS_LEVES, ...(headless ? [] : ['--window-size=1100,800'])],
   });
 }
 

@@ -183,6 +183,9 @@ async function iniciarWhatsApp() {
   try {
     const whats = createSender('wwebjs');
     whatsSender = whats;
+    // Servidor sem tela: o código para conectar o chip chega no Telegram do dono.
+    whats.aoCodigo = (codigo) =>
+      avisos.avisar('whatsapp-codigo', `*Conectar o WhatsApp do bot* 📲\nNo celular do chip: WhatsApp → Aparelhos conectados → Conectar um aparelho → *Conectar com número de telefone* e digite:\n\n*${codigo}*\n\n(o código muda a cada 3 minutos)`, { sempre: true }).catch(() => {});
     log('📲 WhatsApp: conectando o número do bot (na 1ª vez, escaneie o QR code na janela do WhatsApp Web que abrir)...');
     await whats.init();
     espelhoWhats = new EspelhoWhatsApp({ sender: whats, store, carregarGrupos: loadGrupos, avisos, intervaloMin: settings.whatsappIntervaloMin });

@@ -1,0 +1,23 @@
+[Unit]
+Description=Achadinhos da Vic - bot de ofertas (ml-afiliados)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=bot
+WorkingDirectory=/opt/achadinhos/ml-afiliados
+ExecStart=/opt/achadinhos/ml-afiliados/linux/iniciar.sh
+Environment=TZ=America/Sao_Paulo
+Environment=NODE_ENV=production
+# Religa sempre que o bot sair (reinício pedido, queda, erro), depois de 10 s.
+Restart=always
+RestartSec=10
+# Ao parar (systemctl stop/restart) o bot recebe SIGTERM e grava a fila antes de sair.
+KillSignal=SIGTERM
+TimeoutStopSec=60
+# Teto de memória: se o navegador do WhatsApp passar disso, o systemd reinicia o bot em vez de travar o servidor.
+MemoryMax=1500M
+
+[Install]
+WantedBy=multi-user.target
