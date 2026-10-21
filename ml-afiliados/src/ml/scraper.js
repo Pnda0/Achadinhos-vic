@@ -9,7 +9,7 @@ import { log, randomDelay } from '../util.js';
  * cai na verificação, até pelo navegador. Insistir só piora — quem recebe este erro para de pedir páginas ao ML.
  */
 export class ErroBloqueioML extends Error {}
-const VERIFICACAO = /gz\/account-verification|negative_traffic/;
+export const VERIFICACAO = /gz\/account-verification|negative_traffic|captcha\/wall/;
 
 /** Monta a URL da página N de uma listagem de ofertas. */
 export function pageUrl(url, page) {
@@ -55,17 +55,30 @@ export async function fetchHtml(url, { cookies } = {}) {
  * 1ª tentativa: HTTP direto (rápido, como o nó "CARREGA HTML" do curso, que também manda os cookies).
  * Plano B: se o ML bloquear ou devolver uma página sem produtos, abre no Chrome/Edge do bot.
  */
-export async function obterProdutos(url, { http = fetchHtml, navegador = sessaoNavegador, temNavegador = !!findBrowserPath() } = {}) {
+// Leitura direta (HTTP) barrada pela verificação: até esta hora vai direto pelo navegador, sem insistir no HTTP
+// (cada pedido barrado reforça a marca de "suspeito").
+let httpBarradoAte = 0;
+const HTTP_BARRADO_MS = 6 * 3_600_000;
+export const _zerarHttpBarrado = () => (httpBarradoAte = 0); // testes
+
+export async function obterProdutos(url, { http = fetchHtml, navegador = sessaoNavegador, temNavegador = !!findBrowserPath(), agora = Date.now() } = {}) {
   let motivo;
-  try {
-    const html = await http(url, { cookies: loadCookies() });
-    if (VERIFICACAO.test(html)) throw new ErroBloqueioML('o Mercado Livre pediu verificação (marcou o acesso como suspeito)');
-    const r = parseOffersPage(html);
-    if (r.produtos.length) return r;
-    motivo = 'página sem produtos via HTTP';
-  } catch (e) {
-    if (e instanceof ErroBloqueioML) throw e;
-    motivo = e.message;
+  if (agora < httpBarradoAte && temNavegador) motivo = 'leitura direta barrada pelo ML';
+  else {
+    try {
+      const html = await http(url, { cookies: loadCookies() });
+      if (VERIFICACAO.test(html)) {
+        httpBarradoAte = agora + HTTP_BARRADO_MS;
+        throw new ErroBloqueioML('o Mercado Livre pediu verificação (marcou o acesso como suspeito)');
+      }
+      const r = parseOffersPage(html);
+      if (r.produtos.length) return r;
+      motivo = 'página sem produtos via HTTP';
+    } catch (e) {
+      // Verificação na leitura direta: o navegador (com janela) ainda passa — tenta por ele antes de desistir.
+      if (e instanceof ErroBloqueioML && !temNavegador) throw e;
+      motivo = e.message;
+    }
   }
   if (!temNavegador) throw new Error(motivo);
   log(`  ↪ ${motivo} — tentando pelo navegador...`);

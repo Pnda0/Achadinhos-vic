@@ -72,7 +72,10 @@ export const ARGS_LEVES = [
   ...(process.platform === 'linux' ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] : []),
 ];
 
-export async function launch({ headless = true, userDataDir = PERFIL_ML } = {}) {
+/** Sem tela (servidor Linux sem DISPLAY): o navegador só pode rodar invisível. */
+export const semTela = () => process.platform === 'linux' && !process.env.DISPLAY;
+
+export async function launch({ headless = true, userDataDir = PERFIL_ML, foraDaTela = false } = {}) {
   const { default: puppeteer } = await import('puppeteer');
   fs.mkdirSync(userDataDir, { recursive: true });
   return puppeteer.launch({
@@ -80,7 +83,8 @@ export async function launch({ headless = true, userDataDir = PERFIL_ML } = {}) 
     headless,
     userDataDir,
     defaultViewport: null,
-    args: [...ARGS_LEVES, ...(headless ? [] : ['--window-size=1100,800'])],
+    // foraDaTela: janela de verdade (o ML barra navegador invisível), mas posicionada fora do monitor — ninguém vê.
+    args: [...ARGS_LEVES, ...(headless ? [] : foraDaTela ? ['--window-position=-32000,-32000', '--window-size=1280,900'] : ['--window-size=1100,800'])],
   });
 }
 
@@ -99,8 +103,10 @@ export class BrowserSession {
 
   async open() {
     if (this.browser) return;
-    this.browser = await launch({ headless: true });
-    this.page = await this.browser.newPage();
+    // Com janela (fora da tela): em 21/10/2026 o ML passou a barrar o navegador invisível ("verificação"), e com
+    // janela a mesma página abre normal. No servidor sem tela não tem jeito: fica invisível.
+    this.browser = await launch({ headless: semTela(), foraDaTela: true });
+    this.page = (await this.browser.pages())[0] || (await this.browser.newPage());
   }
 
   /** HTML de uma página, como o navegador recebe do servidor. */
@@ -108,7 +114,10 @@ export class BrowserSession {
     await this.open();
     const res = await this.page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 });
     if (res && res.status() >= 400) throw new Error(`HTTP ${res.status()} (navegador) em ${url}`);
-    return this.page.content();
+    await this.page.waitForSelector('.poly-card, .ui-search-layout', { timeout: 10_000 }).catch(() => {});
+    // A verificação do ML troca a URL: o scraper reconhece pelo endereço (ErroBloqueioML).
+    const final = this.page.url();
+    return (/account-verification/.test(final) ? `<!-- ${final} -->` : '') + (await this.page.content());
   }
 
   /** Gera links chamando o createLink de dentro da página do Link Builder (mesma sessão do login). */

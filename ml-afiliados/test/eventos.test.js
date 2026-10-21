@@ -125,7 +125,7 @@ test('Mercado Livre bloqueou (verificação): para de pedir páginas na hora e f
   const r = await coletar(s, { ...base, raspar: async (c) => { pedidas.push(c.nome); throw new ErroBloqueioML('o Mercado Livre pediu verificação'); } });
   assert.equal(pedidas.length, 1, 'parou na primeira página bloqueada');
   assert.match(r.mlBloqueado, /verificação/);
-  assert.ok(Date.parse(s.data.mlPausadoAte) > Date.now() + (PAUSA_ML_HORAS - 1) * 3_600_000);
+  assert.ok(Date.parse(s.data.pausaML) > Date.now() + (PAUSA_ML_HORAS - 1) * 3_600_000);
   await coletar(s, { ...base, raspar: async (c) => (pedidas.push(c.nome), []) });
   assert.equal(pedidas.length, 1, 'em pausa: nem tenta');
 
@@ -135,4 +135,21 @@ test('Mercado Livre bloqueou (verificação): para de pedir páginas na hora e f
   await coletar(s2, { ...base, raspar: async (c) => (vez.push(c.nome), []) });
   await coletar(s2, { ...base, mlMinIntervaloH: 3, raspar: async (c) => (vez.push(c.nome), []) });
   assert.equal(vez.length, 3, 'a 2ª (reposição logo depois) não foi ao ML');
+});
+
+test('ML: leitura direta barrada pela verificação → tenta pelo navegador (com janela) e não insiste no HTTP; navegador barrado = bloqueio', async () => {
+  const { obterProdutos, ErroBloqueioML, _zerarHttpBarrado } = await import('../src/ml/scraper.js');
+  _zerarHttpBarrado();
+  const VERIF = '<html>gz/account-verification negative_traffic</html>';
+  const pagina = fs.readFileSync(new URL('./fixtures/ofertas-polycard.html', import.meta.url), 'utf8');
+  let http = 0;
+  const httpBarrado = async () => (http++, VERIF);
+  const navegadorBom = { html: async () => pagina };
+  const r = await obterProdutos('https://ml/1', { http: httpBarrado, navegador: navegadorBom, temNavegador: true });
+  assert.ok(r.produtos.length > 0);
+  assert.match(r.fonte, /navegador/);
+  await obterProdutos('https://ml/2', { http: httpBarrado, navegador: navegadorBom, temNavegador: true });
+  assert.equal(http, 1, 'depois da 1ª verificação, vai direto pelo navegador');
+  await assert.rejects(obterProdutos('https://ml/3', { http: httpBarrado, navegador: { html: async () => VERIF }, temNavegador: true }), ErroBloqueioML);
+  _zerarHttpBarrado();
 });

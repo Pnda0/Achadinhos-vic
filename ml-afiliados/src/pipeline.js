@@ -14,6 +14,7 @@ import { buscarOfertasAmazon } from './amazon.js';
 import { buscarCuponsAwin, loadAwin } from './awin.js';
 import { buscarOfertasShopee } from './shopee-busca.js';
 import { HistoricoDePrecos } from './precos.js';
+import fs from 'node:fs';
 import path from 'node:path';
 import { VENDAS_MINIMAS, motivoVendas } from './ml/vendas.js';
 import { evento, origemDe } from './eventos.js';
@@ -95,7 +96,14 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
   // por PAUSA_ML_HORAS; nas buscas de reposição, no máximo uma ida ao ML a cada `mlMinIntervaloH` horas.
   let mlBloqueado = null;
   const agoraMs = Date.now();
-  const pausadoAte = Date.parse(store.data.mlPausadoAte || 0) || 0;
+  // O dono resolveu o captcha no navegador do bot (npm run ml-liberar): tira a pausa e volta a ler o ML.
+  const liberado = path.join(path.dirname(store.file), '.ml-liberado');
+  if (fs.existsSync(liberado)) {
+    fs.rmSync(liberado, { force: true });
+    if (store.data.pausaML) log('🧩 Mercado Livre liberado pelo dono (captcha resolvido): pausa encerrada.');
+    delete store.data.pausaML;
+  }
+  const pausadoAte = Date.parse(store.data.pausaML || 0) || 0;
   const ultimaML = Date.parse(store.data.ultimaColetaML || 0) || 0;
   let pularML = null;
   if (pausadoAte > agoraMs) pularML = `em pausa até ${new Date(pausadoAte).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: settings.tz })} (o ML bloqueou)`;
@@ -127,7 +135,7 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
       } catch (e) {
         if (!(e instanceof ErroBloqueioML)) throw e;
         mlBloqueado = e.message;
-        store.data.mlPausadoAte = new Date(Date.now() + PAUSA_ML_HORAS * 3_600_000).toISOString();
+        store.data.pausaML = new Date(Date.now() + PAUSA_ML_HORAS * 3_600_000).toISOString();
         log(`⛔ Mercado Livre bloqueou (${e.message}): sem novas páginas do ML por ${PAUSA_ML_HORAS} h. Shopee e Awin seguem normais.`);
         break;
       }
