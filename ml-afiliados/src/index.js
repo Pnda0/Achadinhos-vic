@@ -314,7 +314,18 @@ async function main() {
     store.save();
     log(`♻️  ${reabertas} oferta(s) que tinham falhado no envio voltaram para a fila.`);
   }
-  await sender.init();
+  // O PC liga antes da internet: sem resposta do Telegram, tenta de novo a cada 30 s (até 30 min) em vez de
+  // desistir — em 21/10/2026 o bot ficou parado das 10h33 às 11h26 por isso. Erro claro (token errado) para na hora.
+  for (let tentativa = 1; ; tentativa++) {
+    try {
+      await sender.init();
+      break;
+    } catch (e) {
+      if (!e.incerto || tentativa >= 60) throw e;
+      if (tentativa === 1) log(`🌐 Sem internet ainda (${String(e.message).split('\n')[0]}) — tentando de novo a cada 30 s.`);
+      await sleep(30_000);
+    }
+  }
   if (sender.tipo === 'telegram') {
     // Mostra no log os chats que o bot enxerga (para preencher "telegram" em config/grupos.json).
     try {

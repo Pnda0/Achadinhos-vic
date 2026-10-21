@@ -5,11 +5,12 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { DATA_DIR, settings } from '../config.js';
+import { DATA_DIR, loadCategorias, loadGrupos, loadShopee, settings } from '../config.js';
 import { diaLocal } from '../util.js';
 import { PASTA_ANALYTICS, lerDia, lerEventos, montarDia } from './dia.js';
 import { lerMembros, variacaoMembros } from './membros.js';
 import { PAINEL_ML, lerAwin } from './ganhos.js';
+import { montarAnalytics } from './produtos.js';
 
 export const NOTAS = [
   'Funil dos canais: conta só as mensagens novas lidas com o bot ligado.',
@@ -150,12 +151,32 @@ function dinheiroAwin(awin, dias) {
  * Tudo o que o painel mostra, para os três períodos (ou um dia só, se pedido).
  * HOJE é montado na hora a partir do histórico (o arquivo do dia só sai às 21h55).
  */
-export function montarPainel({ base = PASTA_ANALYTICS, store = lerStoreSoLeitura(), eventos, agora = new Date(), periodos = ['hoje', '7d', '30d'] } = {}) {
+/** Grupos e categorias de busca ligados na configuração (para o Analytics de produtos). */
+export function configDoPainel() {
+  const grupos = loadGrupos().map((g) => ({ nome: g.nome, ativo: g.ativo }));
+  const ligado = new Set(grupos.filter((g) => g.ativo).map((g) => g.nome));
+  const shopee = loadShopee();
+  const categoriasAtivas = [
+    ...loadCategorias().filter((c) => c.ativo && ligado.has(c.grupo)).map((c) => ({ nome: c.nome, loja: 'Mercado Livre' })),
+    ...(shopee.ativo === false ? [] : Object.entries(shopee.grupos || {}).filter(([g, x]) => x.ativo !== false && ligado.has(g)).map(([g]) => ({ nome: `Shopee: ${g}`, loja: 'Shopee' }))),
+  ];
+  return { gruposConfig: grupos, categoriasAtivas: [...new Map(categoriasAtivas.map((c) => [c.nome, c])).values()] };
+}
+
+/** Quando cada grupo publicou pela última vez (do histórico). */
+export function ultimasPublicacoes(eventos) {
+  const ultima = {};
+  for (const e of eventos) if (e?.tipo === 'publicado' && e.grupo && e.t && (!ultima[e.grupo] || e.t > ultima[e.grupo])) ultima[e.grupo] = e.t;
+  return ultima;
+}
+
+export function montarPainel({ base = PASTA_ANALYTICS, store = lerStoreSoLeitura(), eventos, agora = new Date(), periodos = ['hoje', '7d', '30d'], config = null } = {}) {
   const hoje = diaLocal(agora, settings.tz);
   let ao = null;
+  let todos = eventos;
   const resumoDe = (dia) => {
     if (dia !== hoje) return lerDia(dia, base);
-    ao ??= montarDia(hoje, { eventos: eventos ?? lerEventos(), store, parcial: true, agora });
+    ao ??= montarDia(hoje, { eventos: (todos ??= lerEventos()), store, parcial: true, agora });
     return ao;
   };
   const awin = lerAwin(base);
@@ -173,6 +194,9 @@ export function montarPainel({ base = PASTA_ANALYTICS, store = lerStoreSoLeitura
     [...new Set(Object.values(membros).flatMap((m) => Object.keys(m || {})))].map((g) => [g, variacaoMembros(membros, g, ultimo)]).filter(([, v]) => v)
   );
   saida.awin30 = awin.periodo30 ? { inicio: awin.periodo30.inicio, fim: awin.periodo30.fim, total: awin.periodo30.total, lojas: awin.periodo30.lojas } : null;
+  // Analytics de produtos (a tela nova): tudo calculado aqui, por período.
+  const cfg = config ?? configDoPainel();
+  saida.analytics = montarAnalytics(saida, { ...cfg, ultimaPublicacao: ultimasPublicacoes((todos ??= lerEventos())), hoje, agora, tz: settings.tz });
   return saida;
 }
 

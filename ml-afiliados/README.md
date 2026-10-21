@@ -290,6 +290,8 @@ npm run historico -- "creatina dark lab"
 
 O bot guarda, por grupo e por fonte, o que entrou, o que saiu, o que foi barrado e o que deu resultado (Awin), e monta um painel:
 
+**Analytics de produtos** (desde 21/10/2026, tema escuro): `src/analytics/produtos.js` calcula tudo de cada período (Hoje / 7 / 30 dias) — KPIs com médias ponderadas pelo volume, publicações por dia (ou hora) empilhadas por grupo, funil, pontos de atenção por regra (limites em `LIMITES`: parado ≥ 48 h, barradas > 10%, fila vazia > 100 ou > 20%, queda < 25% da média, categorias sem publicação), comparativo e cartões por grupo, funil das fontes, categorias e monetização; `src/analytics/pagina.js` só desenha. Período e aba ficam na URL (`?periodo=7d&aba=resumo`). Grupo pausado em `config/grupos.json` aparece como "Pausado", sem alerta. Nada é inventado: sem dado, a tela diz "sem dados no período".
+
 - **No PC**: dois cliques em `4-relatorio.bat` (ou `npm run analytics -- 7d`, `-- 30d`, `-- hoje`, `-- 2026-10-14`). Só lê os dados; pode rodar com o bot ligado.
 - **No celular, de qualquer lugar**: https://achadinhos-vic-painel.pages.dev — um projeto **separado** do site público, **privado** (só o seu e-mail entra). O bot publica às 8h05, 12h30, 17h30 e 21h57, e só se conseguir confirmar que o painel está protegido.
 - **No Telegram**: o resumo das 21h58 traz 3–5 linhas de destaque (e o link do painel); toda segunda às 9h chega o resumo da semana.
