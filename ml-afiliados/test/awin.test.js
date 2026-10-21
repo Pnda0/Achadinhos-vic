@@ -215,7 +215,8 @@ test('Espelho: link de loja parceira num canal entra com o MEU link da Awin e o 
   const p = fila[0];
   assert.deepEqual({ loja: p.loja, lojaNome: p.lojaNome, linkAfiliado: p.linkAfiliado, precoAtual: p.precoAtual, precoOriginal: p.precoOriginal, cupom: p.cupom }, { loja: 'awin', lojaNome: 'adidas', linkAfiliado: 'https://tidd.ly/79926', precoAtual: 199, precoOriginal: 399, cupom: 'CORRE15' });
   const legenda = montarLegenda(p, { titulo: 'x' });
-  assert.match(legenda, /🛒 Ver oferta na loja adidas:\nhttps:\/\/tidd\.ly\/79926/);
+  assert.match(legenda, /^💜 \*ADIDAS\*/);
+  assert.match(legenda, /🔗 use o link:\nhttps:\/\/tidd\.ly\/79926/);
   assert.match(legenda, /🎟️ Cupom: `CORRE15` \(toque para copiar\)/);
   assert.doesNotMatch(legenda, /utm_source|Preço da Amazon/);
 });

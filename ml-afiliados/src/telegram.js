@@ -20,7 +20,9 @@ export function paraHTML(texto) {
   return esc(texto)
     .replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,!?:]|$)/gm, '$1<b>$2</b>')
     .replace(/(^|[\s(])~([^~\n]+)~(?=[\s).,!?:]|$)/gm, '$1<s>$2</s>')
-    .replace(/(^|[\s(])`([^`\n]+)`(?=[\s).,!?:]|$)/gm, '$1<code>$2</code>');
+    .replace(/(^|[\s(])`([^`\n]+)`(?=[\s).,!?:]|$)/gm, '$1<code>$2</code>')
+    .replace(/(^|[\s(])_([^_\n]+)_(?=[\s).,!?:]|$)/gm, '$1<i>$2</i>')
+    .replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>'); // "> texto" = citação (o WhatsApp entende igual)
 }
 
 /** Imagem que é um arquivo do próprio bot (pasta assets/), e não uma URL ou file_id. */

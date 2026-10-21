@@ -152,20 +152,29 @@ function linhaCupomML(p) {
   return final ? `🎟️ *${formatBRL(final)}* com o cupom de ${formatBRL(v)}` : `🎟️ ${p.cupom.replace(/ com Cupom$/i, '')} com cupom`;
 }
 
+/** Cabeçalho com a loja, no estilo dos grandes grupos ("🧡 AMAZON"); a cor do coração lembra a da loja. */
+const CORACAO = { amazon: '🧡', shopee: '🧡', awin: '💜' };
+export const cabecalhoLoja = (p) => `${CORACAO[p.loja] || '💛'} *${nomeLoja(p).toUpperCase()}*`;
+
+/**
+ * Post de produto (formato pedido pelo dono em 20/10/2026, inspirado num grupo grande): loja no topo, nome em
+ * negrito, "de R$ X por R$ Y", a economia (sempre), cupom, frete, nota e vendidos, "use o link" e o aviso em citação.
+ * `titulo` só vale para cupom/promoção de loja; produto não tem mais título.
+ */
 export function montarLegenda(p, { titulo, mensagemAdicional = '' } = {}) {
   // Post copiado de um canal (espelho com "copiarTexto"): sai como o canal escreveu, já com os links do dono.
   if (p.textoPronto) return [p.textoPronto, mensagemAdicional].filter((s) => s && s.trim()).join('\n\n');
   if (p.tipo === 'cupom') return legendaCupom(p, { titulo, mensagemAdicional });
   const linhasPreco = [];
   if (p.precoAtual) {
-    if (p.precoOriginal && p.precoOriginal > p.precoAtual) linhasPreco.push(`~De ${formatBRL(p.precoOriginal)}~`);
-    linhasPreco.push(
-      `🔥 *Por ${formatBRL(p.precoAtual)}*${p.precoObs ? ` ${p.precoObs}` : ''}${p.descontoPct ? ` (${p.descontoPct}% OFF)` : ''}`
-    );
-    const economia = p.precoOriginal ? centavos(p.precoOriginal - p.precoAtual) : 0;
-    if (economia >= ECONOMIA_MINIMA) linhasPreco.push(`💰 Economia de ${formatBRL(economia)}`);
+    const temDe = p.precoOriginal && p.precoOriginal > p.precoAtual;
+    linhasPreco.push(`💰 ${temDe ? `de ${formatBRL(p.precoOriginal)} ` : ''}por *${formatBRL(p.precoAtual)}*${p.precoObs ? ` ${p.precoObs}` : ''}`);
+    const economia = temDe ? centavos(p.precoOriginal - p.precoAtual) : 0;
+    const pct = p.descontoPct || (temDe ? Math.round((economia / p.precoOriginal) * 100) : 0);
+    if (economia > 0) linhasPreco.push(`💸 Economia de ${formatBRL(economia)}${pct ? ` (${pct}% OFF)` : ''}`);
+    else if (pct) linhasPreco.push(`💸 ${pct}% OFF`);
   } else {
-    linhasPreco.push(`🔥 *Confira o preço no link*${p.descontoPct ? ` (${p.descontoPct}% OFF)` : ''}`);
+    linhasPreco.push(`💰 *Confira o preço no link*${p.descontoPct ? ` (${p.descontoPct}% OFF)` : ''}`);
   }
 
   const extras = [];
@@ -175,12 +184,15 @@ export function montarLegenda(p, { titulo, mensagemAdicional = '' } = {}) {
   extras.push(linhaProva(p));
   if (p.fimRelampago) extras.push('⏳ Oferta relâmpago — acaba hoje!');
 
+  // A Amazon exige mostrar a hora do preço; nas outras lojas, o aviso de sempre.
+  const aviso = p.loja === 'amazon' && p.precoAtual ? `Preço da Amazon às ${horaConsulta(p)} — pode mudar` : 'Oferta válida por tempo limitado';
   return [
-    `*${(titulo || tituloPronto(p)).toUpperCase()}*`,
-    nomeCurto(p.nome),
+    cabecalhoLoja(p),
+    `*${nomeCurto(p.nome)}*`,
     linhasPreco.join('\n'),
     extras.filter(Boolean).join('\n'),
-    chamada(p) + (p.loja === 'amazon' && p.precoAtual ? `\n\n⏱️ Preço da Amazon às ${horaConsulta(p)} — pode mudar.` : ''),
+    `🔗 use o link:\n${p.linkAfiliado}`,
+    `> _${aviso}_`,
     mensagemAdicional,
   ]
     .filter((s) => s && s.trim())

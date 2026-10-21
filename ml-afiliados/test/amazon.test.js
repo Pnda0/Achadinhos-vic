@@ -137,8 +137,9 @@ test('coletar: ofertas da Amazon entram na fila já PRONTAS (com link), passando
 test('legenda da Amazon mostra a loja e a hora do preço (exigência da Amazon)', () => {
   const p = produtoDeItem(itemCamel, { grupo: 'Geral', categoria: 'x', consultadoEm: new Date('2026-10-09T17:32:00Z') });
   const txt = montarLegenda(p, { titulo: 'TESTE' });
-  assert.match(txt, /🛒 Ver oferta na Amazon:\nhttps:\/\/www\.amazon\.com\.br\/dp\/B0TESTE123\?tag=panda-20/);
-  assert.match(txt, /⏱️ Preço da Amazon às 14:32 — pode mudar\./);
-  assert.match(txt, /~De R\$ 499,90~/);
+  assert.match(txt, /^🧡 \*AMAZON\*/);
+  assert.match(txt, /🔗 use o link:\nhttps:\/\/www\.amazon\.com\.br\/dp\/B0TESTE123\?tag=panda-20/);
+  assert.match(txt, /> _Preço da Amazon às 14:32 — pode mudar_/);
+  assert.match(txt, /💰 de R\$ 499,90 por/);
   assert.doesNotMatch(txt, /Mercado Livre/);
 });

@@ -17,7 +17,7 @@ import { evento, origemDe } from './eventos.js';
 import { preferenciaFeminina } from './genero.js';
 import { marcaDoProduto, preferenciaDeMarca } from './marcas.js';
 import { BrowserSession, sessaoNavegador } from './browser.js';
-import { estiloDoProduto, gerarTitulo, montarLegenda, tituloCupom } from './caption.js';
+import { montarLegenda, tituloCupom } from './caption.js';
 import { Store } from './store.js';
 import { casaTermo, chunk, diaLocal, log, normalizar, randomDelay, shuffle, sleep } from './util.js';
 
@@ -375,7 +375,7 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
   store.setStatus(p, 'ENVIANDO', { tentativaEm: new Date().toISOString() });
   store.save();
   try {
-    const titulo = p.textoPronto ? null : p.tipo === 'cupom' ? tituloCupom(p) : await gerarTitulo(p, estiloDoProduto(p, grupo));
+    const titulo = p.tipo === 'cupom' ? tituloCupom(p) : null; // produto não tem mais título (formato de 20/10/2026)
     const legenda = montarLegenda(p, { titulo, mensagemAdicional: grupo.mensagemAdicional });
     if (settings.simularDigitando && settings.sender !== 'console') await simularDigitando(sender, grupo.jid);
     const r = p.imagem

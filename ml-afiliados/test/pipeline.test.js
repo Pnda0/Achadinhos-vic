@@ -58,25 +58,27 @@ test('createLinks: erro 403 vira mensagem clara', async () => {
   await assert.rejects(aff.createLinks(['x']), /cookies expirados/);
 });
 
-test('legenda tem título, preço riscado, cupom, frete, link e mensagem adicional', () => {
+test('legenda: loja no topo, nome, de/por, economia, cupom, frete, nota e vendidos, link, aviso e mensagem adicional', () => {
   const l = montarLegenda(produto, { titulo: 'pisante barato 👟', mensagemAdicional: '🔗 Convide um amigo' });
-  assert.match(l, /^\*PISANTE BARATO 👟\*/);
-  assert.match(l, /~De R\$ 169,99~/);
-  assert.match(l, /\*Por R\$ 69,34\* no Pix \(59% OFF\)/);
-  assert.match(l, /💰 Economia de R\$ 100,65\n/);
+  assert.match(l, /^💛 \*MERCADO LIVRE\*\n\n\*Tênis Masculino Feminino Kappa Park 2\.0\*\n/);
+  assert.doesNotMatch(l, /PISANTE/i, 'produto não tem mais título');
+  assert.match(l, /💰 de R\$ 169,99 por \*R\$ 69,34\* no Pix\n/);
+  assert.match(l, /💸 Economia de R\$ 100,65 \(59% OFF\)/);
+  assert.match(l, /> _Oferta válida por tempo limitado_/);
   assert.match(l, /🎟️ R\$ 15 OFF com cupom\n/); // preço "no Pix": não dá para garantir que o cupom acumula
   assert.match(montarLegenda({ ...produto, precoObs: null }, { titulo: 'x' }), /🎟️ \*R\$ 54,34\* com o cupom de R\$ 15\n/);
   assert.match(l, /🚚 Frete grátis ⚡FULL/);
   assert.match(l, /⭐ 4,7 · \+250 mil vendidos/);
-  assert.match(l, /🛒 Ver oferta no Mercado Livre:\nhttps:\/\/meli\.la\/abc/);
+  assert.match(l, /🔗 use o link:\nhttps:\/\/meli\.la\/abc/);
   assert.match(l, /Convide um amigo$/);
   assert.equal((l.match(/% OFF/g) || []).length, 1); // o % aparece uma vez só
   assert.equal(nomeCurto(produto.nome), 'Tênis Masculino Feminino Kappa Park 2.0');
 });
 
-test('legenda: economia em R$ só quando pesa; cupom só vira preço final quando é em reais', () => {
+test('legenda: economia sempre (pedido do dono); cupom só vira preço final quando é em reais', () => {
   const barato = montarLegenda({ ...produto, precoAtual: 39.9, precoOriginal: 54.9, descontoPct: 27, cupom: null }, { titulo: 'x' });
-  assert.doesNotMatch(barato, /Economia/); // R$ 15 de economia: o % já diz tudo
+  assert.match(barato, /💸 Economia de R\$ 15 \(27% OFF\)/);
+  assert.match(montarLegenda({ ...produto, precoOriginal: null, descontoPct: 30, cupom: null }), /💸 30% OFF/); // sem o "de": só o %
   const pct = montarLegenda({ ...produto, cupom: '10% OFF com Cupom' }, { titulo: 'x' });
   assert.match(pct, /🎟️ 10% OFF com cupom/); // cupom em % pode ter teto: não calcula
   const maiorQuePreco = montarLegenda({ ...produto, cupom: 'R$ 80 OFF com Cupom' }, { titulo: 'x' });
