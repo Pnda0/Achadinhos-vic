@@ -330,6 +330,18 @@ Entre em https://dash.cloudflare.com com a conta **alanribeiro8352@icloud.com** 
 
 **Como ler**: "recusadas na busca" são ofertas que não passaram nos filtros do grupo e nem entraram na fila (não é perda); "barradas na hora de postar" estavam na fila e não saíram; os membros incluem você e o bot; o funil dos canais conta só mensagens novas lidas com o bot ligado; visualizações por post não existem (canais privados); a Awin mostra comissão **pendente** (pode ser cancelada) separada da **aprovada**; o Mercado Livre não tem relatório pela API — o painel leva ao painel do ML.
 
+## 3.16 Servidor Linux (VPS)
+
+Para tirar o bot do PC de casa (21/10/2026). Servidor com **2 GB de memória** (o WhatsApp Web roda num navegador e usa ~1 GB; o bot em si, ~90 MB), 1–2 núcleos e ~10 GB de disco, Ubuntu 22.04/24.04 ou Debian 12 de 64 bits.
+
+1. **Instalar** (como root): `curl -fsSL https://raw.githubusercontent.com/Pnda0/Achadinhos-vic/main/ml-afiliados/linux/instalar.sh | bash` — instala Node 22, Google Chrome, swap de 2 GB, o bot em `/opt/achadinhos` (usuário `bot`) e o serviço `ml-afiliados` (liga com o servidor, religa se cair, teto de 1,5 GB de memória). Não liga o bot.
+2. **Levar os dados do PC de casa** para `/opt/achadinhos/ml-afiliados/`: o `.env` e a pasta `data/` (fila, histórico, preços, analytics, `cookies.txt` do ML) — **sem** `data/perfil-ml` e sem `.wwebjs_auth` (o WhatsApp conecta de novo no servidor). Depois: `chown -R bot:bot /opt/achadinhos`.
+3. **No `.env` do servidor**: `WHATSAPP_NUMERO=55DDDNUMERO` do chip do bot (o código para conectar chega no seu Telegram: celular do chip → Aparelhos conectados → Conectar com número de telefone) e, para o painel, `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` (o login do wrangler do PC não vai junto).
+4. **Desligar o bot do PC de casa** (fechar a janela e tirar o atalho da pasta Inicializar): os dois ligados postam tudo em dobro.
+5. **Ligar**: `systemctl start ml-afiliados` · ver: `journalctl -u ml-afiliados -f` · reiniciar com calma: `cd /opt/achadinhos/ml-afiliados && sudo -u bot npm run reiniciar` (o systemd religa sozinho, com `git pull`).
+
+Atenção: o Mercado Livre costuma bloquear mais IP de servidor (data center) do que internet de casa; Shopee e Awin usam API oficial e não mudam.
+
 ## 4. Uso
 
 Cada etapa também roda separada:
