@@ -41,7 +41,7 @@ test('histórico de preço: já esteve bem mais barato = caro; o menor preço do
   assert.deepEqual(new HistoricoDePrecos({ arquivo: h.arquivo }).dados, {});
 });
 
-test('coleta usa o histórico: o "desconto" que já foi mais barato fica de fora; o menor preço sai com o selo', async () => {
+test('coleta usa o histórico: o "desconto" que já foi mais barato fica de fora; o menor preço só pesa na fila (sem selo no post)', async () => {
   const dir = pasta();
   const store = new Store(path.join(dir, 'db.json'));
   const precos = new HistoricoDePrecos({ arquivo: path.join(dir, 'precos.json') });
@@ -64,7 +64,7 @@ test('coleta usa o histórico: o "desconto" que já foi mais barato fica de fora
   const [bom] = store.list();
   assert.equal(bom.id, 'BOM');
   assert.equal(bom.menorPreco30d, true);
-  assert.match(montarLegenda({ ...bom, linkAfiliado: 'https://meli.la/x' }, { titulo: 'T' }), /📉 Menor preço dos últimos 30 dias/);
+  assert.doesNotMatch(montarLegenda({ ...bom, linkAfiliado: 'https://meli.la/x' }), /Menor preço/); // o selo não vai no post (pedido do dono, 20/10/2026)
   assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'precos.json'), 'utf8')).BOM.u, 99, 'gravou ao lado do db.json');
 });
 

@@ -243,7 +243,7 @@ Desde 15/10/2026 (`src/shopee.js`), post de canal com link da Shopee entra na fi
 ## 3.13h Histórico de preço e nota de qualidade
 
 Inspirado nos grandes grupos (o Promobit compara cada oferta com um preço de referência das ofertas anteriores), desde 16/10/2026:
-- **Histórico de preço** (`src/precos.js`, `data/precos.json`): cada busca anota o preço de cada produto visto. Se ele já esteve **mais de 10% mais barato nos últimos 30 dias**, a "oferta" de agora fica de fora (recusa "já esteve mais barato (30 dias)") — é o desconto inflado. Se o preço de agora é o **menor dos 30 dias** (e já foi visto mais caro), o post ganha "📉 Menor preço dos últimos 30 dias". O histórico vai se formando com as buscas: nos primeiros dias quase nada é recusado por isso.
+- **Histórico de preço** (`src/precos.js`, `data/precos.json`): cada busca anota o preço de cada produto visto. Se ele já esteve **mais de 10% mais barato nos últimos 30 dias**, a "oferta" de agora fica de fora (recusa "já esteve mais barato (30 dias)") — é o desconto inflado. Se o preço de agora é o **menor dos 30 dias** (e já foi visto mais caro), a oferta ganha pontos na fila (o selo "📉 Menor preço dos últimos 30 dias" saiu do post em 20/10/2026: o dono não gostou). O histórico vai se formando com as buscas: nos primeiros dias quase nada é recusado por isso.
 - **Nota de qualidade** (`notaDeQualidade` em `src/store.js`): depois das preferências (feminino, marca), a próxima oferta é escolhida pela nota — desconto (até 80) + vendas (1 mil vendidos = 30) + avaliação (4,9 = +8; 4,0 = −10) + menor preço (+15) — sorteando entre as 3 melhores.
 
 ## 3.13g Reiniciar o bot com calma
