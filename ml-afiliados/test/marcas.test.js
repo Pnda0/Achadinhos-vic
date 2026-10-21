@@ -81,3 +81,17 @@ test('na hora de postar: o que está na fila fora do nicho (ex.: rack "Dior" no 
   assert.equal(await enviarProximo(sender, grupo, store), null);
   assert.equal(store.list((x) => x.id === 'R')[0].erro, 'fora do nicho');
 });
+
+test('capinha de celular com logo de marca não entra em grupo nenhum (busca "Nike" na Shopee, 21/10/2026)', async () => {
+  const { loadGrupos } = await import('../src/config.js');
+  const { motivoRecusa } = await import('../src/pipeline.js');
+  const grupos = loadGrupos();
+  const p = (grupo, nome) => ({ id: 'X', grupo, nome, precoAtual: 50, descontoPct: 30, nota: 4.8, vendidos: '+1000 vendidos', loja: 'shopee' });
+  for (const g of ['Fitness', 'Beleza', 'Geral']) {
+    const f = grupos.find((x) => x.nome === g).filtros;
+    assert.equal(motivoRecusa(p(g, 'Silicone Anti-impacto Capinha Capa Nike iPhone 11 12 13 14 15 Pro MAX'), f), 'palavra bloqueada', g);
+    assert.equal(motivoRecusa(p(g, 'Capa Fosco Anti impacto Nike Swoosh para Samsung A15'), f), 'palavra bloqueada', g);
+  }
+  const fit = grupos.find((x) => x.nome === 'Fitness').filtros;
+  for (const bom of ['Óculos de Natação Profissional Decathlon Nabaiji', 'Meia New Balance Cano Longo Kit 3 Pares', 'Relógio Smartwatch compatível com celular Nike Run']) assert.equal(motivoRecusa(p('Fitness', bom), fit), null, bom);
+});

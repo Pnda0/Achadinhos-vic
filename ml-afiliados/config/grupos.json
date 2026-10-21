@@ -8,7 +8,21 @@
     "palavrasBloqueadas": [
       "usado",
       "recondicionado",
-      "refil"
+      "refil",
+      "capinha",
+      "capinhas",
+      "capa+celular",
+      "capa+iphone",
+      "capa+samsung",
+      "capa+motorola",
+      "capa+xiaomi",
+      "capa+galaxy",
+      "case+iphone",
+      "case+celular",
+      "case+samsung",
+      "pelicula+celular",
+      "pelicula+iphone",
+      "pelicula+samsung"
     ],
     "diasSemRepetir": 5
   },
@@ -67,7 +81,21 @@
           "pesca",
           "molinete",
           "airsoft",
-          "camping"
+          "camping",
+          "capinha",
+          "capinhas",
+          "capa+celular",
+          "capa+iphone",
+          "capa+samsung",
+          "capa+motorola",
+          "capa+xiaomi",
+          "capa+galaxy",
+          "case+iphone",
+          "case+celular",
+          "case+samsung",
+          "pelicula+celular",
+          "pelicula+iphone",
+          "pelicula+samsung"
         ]
       },
       "telegram": "-1003849571702",
@@ -117,5 +145,6 @@
       "whatsapp": "Achadinhos Vic - Perfumes",
       "soMarcas": true
     }
-  ]
+  ],
+  "_comentarioCapinha": "Capinha, capa e película de celular bloqueadas em todos os grupos (pedido do dono, 21/10/2026): a busca da Shopee por marca (\"Nike\") trazia capinha falsificada com o logo."
 }
