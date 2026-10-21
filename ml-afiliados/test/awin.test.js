@@ -290,3 +290,19 @@ test('fila: alterna as lojas — depois de uma da Shopee, a vez é do Mercado Li
   s.setStatus(s.list((p) => p.id === 'M1')[0], 'ENVIADO', { enviadoEm: new Date().toISOString() });
   assert.match(s.proximo('G').id, /^S/);
 });
+
+test('cupom do dia: grupo sem cupom do tema recebe o que fala dele ("beleza") ou de loja de departamento, não o de marca de outro nicho', async () => {
+  const promos = [
+    { promotionId: 30, type: 'voucher', advertiser: { id: 79926 }, title: '30% OFF em produtos selecionados da campanha Últimas 30', endDate: '2099-12-31T00:00:00.000', urlTracking: 'https://www.awin1.com/cread.php?o=30', voucher: { code: 'ULTIMAS30' }, dateAdded: '2026-10-20T00:00:00.000' },
+    { promotionId: 31, type: 'voucher', advertiser: { id: 55555 }, title: '8% OFF em Apparel, beleza, óculos e relógios', endDate: '2099-12-31T00:00:00.000', urlTracking: 'https://www.awin1.com/cread.php?o=31', voucher: { code: 'AFILIADOS10' }, dateAdded: '2026-10-01T00:00:00.000' },
+  ];
+  const { api } = apiFalsa({ promos });
+  const grupos = [
+    { nome: 'Fitness', ativo: true, filtros: { palavrasObrigatorias: ['whey'] } },
+    { nome: 'Beleza', ativo: true, filtros: { palavrasObrigatorias: ['maquiagem'] } },
+  ];
+  const r = await buscarCuponsAwin({ api, grupos });
+  const de = Object.fromEntries(r.produtos.map((p) => [p.grupo, p.cupom]));
+  assert.equal(de.Fitness, 'ULTIMAS30'); // a loja do grupo primeiro
+  assert.equal(de.Beleza, 'AFILIADOS10'); // fala de beleza e é loja de departamento — não o da marca esportiva
+});

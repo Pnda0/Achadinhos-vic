@@ -429,23 +429,33 @@ export async function buscarCuponsAwin({ api = new Awin(), grupos = [], jaTem = 
   };
   // 1ª passada: lojas do grupo e cupons do tema dele. 2ª passada (pedido do dono, 21/10/2026: "pelo menos 1 cupom de
   // loja por dia"): grupo que ainda está sem cupom hoje recebe o melhor cupom de qualquer loja aprovada que não o exclua.
-  for (const passada of [1, 2]) {
-    for (const promo of promos) {
-      const loja = porId.get(Number(promo.advertiser?.id));
-      if (!loja) continue;
-      // Só o título, e sem as ressalvas: "10% OFF - não aplica em perfumes" NÃO é cupom de perfume.
-      const texto = normalizar(promo.title).replace(RESSALVA, '');
-      const tema = doTema(texto);
-      // 2ª passada: só grupo que ficou sem nenhum cupom, e só cupom sem tema de OUTRO nicho ("Perfumes 20% OFF" não vai pro Fitness).
-      const alvos = passada === 1 ? [...(loja.grupos || []), ...tema, cfg.grupoGeral] : [...ativos].filter((g) => !porGrupo[g] && (!tema.length || tema.includes(g)));
-      for (const grupo of new Set(alvos.filter((g) => g && ativos.has(g)))) {
-        if ((porGrupo[grupo] || 0) >= max || temCupomHoje(grupo) || excluiGrupo(promo, grupo)) continue;
-        const p = ofertaDeCupom(promo, loja, grupo);
-        if (!p || jaTem(p) || produtos.some((x) => x.id === p.id && x.grupo === grupo)) continue;
-        porGrupo[grupo] = (porGrupo[grupo] || 0) + 1;
-        produtos.push(p);
-      }
-    }
+  // Só o título, e sem as ressalvas: "10% OFF - não aplica em perfumes" NÃO é cupom de perfume.
+  const semRessalva = (promo) => normalizar(promo.title).replace(RESSALVA, '');
+  const adicionar = (promo, loja, grupo) => {
+    if ((porGrupo[grupo] || 0) >= max || temCupomHoje(grupo) || excluiGrupo(promo, grupo)) return false;
+    const p = ofertaDeCupom(promo, loja, grupo);
+    if (!p || jaTem(p) || produtos.some((x) => x.id === p.id && x.grupo === grupo)) return false;
+    porGrupo[grupo] = (porGrupo[grupo] || 0) + 1;
+    produtos.push(p);
+    return true;
+  };
+  for (const promo of promos) {
+    const loja = porId.get(Number(promo.advertiser?.id));
+    if (!loja) continue;
+    for (const grupo of new Set([...(loja.grupos || []), ...doTema(semRessalva(promo)), cfg.grupoGeral].filter((g) => g && ativos.has(g)))) adicionar(promo, loja, grupo);
+  }
+  // 2ª passada: grupo que ficou sem nenhum cupom recebe o mais adequado (sem tema de OUTRO nicho — "Perfumes 20% OFF"
+  // não vai pro Fitness): primeiro o que fala do grupo ("beleza"), depois o de loja de departamento (C&A, Riachuelo...),
+  // e só por último o de marca de outro nicho (Nike no Beleza saiu em 21/10/2026 por falta desse critério).
+  const candidatos = promos.map((promo) => ({ promo, loja: porId.get(Number(promo.advertiser?.id)) })).filter((c) => c.loja);
+  for (const grupo of [...ativos].filter((g) => !porGrupo[g] && !temCupomHoje(g))) {
+    const palavra = normalizar(grupo).replace(/s$/, '');
+    const nota = ({ promo, loja }) => (casaTermo(semRessalva(promo), palavra) ? 4 : 0) + ((loja.grupos || []).length ? 0 : 2) + (promo.voucher?.code ? 1 : 0);
+    const bons = candidatos.filter(({ promo }) => {
+      const tema = doTema(semRessalva(promo));
+      return !tema.length || tema.includes(grupo);
+    });
+    for (const c of [...bons].sort((a, b) => nota(b) - nota(a))) if (adicionar(c.promo, c.loja, grupo)) break;
   }
   // Link curto oficial (tidd.ly) para a página do cupom, uma vez por promoção; se não der, fica o link de rastreio da API.
   const curtos = new Map();
