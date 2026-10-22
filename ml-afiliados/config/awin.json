@@ -285,5 +285,13 @@
       "pf": "nao",
       "obs": "Só com CNPJ. Alta perfumaria do Grupo Boticário."
     }
-  ]
+  ],
+  "produtos": {
+    "ativo": true,
+    "porGrupo": 8,
+    "descontoMinimo": 15,
+    "precoMinimo": 15,
+    "renovarHoras": 20,
+    "_comentario": "Produtos dos catálogos das lojas aprovadas (22/10/2026: revezar com a Shopee). Precisa de AWIN_FEED_KEY no .env (Awin → Toolbox → Create-a-Feed; não é o API_KEY_AWIN). Catálogo baixado 1x a cada renovarHoras; só entra com descontoMinimo% de desconto e em estoque; no máximo porGrupo novos por grupo a cada busca; depois passam pelos filtros do grupo (nicho, só marcas, feminino...)."
+  }
 }

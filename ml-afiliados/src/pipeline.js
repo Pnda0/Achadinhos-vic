@@ -11,7 +11,13 @@ import { ErroBloqueioML, scrapeCategoria } from './ml/scraper.js';
 export const PAUSA_ML_HORAS = 6;
 import { MLAffiliate } from './ml/affiliate.js';
 import { buscarOfertasAmazon } from './amazon.js';
-import { buscarCuponsAwin, loadAwin } from './awin.js';
+import { Awin, buscarCuponsAwin, loadAwin } from './awin.js';
+import { buscarProdutosAwin } from './awin-produtos.js';
+
+// Testes nunca baixam catálogo de verdade (a chave pode estar no .env do PC).
+const produtosAwinPadrao = process.env.NODE_TEST_CONTEXT
+  ? async () => ({ produtos: [], categorias: {}, motivo: 'desligada (teste)' })
+  : (o) => buscarProdutosAwin({ api: new Awin(), cfg: loadAwin().produtos || {}, ...o });
 import { buscarOfertasShopee } from './shopee-busca.js';
 import { HistoricoDePrecos } from './precos.js';
 import fs from 'node:fs';
@@ -66,13 +72,14 @@ export function motivoLinkInvalido(p) {
   if (p.loja === 'shopee') return /^(s\.shopee\.com\.br|shope\.ee)$/.test(host) && u.pathname.length > 1 ? null : 'link da Shopee sem afiliado';
   if (p.loja === 'awin') {
     if (host === 'tidd.ly' && u.pathname.length > 1) return null;
-    return /(^|\.)awin1\.com$/.test(host) && u.searchParams.get('awinaffid') ? null : 'link da Awin sem id de afiliado';
+    // awinaffid (link de cupom/página) ou a= (link de produto dos catálogos, pclick.php?p=...&a=<afiliado>&m=<loja>)
+    return /(^|\.)awin1\.com$/.test(host) && (u.searchParams.get('awinaffid') || u.searchParams.get('a')) ? null : 'link da Awin sem id de afiliado';
   }
   if (host === 'meli.la' && /^\/\w+$/.test(u.pathname)) return null;
   return /(^|\.)mercadoli[vb]re\.com(\.br)?$/.test(host) && u.searchParams.get('matt_word') ? null : 'link do ML sem afiliado';
 }
 
-export async function coletar(store = new Store(), { amazon = buscarOfertasAmazon, awin = buscarCuponsAwin, shopee = buscarOfertasShopee, categoriasML = null, raspar = scrapeCategoria, esperar = randomDelay, grupos: gruposDados = null, apenasGrupos = null, precos = null, mlMinIntervaloH = 0, soCupons = false } = {}) {
+export async function coletar(store = new Store(), { amazon = buscarOfertasAmazon, awin = buscarCuponsAwin, awinProdutos = produtosAwinPadrao, shopee = buscarOfertasShopee, categoriasML = null, raspar = scrapeCategoria, esperar = randomDelay, grupos: gruposDados = null, apenasGrupos = null, precos = null, mlMinIntervaloH = 0, soCupons = false } = {}) {
   // `soCupons`: só os cupons da Awin (garantia de 1 cupom por dia em cada grupo), sem ML, Shopee nem Amazon.
   // Histórico de preços (src/precos.js), ao lado do db.json desta fila (nos testes, numa pasta temporária).
   const historico = precos ?? new HistoricoDePrecos({ arquivo: path.join(path.dirname(store.file), 'precos.json') });
@@ -223,6 +230,38 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
     log(`❌ Shopee: ${shopeeErro}`);
   }
 
+  // Awin — produtos dos catálogos das lojas aprovadas (22/10/2026: revezar com a Shopee). No máximo `porGrupo` novos por grupo.
+  let awinProdutosErro = null;
+  try {
+    const ap = soCupons ? { produtos: [], categorias: {}, motivo: 'desligada' } : await awinProdutos({ grupos: lista, vez: (store.data.awinVez ??= {}) });
+    if (ap.motivo) {
+      if (!/desligad/.test(ap.motivo)) log(`🛍️  Awin (produtos): ${ap.motivo}`);
+    } else log(`🛍️  Awin: ${ap.produtos.length} produto(s) dos catálogos para conferir.`);
+    for (const [nome, c] of Object.entries(ap.categorias || {})) porCategoria[nome] = c;
+    const maxAw = loadAwin().produtos?.porGrupo ?? 8;
+    const novosAw = {};
+    for (const p of ap.produtos || []) {
+      const grupo = grupos[p.grupo];
+      if (!grupo?.ativo || (novosAw[p.grupo] || 0) >= maxAw) continue;
+      encontrados++;
+      const motivo = recusa(p, grupo.filtros);
+      if (motivo) {
+        recusas[motivo] = (recusas[motivo] || 0) + 1;
+        evento('recusado', p, motivo);
+        continue;
+      }
+      if (porCategoria[p.categoria]) porCategoria[p.categoria].aceitos++;
+      if (store.upsert(p)) {
+        novos++;
+        novosAw[p.grupo] = (novosAw[p.grupo] || 0) + 1;
+        evento('na_fila', p);
+      }
+    }
+  } catch (e) {
+    awinProdutosErro = String(e.message).split('\n')[0];
+    log(`❌ Awin (produtos): ${awinProdutosErro}`);
+  }
+
   // Awin (API oficial): cupons e promoções das lojas em que a conta foi aprovada. Já vêm com o link de afiliado.
   let awinErro = null;
   try {
@@ -254,7 +293,7 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
 
   log(`✅ Coleta: ${encontrados} visto(s), ${novos} novo(s). Recusados: ${JSON.stringify(recusas)}`);
   log(`   Por categoria (vistos → aprovados): ${Object.entries(porCategoria).map(([n, x]) => `${n} ${x.encontrados}→${x.aceitos}`).join(' | ')}`);
-  const resultado = { encontrados, novos, recusas, categorias: porCategoria, amazonErro, awinErro, shopeeErro, mlBloqueado };
+  const resultado = { encontrados, novos, recusas, categorias: porCategoria, amazonErro, awinErro, awinProdutosErro, shopeeErro, mlBloqueado };
   historico.salvar();
   store.registrarColeta(resultado);
   const agora = new Date().toISOString(); // quando cada grupo foi buscado (a reposição conta por grupo)

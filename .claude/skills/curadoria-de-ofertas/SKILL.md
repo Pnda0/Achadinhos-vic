@@ -13,7 +13,7 @@ sem repetir, foto boa, texto limpo. Pouca oferta boa vale mais que muita oferta 
 
 | Etapa | Regra | Onde |
 |---|---|---|
-| Fontes | busca própria nas lojas: ML (`config/categorias.json`), Shopee (`config/shopee.json`, uma busca por marca), cupons Awin. **Não copia canal nenhum** (pedido do dono, 16/10/2026). Amazon só pelo privado do bot (sem API até 3 vendas; raspar o site é proibido pelo Associados) | `src/pipeline.js` `coletar()` |
+| Fontes | busca própria nas lojas: ML (`config/categorias.json`), Shopee (`config/shopee.json`, uma busca por marca), cupons Awin e produtos dos catálogos da Awin (`src/awin-produtos.js`, precisa de `AWIN_FEED_KEY`). **Não copia canal nenhum** (pedido do dono, 16/10/2026). Amazon só pelo privado do bot (sem API até 3 vendas; raspar o site é proibido pelo Associados) | `src/pipeline.js` `coletar()` |
 | Nicho | o nome precisa ter palavra do nicho; marcas de cabelo/maquiagem/skincare/fitness contam como palavra (perfume NÃO: Dior vende roupa e casa) | `config/nichos.json`, `config/marcas.json` > `nichos` |
 | Só marcas | Fitness, Beleza e Perfumes só com marca da lista | `"soMarcas"` em `config/grupos.json`, `src/marcas.js` |
 | Força | ML: mais de 50 vendas pelo rótulo; Shopee: 50+ vendas, nota 4,5+, 15%+ de desconto, até 4 por busca | `src/ml/vendas.js`, `config/shopee.json` |
