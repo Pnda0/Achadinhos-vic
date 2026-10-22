@@ -29,7 +29,8 @@
     "historico": "node src/cli.js historico",
     "analytics": "node src/cli.js analytics",
     "reiniciar": "node src/reiniciar.js",
-    "ml-liberar": "node src/ml/liberar.js"
+    "ml-liberar": "node src/ml/liberar.js",
+    "migrar": "node src/migrar.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

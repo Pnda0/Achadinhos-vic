@@ -77,3 +77,16 @@ test('reinício com calma: "npm run reiniciar" pede pela porta e o bot recebe; s
     t.soltar();
   }
 });
+
+test('"desligar" (npm run migrar) pede parada SEM religar; "parar" (npm run reiniciar) religa', async () => {
+  const porta = 47997;
+  const pedidos = [];
+  const t = await travarInstancia({ porta, aoPedirParada: (op) => pedidos.push(op) });
+  try {
+    assert.equal(await pedirParada({ porta, religar: false }), true);
+    assert.equal(await pedirParada({ porta }), true);
+    assert.deepEqual(pedidos, [{ religar: false }, { religar: true }]);
+  } finally {
+    t.soltar();
+  }
+});

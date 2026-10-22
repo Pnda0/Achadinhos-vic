@@ -9,7 +9,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, settings } from './config.js';
+import { DATA_DIR, ROOT, settings } from './config.js';
 import { ARGS_LEVES, requireBrowserPath } from './browser.js';
 import { garantirPatchWwebjs } from './patch-wwebjs.js';
 import { log, sleep } from './util.js';
@@ -106,6 +106,11 @@ class WWebJsSender {
     });
     await Promise.all([this.client.initialize(), ready]);
     log('✅ WhatsApp conectado');
+    // O número do chip fica anotado: no servidor ele conecta por código (WHATSAPP_NUMERO), sem QR code (npm run migrar).
+    try {
+      const numero = this.client.info?.wid?.user;
+      if (numero) fs.writeFileSync(path.join(DATA_DIR, 'whatsapp-numero.txt'), numero);
+    } catch {}
   }
   /**
    * Mostra "digitando..." no grupo. Chama o estado direto na página do WhatsApp Web:

@@ -336,17 +336,19 @@ Entre em https://dash.cloudflare.com com a conta **alanribeiro8352@icloud.com** 
 - **Cupom do dia**: cada grupo recebe pelo menos 1 cupom de loja da Awin por dia — primeiro o da loja/tema do grupo (Nike e C&A Esportivo no Fitness, C&A beleza no Beleza…), senão o melhor cupom de qualquer loja aprovada que não exclua o grupo ("não aplica em perfumes" não vai ao Perfumes). O cupom passa na frente na fila (nunca dois seguidos). Grupo sem cupom hoje dispara uma busca só de cupons (a cada 2 h no máximo, das 8h às 20h). O mesmo cupom pode voltar depois de 3 dias (`cupons.diasSemRepetir` em `config/awin.json`).
 - **Mercado Livre com calma**: muitas páginas fazem o ML marcar o acesso como suspeito (verificação "negative_traffic", todas as páginas bloqueadas — aconteceu em 21/10/2026). Agora: ~22 páginas por busca (eram ~46; páginas repetidas entre grupos baixam uma vez só), e ao primeiro bloqueio o bot fica **6 h sem pedir páginas ao ML** (`PAUSA_ML_HORAS`) e avisa no Telegram; a busca de reposição vai ao ML no máximo a cada 3 h. Se o bloqueio durar dias, abra o ML no navegador do PC de casa e passe pela verificação.
 
-## 3.16 Servidor Linux (VPS)
+## 3.16 Servidor Linux (PC só para o bot ou VPS)
 
-Para tirar o bot do PC de casa (21/10/2026). Servidor com **2 GB de memória** (o WhatsApp Web roda num navegador e usa ~1 GB; o bot em si, ~90 MB), 1–2 núcleos e ~10 GB de disco, Ubuntu 22.04/24.04 ou Debian 12 de 64 bits.
+Para tirar o bot do PC de casa (22/10/2026: um PC com 4 GB de memória só para isso). Precisa de **2 GB ou mais** de memória (o WhatsApp Web roda num navegador e usa ~1,3 GB; o bot em si, ~90 MB), Ubuntu 22.04/24.04 ou Debian 12 de 64 bits, ~10 GB de disco.
 
-1. **Instalar** (como root): `curl -fsSL https://raw.githubusercontent.com/Pnda0/Achadinhos-vic/main/ml-afiliados/linux/instalar.sh | bash` — instala Node 22, Google Chrome, swap de 2 GB, o bot em `/opt/achadinhos` (usuário `bot`) e o serviço `ml-afiliados` (liga com o servidor, religa se cair, teto de 1,5 GB de memória). Não liga o bot.
-2. **Levar os dados do PC de casa** para `/opt/achadinhos/ml-afiliados/`: o `.env` e a pasta `data/` (fila, histórico, preços, analytics, `cookies.txt` do ML) — **sem** `data/perfil-ml` e sem `.wwebjs_auth` (o WhatsApp conecta de novo no servidor). Depois: `chown -R bot:bot /opt/achadinhos`.
-3. **No `.env` do servidor**: `WHATSAPP_NUMERO=55DDDNUMERO` do chip do bot (o código para conectar chega no seu Telegram: celular do chip → Aparelhos conectados → Conectar com número de telefone) e, para o painel, `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` (o login do wrangler do PC não vai junto).
-4. **Desligar o bot do PC de casa** (fechar a janela e tirar o atalho da pasta Inicializar): os dois ligados postam tudo em dobro.
-5. **Ligar**: `systemctl start ml-afiliados` · ver: `journalctl -u ml-afiliados -f` · reiniciar com calma: `cd /opt/achadinhos/ml-afiliados && sudo -u bot npm run reiniciar` (o systemd religa sozinho, com `git pull`).
+1. **No servidor (como root)** — instala Node 22, Google Chrome, swap de 2 GB, o bot em `/opt/achadinhos` (usuário `bot`) e o serviço `ml-afiliados` (liga com o servidor, religa se cair, teto de 1,5 GB):
+   `curl -fsSL https://raw.githubusercontent.com/Pnda0/Achadinhos-vic/main/ml-afiliados/linux/instalar.sh | bash`
+2. **No PC de casa**: `cd ml-afiliados && npm run migrar` — desliga o bot daqui **sem religar**, tira o atalho do início automático do Windows (vira `.desligado`) e gera `Downloads/achadinhos-migracao-AAAA-MM-DD.tar.gz` (~2 MB) com o `.env` (já com `WHATSAPP_NUMERO`, o chip do bot), a pasta `data/` (fila, histórico, preços, analytics, cookies do ML; sem perfil de navegador nem sessão do WhatsApp) e o login do Cloudflare do wrangler (o painel continua publicando). **Tem senhas**: pendrive ou rede local, e apague depois. (`npm run migrar -- --teste` só gera o arquivo.)
+3. **No servidor**: `bash /opt/achadinhos/ml-afiliados/linux/receber.sh <arquivo>` — põe tudo no lugar e liga o bot. Em ~1 min chega no Telegram do dono o **código para conectar o WhatsApp** (celular do chip → Aparelhos conectados → Conectar com número de telefone).
+4. Dia a dia: `journalctl -u ml-afiliados -f` (ver), `systemctl restart ml-afiliados` ou `cd /opt/achadinhos/ml-afiliados && sudo -u bot npm run reiniciar` (reiniciar, com `git pull`), `systemctl stop ml-afiliados` (parar).
 
-Atenção: o Mercado Livre costuma bloquear mais IP de servidor (data center) do que internet de casa; Shopee e Awin usam API oficial e não mudam.
+Voltar para o PC de casa: pare o serviço no servidor, tire o `.desligado` do atalho na pasta Inicializar e abra o `3-iniciar.bat` (com a pasta `data/` de volta do servidor, se quiser a fila e o histórico atuais). **Nunca os dois ligados.**
+
+Atenção: o Mercado Livre bloqueia leitura automática de páginas (verificação/captcha desde 21/10/2026) — no servidor também; Shopee e Awin usam API oficial e não mudam.
 
 ## 4. Uso
 

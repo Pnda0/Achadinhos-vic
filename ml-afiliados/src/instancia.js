@@ -46,9 +46,11 @@ export function travarInstancia({ porta = PORTA_TRAVA, timeoutMs = 1500, aoPedir
       let lido = '';
       conexao.on('data', (d) => {
         lido += d;
-        if (!/\bparar\b/.test(lido)) return;
+        // "parar" = reiniciar com calma; "desligar" = parar sem religar (mudança para o servidor: npm run migrar).
+        const pedido = lido.match(/\b(parar|desligar)\b/)?.[1];
+        if (!pedido) return;
         conexao.end('ok\n');
-        aoPedirParada?.();
+        aoPedirParada?.({ religar: pedido === 'parar' });
       });
     });
     servidor.once('error', async (e) => {
@@ -64,7 +66,7 @@ export function travarInstancia({ porta = PORTA_TRAVA, timeoutMs = 1500, aoPedir
 }
 
 /** Pede ao bot que está rodando neste PC para reiniciar com calma. true = havia um bot e ele recebeu o pedido. */
-export function pedirParada({ porta = PORTA_TRAVA, timeoutMs = 3000 } = {}) {
+export function pedirParada({ porta = PORTA_TRAVA, timeoutMs = 3000, religar = true } = {}) {
   return new Promise((resolve) => {
     let lido = '';
     let pediu = false;
@@ -78,7 +80,7 @@ export function pedirParada({ porta = PORTA_TRAVA, timeoutMs = 3000 } = {}) {
       lido += d;
       if (lido.includes(ASSINATURA) && !pediu) {
         pediu = true;
-        s.write('parar\n');
+        s.write(religar ? 'parar\n' : 'desligar\n');
       }
       if (/\bok\b/.test(lido)) fim(true);
     });

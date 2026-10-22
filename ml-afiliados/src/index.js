@@ -275,15 +275,17 @@ async function iniciarEspelho() {
  * bot de novo na mesma janela, já com o que foi para o GitHub.
  */
 let aoPedirParada = () => {};
-async function reiniciarComCalma(sair) {
+async function reiniciarComCalma(sair, { religar = true } = {}) {
   if (parando) return;
   parando = true;
-  log('🔁 Reinício pedido: termino o que estiver fazendo e ligo de novo.');
+  log(religar ? '🔁 Reinício pedido: termino o que estiver fazendo e ligo de novo.' : '⏹️  Desligamento pedido (mudança para o servidor): termino o que estiver fazendo e desligo.');
   for (let i = 0; i < 90 && ocupado; i++) await sleep(1000);
-  try {
-    fs.writeFileSync(path.join(DATA_DIR, '.reiniciar'), new Date().toISOString());
-  } catch {}
-  await sair('reinício pedido');
+  if (religar) {
+    try {
+      fs.writeFileSync(path.join(DATA_DIR, '.reiniciar'), new Date().toISOString());
+    } catch {}
+  }
+  await sair(religar ? 'reinício pedido' : 'desligado para a mudança');
 }
 
 async function main() {
@@ -314,7 +316,7 @@ async function main() {
     process.exit(0);
   };
   for (const sinal of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sinal, sair);
-  aoPedirParada = () => reiniciarComCalma(sair).catch((e) => registrarErro('reiniciar', e));
+  aoPedirParada = (op) => reiniciarComCalma(sair, op).catch((e) => registrarErro('reiniciar', e));
   log(`🚀 ml-afiliados iniciando (envio via "${settings.sender}")`);
   // Envio que ficou pela metade quando o bot parou: pode ter saído — vira INCERTO e entra no histórico (antes de limpar).
   const incertos = store.recuperarEnvios();
