@@ -72,10 +72,7 @@ export const ARGS_LEVES = [
   ...(process.platform === 'linux' ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] : []),
 ];
 
-/** Sem tela (servidor Linux sem DISPLAY): o navegador só pode rodar invisível. */
-export const semTela = () => process.platform === 'linux' && !process.env.DISPLAY;
-
-export async function launch({ headless = true, userDataDir = PERFIL_ML, foraDaTela = false } = {}) {
+export async function launch({ headless = true, userDataDir = PERFIL_ML } = {}) {
   const { default: puppeteer } = await import('puppeteer');
   fs.mkdirSync(userDataDir, { recursive: true });
   return puppeteer.launch({
@@ -83,8 +80,7 @@ export async function launch({ headless = true, userDataDir = PERFIL_ML, foraDaT
     headless,
     userDataDir,
     defaultViewport: null,
-    // foraDaTela: janela de verdade (o ML barra navegador invisível), mas posicionada fora do monitor — ninguém vê.
-    args: [...ARGS_LEVES, ...(headless ? [] : foraDaTela ? ['--window-position=-32000,-32000', '--window-size=1280,900'] : ['--window-size=1100,800'])],
+    args: [...ARGS_LEVES, ...(headless ? [] : ['--window-size=1100,800'])],
   });
 }
 
@@ -103,9 +99,8 @@ export class BrowserSession {
 
   async open() {
     if (this.browser) return;
-    // Com janela (fora da tela): em 21/10/2026 o ML passou a barrar o navegador invisível ("verificação"), e com
-    // janela a mesma página abre normal. No servidor sem tela não tem jeito: fica invisível.
-    this.browser = await launch({ headless: semTela(), foraDaTela: true });
+    // Invisível, como sempre. Se o ML pedir verificação/captcha, o bot respeita e pausa (não tenta se disfarçar de pessoa).
+    this.browser = await launch({ headless: true });
     this.page = (await this.browser.pages())[0] || (await this.browser.newPage());
   }
 

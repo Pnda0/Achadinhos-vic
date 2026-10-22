@@ -75,7 +75,7 @@ export async function obterProdutos(url, { http = fetchHtml, navegador = sessaoN
       if (r.produtos.length) return r;
       motivo = 'página sem produtos via HTTP';
     } catch (e) {
-      // Verificação na leitura direta: o navegador (com janela) ainda passa — tenta por ele antes de desistir.
+      // Verificação na leitura direta: tenta uma vez pelo navegador (plano B de sempre); barrado lá também = pausa.
       if (e instanceof ErroBloqueioML && !temNavegador) throw e;
       motivo = e.message;
     }
