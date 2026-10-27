@@ -26,9 +26,10 @@ o bot até apertar uma tecla) — desde 27/10 o bot desliga a edição rápida a
 também se recusa a ligar. Peça ao dono para fechar a janela travada; depois `npm run reiniciar` abre uma só.
 
 **ML bloqueado por dias** ("⛔ Mercado Livre bloqueou" toda busca; desde 21/10/2026, em 27/10 até a página de
-ofertas sem o bot caía em "account-verification"): rode `npm run ml-liberar` (em segundo plano) e avise o dono — abre o
-ML numa janela comum do Chrome com o perfil do bot, ele entra na conta e passa pela verificação (até 20 min). Não
-aumente páginas nem tente contornar a verificação.
+ofertas sem o bot caía em "account-verification"). Tentado em 27/10 sem sucesso: `npm run ml-liberar` (o ML recusou o
+login na janela) e cookies novos copiados do Chrome do dono, onde as ofertas abriam (o bot seguiu caindo em
+`captcha/wall/logged`; o gerador de links continuou abrindo). Ou seja, o ML barra o bot em si: não insista, não aumente
+páginas nem tente se passar por navegador. O bot tenta sozinho nas buscas do dia e volta quando o ML liberar.
 
 ## Investigar
 
