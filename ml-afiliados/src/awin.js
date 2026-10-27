@@ -27,7 +27,7 @@ export const awinCfg = () => ({
 export function loadAwin() {
   try {
     const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'config/awin.json'), 'utf8'));
-    return { ativo: cfg.ativo !== false, grupoGeral: cfg.grupoGeral ?? 'Geral', linkCurto: cfg.linkCurto !== false, cupons: { ativo: true, maxPorColeta: 2, diasSemRepetir: 7, ...(cfg.cupons || {}) }, anunciantes: cfg.anunciantes || [] };
+    return { ativo: cfg.ativo !== false, grupoGeral: cfg.grupoGeral ?? 'Geral', linkCurto: cfg.linkCurto !== false, cupons: { ativo: true, maxPorColeta: 2, diasSemRepetir: 7, ...(cfg.cupons || {}) }, produtos: cfg.produtos || {}, anunciantes: cfg.anunciantes || [] };
   } catch {
     return { ativo: false, grupoGeral: 'Geral', linkCurto: true, cupons: { ativo: false }, anunciantes: [] };
   }

@@ -291,7 +291,11 @@
     "porGrupo": 8,
     "descontoMinimo": 15,
     "precoMinimo": 15,
+    "precoMaximo": 400,
+    "umACada": 4,
+    "maxPorDia": 6,
     "renovarHoras": 20,
-    "_comentario": "Produtos dos catálogos das lojas aprovadas (22/10/2026: revezar com a Shopee). Precisa de AWIN_FEED_KEY no .env (Awin → Toolbox → Create-a-Feed; não é o API_KEY_AWIN). Catálogo baixado 1x a cada renovarHoras; só entra com descontoMinimo% de desconto e em estoque; no máximo porGrupo novos por grupo a cada busca; depois passam pelos filtros do grupo (nicho, só marcas, feminino...)."
+    "_comentario": "Produtos dos catálogos das lojas aprovadas (22/10/2026: revezar com a Shopee). Precisa de AWIN_FEED_KEY no .env (Awin → Toolbox → Create-a-Feed; não é o API_KEY_AWIN). Catálogo baixado 1x a cada renovarHoras; só entra com descontoMinimo% de desconto e em estoque; no máximo porGrupo novos por grupo a cada busca; depois passam pelos filtros do grupo (nicho, só marcas, feminino...).",
+    "_comentarioPublico": "27/10/2026, o dono: 'os tênis da Nike tão muito exagerados, lembre que o grupo é pra mulheres' (num dia saíram 11 Nike no Fitness, alguns masculinos, de até R$ 1.099, até 4 seguidos). Agora: grupo de meninas não recebe peça masculina do catálogo; nenhum recebe infantil nem acima de precoMaximo; femininas primeiro; no máximo 1 do catálogo a cada umACada posts e maxPorDia por grupo por dia."
   }
 }

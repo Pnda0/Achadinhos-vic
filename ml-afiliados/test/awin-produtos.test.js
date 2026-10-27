@@ -6,8 +6,10 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 
 process.env.EVENTOS_ARQUIVO = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-')), 'produtos.log');
-const { lerLinhaCsv, produtoDoCatalogo, listarCatalogos, buscarProdutosAwin, chaveDosCatalogos, urlDoCatalogo } = await import('../src/awin-produtos.js');
-const { motivoLinkInvalido } = await import('../src/pipeline.js');
+process.env.SIMULAR_DIGITANDO = 'false';
+const { lerLinhaCsv, produtoDoCatalogo, listarCatalogos, buscarProdutosAwin, chaveDosCatalogos, urlDoCatalogo, motivoForaDoPublico } = await import('../src/awin-produtos.js');
+const { motivoLinkInvalido, awinLiberada, enviarProximo } = await import('../src/pipeline.js');
+const { Store } = await import('../src/store.js');
 
 const LISTA = [
   '"Advertiser ID","Advertiser Name","Primary Region","Membership Status","Feed ID","Feed Name","Language","Vertical","Last Imported","Last Checked","No of products","URL"',
@@ -59,4 +61,64 @@ test('busca de produtos da Awin: só lojas aprovadas, só com desconto e em esto
   const r2 = await buscarProdutosAwin({ grupos: comNicho, api, chave: 'k', pasta, cfg: {}, fetchImpl: fetchFalso(chamadas) });
   assert.deepEqual(r2.produtos.map((p) => [p.grupo, p.id]), [['Fitness', 'AWF-1']]);
   await assert.rejects(listarCatalogos('ruim', { fetchImpl: async () => new Response('{}', { status: 401 }) }), /recusou a chave/);
+});
+
+// Caso real (27/10/2026): num dia saíram 11 Nike no Fitness, alguns masculinos, de até R$ 1.099, até 4 seguidos.
+// O dono: "os tênis da Nike tão muito exagerados, lembre que o grupo é pra mulheres".
+test('catálogo da Awin no grupo de meninas: sem masculino, sem infantil, sem preço exagerado; femininas primeiro', async () => {
+  const meninas = { nome: 'Fitness', preferirFeminino: 4 };
+  const cfg = { precoMaximo: 400 };
+  const p = (nome, precoAtual = 300) => ({ nome, precoAtual });
+  assert.equal(motivoForaDoPublico(p('Tênis Nike ZoomX VaporFly 4 Masculino'), meninas, cfg), 'masculino (catálogo da Awin)');
+  assert.equal(motivoForaDoPublico(p('Chuteira Futsal Kylian Mbappé Nike Mercurial Superfly 11 Club Infantil'), meninas, cfg), 'infantil (catálogo da Awin)');
+  assert.match(motivoForaDoPublico(p('Tênis Nike Zoom VaporFly Next 4 SE Feminino', 1099.99), meninas, cfg), /acima de R\$ 400/);
+  assert.equal(motivoForaDoPublico(p('Tênis Nike Court Vision Alta Feminino', 341.99), meninas, cfg), null);
+  assert.equal(motivoForaDoPublico(p('Mochila Nike Brasilia'), meninas, cfg), null, 'neutro passa (as femininas vêm antes)');
+  assert.equal(motivoForaDoPublico(p('Camiseta Nike Masculina'), { nome: 'Geral' }, cfg), null, 'grupo sem preferência: masculino passa');
+
+  const catalogo = [
+    'aw_deep_link,product_name,aw_product_id,search_price,rrp_price,in_stock',
+    'https://www.awin1.com/pclick.php?p=1&a=1694399&m=17652,Tênis Nike Air Max Alpha Trainer 6 Masculino,1,199.90,399.90,1',
+    'https://www.awin1.com/pclick.php?p=2&a=1694399&m=17652,Mochila Nike Brasilia,2,149.90,299.90,1',
+    'https://www.awin1.com/pclick.php?p=3&a=1694399&m=17652,Tênis Nike Revolution 7 Feminino,3,249.90,499.90,1',
+    'https://www.awin1.com/pclick.php?p=4&a=1694399&m=17652,Tênis Nike Alphafly 3 Feminino,4,999.99,2499.99,1',
+  ].join('\n');
+  const fetchImpl = async (url) => new Response(url.includes('/list/') ? LISTA : zlib.gzipSync(catalogo));
+  const api = { anunciantes: async () => [{ id: 17652, nome: 'Nike' }] };
+  const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'mla-aw-'));
+  const r = await buscarProdutosAwin({ grupos: [{ nome: 'Fitness', ativo: true, preferirFeminino: 4 }], api, chave: 'k', pasta, cfg, fetchImpl });
+  assert.deepEqual(r.produtos.map((x) => x.id), ['AWF-3', 'AWF-2']);
+});
+
+test('catálogo da Awin com calma: no máximo 1 a cada 4 posts e 6 por dia no grupo; o que já estava na fila também é barrado', async () => {
+  const s = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-aw-')), 'db.json'));
+  const grupo = { nome: 'Fitness', jid: '-1', mensagemAdicional: '', preferirFeminino: 4, filtros: { diasSemRepetir: 5 } };
+  const add = (id, nome, precoAtual = 250) =>
+    s.upsert({ id, grupo: 'Fitness', nome, loja: 'awin', url: `https://www.nike.com.br/${id}`, imagem: 'i', precoAtual, precoOriginal: precoAtual * 2, descontoPct: 50, linkAfiliado: `https://www.awin1.com/pclick.php?p=${id}&a=1694399&m=17652` });
+  add('AWF-1', 'Tênis Nike Rival Fly 4 Masculino');
+  add('AWF-2', 'Tênis Nike Zoom VaporFly Next 4 SE Feminino', 1099.99);
+  const sender = { sendImage: async () => ({ comImagem: true }), sendText: async () => {} };
+  assert.equal(await enviarProximo(sender, grupo, s), null, 'só masculino e R$ 1.099 na fila: nenhum sai');
+  assert.equal(s.list((p) => p.id === 'AWF-1')[0].status, 'REJEITADO', 'masculino que já estava na fila não sai');
+  assert.equal(s.list((p) => p.id === 'AWF-2')[0].status, 'REJEITADO', 'R$ 1.099 não sai');
+  add('AWF-3', 'Tênis Nike Court Vision Alta Feminino');
+  add('AWF-4', 'Legging Nike One Feminina');
+  assert.match((await enviarProximo(sender, grupo, s)).nome, /Feminin/);
+  assert.deepEqual(await enviarProximo(sender, grupo, s), { esperando: true }, 'dois do catálogo seguidos, não');
+
+  const agora = Date.parse('2026-10-27T18:00:00Z');
+  const cfg = { umACada: 4, maxPorDia: 6 };
+  const s2 = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-aw-')), 'db.json'));
+  const enviado = (id, minAtras) => {
+    s2.upsert({ id, grupo: 'G', nome: id, status: 'PRONTO', loja: 'awin', linkAfiliado: 'x' });
+    s2.setStatus(s2.list((p) => p.id === id)[0], 'ENVIADO', { enviadoEm: new Date(agora - minAtras * 60_000).toISOString() });
+  };
+  enviado('AWF-a', 100);
+  enviado('X1', 6);
+  enviado('X2', 3);
+  assert.equal(awinLiberada(s2, 'G', cfg, 3, agora), true, 'fora dos 3 últimos: libera');
+  enviado('X3', 1);
+  for (let i = 0; i < 5; i++) enviado(`AWF-${i}x`, 90 - i * 15);
+  assert.equal(awinLiberada(s2, 'G', cfg, 3, agora), false, 'já saíram 6 hoje');
+  assert.equal(awinLiberada(s2, 'G', { umACada: 4 }, 3, agora), true, 'sem limite por dia');
 });

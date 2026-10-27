@@ -14,6 +14,7 @@ import readline from 'node:readline';
 import { Readable } from 'node:stream';
 import zlib from 'node:zlib';
 import { DATA_DIR } from './config.js';
+import { generoDoProduto } from './genero.js';
 import { marcaDoProduto } from './marcas.js';
 import { casaTermo, log, normalizar } from './util.js';
 
@@ -77,6 +78,20 @@ export function produtoDoCatalogo(linha, loja) {
     emEstoque: !/^(0|false|no|nao|não)$/i.test(String(linha.in_stock ?? '1').trim()),
     categoria: `Awin: ${loja.nome}`,
   };
+}
+
+const CRIANCA = /\b(infantil|infantis|juvenil|kids|bebe|baby|menino|meninos)\b/;
+
+/**
+ * Do catálogo, só o que é para o público do grupo (o dono, 27/10/2026: "os tênis da Nike tão muito exagerados, lembre
+ * que o grupo é pra mulheres" — num dia saíram 11 Nike no Fitness, masculinos e de até R$ 1.099). Grupo de meninas
+ * ("preferirFeminino") não recebe peça masculina; nenhum recebe infantil nem acima de `precoMaximo`. null = serve.
+ */
+export function motivoForaDoPublico(p, grupo = {}, cfg = {}) {
+  if (grupo.preferirFeminino && generoDoProduto(p) === 'm') return 'masculino (catálogo da Awin)';
+  if (CRIANCA.test(normalizar(p.nome))) return 'infantil (catálogo da Awin)';
+  if (cfg.precoMaximo && p.precoAtual > cfg.precoMaximo) return `acima de R$ ${cfg.precoMaximo} (catálogo da Awin)`;
+  return null;
 }
 
 /** Catálogos disponíveis na conta: [{ lojaId, loja, feedId, idioma, regiao, produtos }]. */
@@ -165,12 +180,15 @@ export async function buscarProdutosAwin({ grupos, api, cfg = {}, chave = chaveD
   }
   // Cada grupo ligado recebe uma fatia, revezando (os filtros do grupo decidem depois em coletar()). A fatia sai só do
   // que é do assunto do grupo (e de marca da lista, se ele for "só marcas"): no meio de 16 mil roupas e tênis, o Beleza e
-  // o Perfumes nunca recebiam os ~30 produtos de beleza e ~40 perfumes da Dafiti (27/10/2026).
+  // o Perfumes nunca recebiam os ~30 produtos de beleza e ~40 perfumes da Dafiti (27/10/2026). E só o que é para o
+  // público do grupo, com as peças femininas primeiro.
   const produtos = [];
   const n = cfg.porGrupo ?? 8;
   for (const g of grupos.filter((x) => x.ativo)) {
     const termos = g.filtros?.palavrasObrigatorias || [];
-    const doGrupo = candidatos.filter((p) => (!termos.length || termos.some((t) => casaTermo(normalizar(p.nome), t))) && (!g.filtros?.soMarcas || marcaDoProduto(p)));
+    const doGrupo = candidatos
+      .filter((p) => (!termos.length || termos.some((t) => casaTermo(normalizar(p.nome), t))) && (!g.filtros?.soMarcas || marcaDoProduto(p)) && !motivoForaDoPublico(p, g, cfg))
+      .sort((a, b) => (generoDoProduto(b) === 'f') - (generoDoProduto(a) === 'f'));
     if (!doGrupo.length) continue;
     const inicio = (vez[g.nome] || 0) % doGrupo.length;
     const lote = Array.from({ length: Math.min(doGrupo.length, n * 6) }, (_, i) => doGrupo[(inicio + i) % doGrupo.length]);

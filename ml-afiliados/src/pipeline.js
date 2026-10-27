@@ -12,7 +12,7 @@ export const PAUSA_ML_HORAS = 6;
 import { MLAffiliate } from './ml/affiliate.js';
 import { buscarOfertasAmazon } from './amazon.js';
 import { Awin, buscarCuponsAwin, loadAwin } from './awin.js';
-import { buscarProdutosAwin } from './awin-produtos.js';
+import { buscarProdutosAwin, motivoForaDoPublico } from './awin-produtos.js';
 
 // Testes nunca baixam catálogo de verdade (a chave pode estar no .env do PC).
 const produtosAwinPadrao = process.env.NODE_TEST_CONTEXT
@@ -391,6 +391,11 @@ function nichoNoEnvio(p, grupo) {
   return null;
 }
 
+/** Catálogo da Awin: o que entrou na fila antes da regra do público (masculino, infantil, caro demais) não sai. */
+function publicoNoEnvio(p, grupo) {
+  return doCatalogoAwin(p) ? motivoForaDoPublico(p, grupo, loadAwin().produtos || {}) : null;
+}
+
 /** Grupo "soMarcas": o que entrou na fila antes do filtro (ou sem marca) não sai. Cupom e caixa de entrada passam. */
 function marcaNoEnvio(p, grupo) {
   if (!grupo.soMarcas || p.manual || p.tipo === 'cupom' || origemDe(p) === 'caixa') return null;
@@ -421,17 +426,36 @@ export const umACadaShopee = () => Number(loadShopee().umACada) || 0;
 const minutosEntreEnvios = () => Number(String(settings.cron.envio).match(/^\*\/(\d+)/)?.[1]) || 3;
 
 /**
- * A Shopee pode sair agora neste grupo? Sim se nenhum dos últimos N-1 posts foi da Shopee — ou, quando só há Shopee
- * para postar, se o último post dela foi há N envios de tempo (assim o grupo não trava: vira 1 Shopee a cada N×3 min).
+ * Uma fonte (`daFonte`) pode sair agora neste grupo? Sim se nenhum dos últimos N-1 posts foi dela — ou, quando só há
+ * ela para postar, se o último post dela foi há N envios de tempo (assim o grupo não trava: vira 1 a cada N×3 min).
  */
-export function shopeeLiberada(store, grupo, n = umACadaShopee(), minutos = minutosEntreEnvios(), agora = Date.now()) {
+function fonteLiberada(store, grupo, daFonte, n, minutos = minutosEntreEnvios(), agora = Date.now()) {
   if (!(n >= 2)) return true;
   const enviados = store
     .list((p) => p.grupo === grupo && (p.status === 'ENVIADO' || p.status === 'INCERTO') && p.enviadoEm)
     .sort((a, b) => String(b.enviadoEm).localeCompare(String(a.enviadoEm)));
-  if (!enviados.slice(0, n - 1).some((p) => p.loja === 'shopee')) return true;
-  const ultimaShopee = enviados.find((p) => p.loja === 'shopee');
-  return agora - Date.parse(ultimaShopee.enviadoEm) >= n * minutos * 60_000;
+  if (!enviados.slice(0, n - 1).some(daFonte)) return true;
+  const ultima = enviados.find(daFonte);
+  return agora - Date.parse(ultima.enviadoEm) >= n * minutos * 60_000;
+}
+
+/** A Shopee pode sair agora neste grupo? (1 a cada N posts) */
+export const shopeeLiberada = (store, grupo, n = umACadaShopee(), minutos, agora) => fonteLiberada(store, grupo, (p) => p.loja === 'shopee', n, minutos, agora);
+
+/** Produto dos catálogos da Awin (não cupom). */
+export const doCatalogoAwin = (p) => String(p.id || '').startsWith('AWF-');
+
+/**
+ * Catálogo da Awin com calma (o dono, 27/10/2026: "os tênis da Nike tão muito exagerados" — saíram 4 Nike seguidos):
+ * no máximo 1 a cada `umACada` posts e `maxPorDia` por grupo (config/awin.json > produtos).
+ */
+export function awinLiberada(store, grupo, cfg = loadAwin().produtos || {}, minutos, agora = Date.now()) {
+  if (cfg.maxPorDia) {
+    const hoje = diaLocal(new Date(agora), settings.tz);
+    const hojeNoGrupo = store.list((p) => p.grupo === grupo && doCatalogoAwin(p) && (p.status === 'ENVIADO' || p.status === 'INCERTO') && p.enviadoEm && diaLocal(new Date(p.enviadoEm), settings.tz) === hoje).length;
+    if (hojeNoGrupo >= cfg.maxPorDia) return false;
+  }
+  return fonteLiberada(store, grupo, doCatalogoAwin, Number(cfg.umACada) || 0, minutos, agora);
 }
 
 export async function enviarProximo(sender, grupo, store = new Store()) {
@@ -440,11 +464,12 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
   // E as marcas da lista (config/marcas.json) passam na frente das sem marca (pedido do dono, 15/10/2026).
   const feminina = grupo.preferirFeminino ? preferenciaFeminina(store, grupo.nome, grupo.preferirFeminino) : {};
   const marca = preferenciaDeMarca();
-  // Shopee no máximo 1 a cada N posts (a comissão é baixa — pedido do dono, 26/10/2026).
+  // Shopee no máximo 1 a cada N posts (a comissão é baixa — pedido do dono, 26/10/2026); catálogo da Awin com calma.
   const shopeeOk = shopeeLiberada(store, grupo.nome);
-  const temLimite = feminina.aceitar || !shopeeOk;
+  const awinOk = awinLiberada(store, grupo.nome);
+  const temLimite = feminina.aceitar || !shopeeOk || !awinOk;
   const preferencia = {
-    aceitar: temLimite ? (x) => (feminina.aceitar ? feminina.aceitar(x) : true) && (shopeeOk || x.loja !== 'shopee') : undefined,
+    aceitar: temLimite ? (x) => (feminina.aceitar ? feminina.aceitar(x) : true) && (shopeeOk || x.loja !== 'shopee') && (awinOk || !doCatalogoAwin(x)) : undefined,
     preferir: (x) => (feminina.preferir ? feminina.preferir(x) : 0) + marca(x),
   };
   let p = null;
@@ -454,7 +479,7 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
     if (!candidato) break;
     const repetido = store.jaPublicado(candidato, dias);
     const linkRuim = !repetido && motivoLinkInvalido(candidato);
-    const vendas = !repetido && !linkRuim && (vendasNoEnvio(candidato, grupo) || marcaNoEnvio(candidato, grupo) || nichoNoEnvio(candidato, grupo));
+    const vendas = !repetido && !linkRuim && (vendasNoEnvio(candidato, grupo) || marcaNoEnvio(candidato, grupo) || nichoNoEnvio(candidato, grupo) || publicoNoEnvio(candidato, grupo));
     if (!repetido && !linkRuim && !vendas) p = candidato;
     else {
       const motivo = repetido || linkRuim || vendas;
@@ -465,7 +490,8 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
   }
   if (!p && preferencia.aceitar && store.proximo(grupo.nome)) {
     store.save();
-    log(`⏳ [${grupo.nome}] ${shopeeOk ? 'só masculinos na fila' : 'só Shopee/masculinos na fila (Shopee: 1 a cada ' + umACadaShopee() + ' posts)'}: esperando outro produto.`);
+    const limites = [!shopeeOk && `Shopee: 1 a cada ${umACadaShopee()} posts`, !awinOk && 'catálogo da Awin: no limite'].filter(Boolean);
+    log(`⏳ [${grupo.nome}] ${limites.length ? `só ofertas no limite ou masculinos na fila (${limites.join('; ')})` : 'só masculinos na fila'}: esperando outro produto.`);
     return { esperando: true };
   }
   if (!p) {
