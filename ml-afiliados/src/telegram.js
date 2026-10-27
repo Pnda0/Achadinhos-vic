@@ -188,6 +188,12 @@ export class TelegramSender {
       if (adm && adm.chat?.type !== 'private' && ['administrator', 'creator'].includes(adm.new_chat_member?.status)) {
         await this.aoVirarAdmin?.({ chatId: String(adm.chat.id), titulo: adm.chat.title || '', tipo: adm.chat.type, quem: String(adm.from?.id || '') });
       }
+      // O bot entrou num grupo ou saiu dele: quem escuta (src/index.js) liga/desliga o grupo como fonte de ofertas.
+      if (adm && ['group', 'supergroup'].includes(adm.chat?.type)) {
+        const membro = (s) => ['member', 'administrator', 'creator', 'restricted'].includes(s?.status) && s.is_member !== false;
+        const dentro = membro(adm.new_chat_member);
+        if (dentro !== membro(adm.old_chat_member)) await this.aoMudarNoGrupo?.({ chatId: String(adm.chat.id), titulo: adm.chat.title || '', dentro });
+      }
       const m = u.message;
       if (!m || !chatIds.includes(String(m.chat.id))) continue;
       const ocultos = [...(m.entities || []), ...(m.caption_entities || [])].map((e) => e.url).filter(Boolean);

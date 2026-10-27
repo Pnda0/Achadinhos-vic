@@ -327,8 +327,8 @@ export class Espelho {
     let destino = this.grupos.get(fonte?.destino || this.cfg.destinoPadrao);
     if (!fonte || !destino) return 'sem destino';
 
-    // Fonte "soAmazon": dali só interessam as ofertas da Amazon (o ML já tem a busca própria).
-    const links = fonte.soAmazon ? [] : extrairLinksML(m.texto).filter((l) => tipoLink(l) !== 'outro');
+    // Fonte "soAmazon"/"semML": os links do ML ficam de fora (o ML já tem a busca própria).
+    const links = fonte.soAmazon || fonte.semML ? [] : extrairLinksML(m.texto).filter((l) => tipoLink(l) !== 'outro');
     const linksAmazon = links.length ? [] : extrairLinksAmazon(m.texto);
     if (fonte.apenasAmazon && !linksAmazon.length) return 'sem link da Amazon'; // canal só para Amazon: ML/Shopee/Awin ficam de fora
     if (!links.length && !linksAmazon.length) {

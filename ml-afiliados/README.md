@@ -340,6 +340,15 @@ Entre em https://dash.cloudflare.com com a conta **alanribeiro8352@icloud.com** 
 
 A comissão da Shopee é baixa (pedido do dono, 26/10/2026): em cada grupo sai **no máximo 1 oferta da Shopee a cada 4 posts** (`"umACada": 4` em `config/shopee.json`; 0 = sem limite) — Mercado Livre, lojas da Awin e cupons têm prioridade. Se só houver Shopee na fila, o grupo posta 1 da Shopee a cada 4 envios de tempo (12 min com envio a cada 3 min) e espera no resto, sem travar (`shopeeLiberada()` em `src/pipeline.js`). O WhatsApp espelha o Telegram, então segue a mesma proporção.
 
+## 3.15e Copiar um grupo do Telegram (A Promo da Luh)
+
+Exceção ao "não copiar" de 16/10, pedida pelo dono em 27/10/2026, só para os grupos de `config/fontes.json` > `gruposTelegram`. Grupo não tem página pública como os canais (`t.me/s/...`), então o bot lê como membro:
+
+1. No @BotFather: `/setprivacy` → `@achadinhosvic_bot` → **Disable** (senão bot só vê comandos em grupo). O bot avisa no privado enquanto isso não for feito.
+2. Adicionar o `@achadinhosvic_bot` no grupo (se ele já estava lá antes do passo 1, tirar e adicionar de novo).
+
+Quando ele entra num grupo cujo título contém o `"titulo"` da lista, avisa no privado e começa a copiar (o chat id fica em `data/db.json` > `gruposFonte`); se for removido, avisa e para. As ofertas saem no formato do bot e passam por todas as regras do grupo de destino (nicho, só marcas, feminino, não repetir, Shopee 1 a cada 4), no máximo `maxPorHora` por grupo. Ficam de fora: links do Mercado Livre (`"semML": true` — trocar exigiria abrir a página de cada um no ML) e a foto do outro grupo (`"fotoDoCanal": false`, pode ter a logo dele). Código: `fonteDoGrupoTelegram()` em `src/telegram-canais.js`, `ligarGruposFonte()` em `src/index.js`.
+
 ## 3.15c Produtos das lojas da Awin (catálogos)
 
 Desde 22/10/2026 (`src/awin-produtos.js`, `config/awin.json` > `produtos`): além dos cupons, o bot pega **produtos com desconto** dos catálogos oficiais das lojas aprovadas na Awin (C&A, Nike, Dafiti, Renner, Riachuelo, StudioZ…) — o link já vem com o seu id de afiliado. Assim a fila tem outra loja para revezar com a Shopee (o equilíbrio de lojas alterna Shopee, Awin e Mercado Livre). O catálogo é baixado 1x por dia (só os itens com 15%+ de desconto e em estoque, guardados em `data/awin-catalogos/`); a cada busca entram no máximo 8 novos por grupo, e eles passam pelos filtros do grupo (nicho, só marcas, feminino, não repetir, histórico de preço). Precisa de **`AWIN_FEED_KEY`** no `.env` — a chave dos catálogos, que **não** é a mesma do `API_KEY_AWIN`: Awin → Toolbox → Create-a-Feed.

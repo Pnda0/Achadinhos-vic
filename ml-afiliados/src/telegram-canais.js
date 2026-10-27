@@ -6,7 +6,7 @@
  * troca o link pela etiqueta do dono e monta a oferta no nosso formato.
  */
 import { settings } from './config.js';
-import { log } from './util.js';
+import { log, normalizar } from './util.js';
 
 const PREFIXO = 'canal:';
 export const jidDoCanal = (nome) => PREFIXO + String(nome).trim().replace(/^(https?:\/\/)?t\.me\/(s\/)?/i, '').replace(/^@/, '').replace(/\/.*$/, '');
@@ -45,6 +45,27 @@ export function fontesDosCanais(c, { destinoPadrao = 'Geral', nichos = {}, lojas
       };
     })
     .filter((f) => (f.apenasAmazon ? amazonTag : !f.soAmazon || lojasParceiras || amazonTag)); // "só Amazon" sem etiqueta (e sem Awin) não aproveita nada
+}
+
+/**
+ * Grupo do Telegram como fonte (config/fontes.json > "gruposTelegram"; pedido do dono, 27/10/2026). Grupo não tem
+ * página pública como os canais: o bot precisa ser membro (e com a privacidade desligada no @BotFather) e lê as
+ * mensagens pela mesma conversa com o Telegram da caixa de entrada. O item de "grupos" casa com o título do grupo
+ * ({ "titulo": "Promo da Luh" } casa com "A Promo da Luh 🛍🌸"). Null se o grupo não estiver na lista.
+ * "semML" (padrão true): links do ML ficam de fora — trocar exigiria abrir a página de cada um no ML.
+ */
+export function fonteDoGrupoTelegram(c, { jid, titulo }, { nichos = {}, lojasParceiras = false } = {}) {
+  if (!c || c.ativo === false) return null;
+  const item = (c.grupos || []).map((x) => (typeof x === 'string' ? { titulo: x } : x)).find((x) => x?.titulo && normalizar(titulo).includes(normalizar(x.titulo)));
+  if (!item) return null;
+  const o = { ...c, ...item };
+  const destinos = (o.destinos?.length ? o.destinos : [{ grupo: o.destino || 'Geral' }]).map((d) => ({ grupo: d.grupo, palavras: d.nicho ? nichos[d.nicho]?.obrigatorias || [] : null }));
+  return {
+    nome: titulo, nomeWhats: titulo, jid: String(jid), destino: destinos[0].grupo, destinos,
+    semML: o.semML !== false, lojasParceiras: lojasParceiras && o.lojasParceiras !== false,
+    exigirVendas: o.exigirVendas !== false, fotoDoCanal: !!o.fotoDoCanal, copiarTexto: !!o.copiarTexto,
+    ...(Number.isInteger(o.maxPorHora) && { maxPorHora: o.maxPorHora }),
+  };
 }
 
 const ENTIDADES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };

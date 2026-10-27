@@ -15,7 +15,7 @@ import { Shopee } from './shopee.js';
 import { grupoDoTitulo } from './telegram.js';
 import { iniciarHeartbeat } from './heartbeat.js';
 import { Espelho, resolverFontes } from './espelho.js';
-import { LeitorDeCanais, fontesDosCanais } from './telegram-canais.js';
+import { LeitorDeCanais, fonteDoGrupoTelegram, fontesDosCanais } from './telegram-canais.js';
 import { MLAffiliate } from './ml/affiliate.js';
 import { PAUSA_ML_HORAS, coletar, filaDeOutroDia, gerarLinks, enviarParaTodos, limpar } from './pipeline.js';
 import { createSender } from './senders.js';
@@ -191,7 +191,9 @@ function iniciarCaixaDeEntrada(cfg) {
     ...(porNicho && { destinos: ativos.map((g) => ({ grupo: g.nome, palavras: g.nicho ? nichos[g.nicho]?.obrigatorias || [] : null })) }),
   }];
   sender.aoVirarAdmin = (canal) => ligarCanalNovo(canal).catch((e) => registrarErro('canal-novo', e));
-  agendarEspelho(new Espelho({ sender, store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), carregarGrupos: loadGrupos, cfg: { ...cfg, janelaMinutos: 180 }, avisos, awin, shopee }), 10);
+  const espelho = new Espelho({ sender, store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), carregarGrupos: loadGrupos, cfg: { ...cfg, janelaMinutos: 180 }, avisos, awin, shopee });
+  ligarGruposFonte(espelho, cfg);
+  agendarEspelho(espelho, 10);
   log(`📥 Caixa de entrada ligada: mande um link da Amazon, do Mercado Livre${shopee.ligada() ? ', da Shopee' : ''}${awin.ligada() ? ' ou de loja parceira da Awin' : ''} no privado do bot que ele entra na fila ${porNicho ? `do grupo do nicho (${destino})` : `do grupo "${destino}"`}.`);
 }
 
@@ -225,6 +227,44 @@ async function iniciarWhatsApp() {
     registrarErro('whatsapp', e);
     log(`⚠️  WhatsApp não conectou: ${String(e.message).split('\n')[0]} — o Telegram segue normal.`);
     await avisos.avisar('whatsapp', `*WhatsApp não conectou* ⚠️\n${String(e.message).split('\n')[0]}\nReinicie o bot e escaneie o QR code com o chip do bot (WhatsApp > Aparelhos conectados).`).catch(() => {});
+  }
+}
+
+/**
+ * Grupos do Telegram que o dono pediu para copiar (config/fontes.json > gruposTelegram): o bot precisa estar no grupo
+ * e com a privacidade desligada no @BotFather. Os grupos em que ele já entrou ficam em data/db.json (gruposFonte).
+ */
+function ligarGruposFonte(espelho, cfg) {
+  const c = cfg.gruposTelegram;
+  if (!c || c.ativo === false || !(c.grupos || []).length) return;
+  const opcoes = { nichos: loadNichos(), lojasParceiras: awin.ligada() };
+  const conhecidos = (store.data.gruposFonte ||= {});
+  const ligar = (jid, titulo) => {
+    const f = fonteDoGrupoTelegram(c, { jid, titulo }, opcoes);
+    if (f) espelho.fontes.set(f.jid, f);
+    return f;
+  };
+  for (const [jid, titulo] of Object.entries(conhecidos)) ligar(jid, titulo);
+  const usuario = sender.eu?.username ? `@${sender.eu.username}` : 'o bot';
+  sender.aoMudarNoGrupo = async ({ chatId, titulo, dentro }) => {
+    if (!dentro) {
+      if (!conhecidos[chatId]) return;
+      delete conhecidos[chatId];
+      espelho.fontes.delete(chatId);
+      store.save();
+      return avisos.avisar('grupo-fonte', `Saí do grupo "${titulo}" (ou me tiraram): parei de copiar as ofertas de lá.`, { sempre: true });
+    }
+    const f = ligar(chatId, titulo);
+    if (!f) return log(`📋 Entrei no grupo "${titulo}" (${chatId}), que não está em config/fontes.json > gruposTelegram: não copio nada de lá.`);
+    conhecidos[chatId] = titulo;
+    store.save();
+    await avisos.avisar('grupo-fonte', `Entrei no grupo "${titulo}": as ofertas de lá entram em ${f.destinos.map((d) => d.grupo).join(', ')} com as suas regras.`, { sempre: true });
+  };
+  const nomes = Object.values(conhecidos);
+  log(`👥 Grupos do Telegram para copiar: ${nomes.length ? nomes.join(', ') : `nenhum ainda (adicione ${usuario} em: ${c.grupos.map((g) => g.titulo || g).join(', ')})`}.`);
+  // Com a privacidade ligada (padrão de todo bot), ele só enxerga comandos dentro de grupos.
+  if (sender.eu?.can_read_all_group_messages === false) {
+    avisos.avisar('privacidade-bot', `Para eu ler os grupos que você pediu para copiar, desligue a privacidade do bot: no @BotFather mande /setprivacy, escolha ${usuario} e toque em Disable. Depois me adicione no grupo (se eu já estiver lá, me tire e adicione de novo).`);
   }
 }
 

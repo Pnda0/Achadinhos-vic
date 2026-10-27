@@ -140,3 +140,50 @@ test('canal "apenasAmazon": só as ofertas da Amazon (ML/Awin ficam de fora), no
   assert.equal(p.linkAfiliado, 'https://www.amazon.com.br/dp/B0FONE0001?tag=achadin09027e-20');
   assert.equal(p.textoPronto, undefined, 'formato do bot, não cópia');
 });
+
+test('grupo do Telegram para copiar ("A Promo da Luh", 27/10/2026): casa pelo título, sem ML, só o que passa nas regras de cada grupo', async () => {
+  const { fonteDoGrupoTelegram } = await import('../src/telegram-canais.js');
+  const { loadNichos } = await import('../src/config.js');
+  const c = { grupos: [{ titulo: 'Promo da Luh' }], destinos: [{ grupo: 'Fitness', nicho: 'fitness' }, { grupo: 'Beleza', nicho: 'beleza' }], semML: true, copiarTexto: false, fotoDoCanal: false, maxPorHora: 4 };
+  const opcoes = { nichos: loadNichos(), lojasParceiras: false };
+  assert.equal(fonteDoGrupoTelegram(c, { jid: '-100', titulo: 'Outro Grupo de Promo' }, opcoes), null);
+  assert.equal(fonteDoGrupoTelegram({ ...c, ativo: false }, { jid: '-100', titulo: 'A Promo da Luh 🛍🌸' }, opcoes), null);
+  const f = fonteDoGrupoTelegram(c, { jid: '-100', titulo: 'A Promo da Luh 🛍🌸' }, opcoes);
+  assert.equal(f.jid, '-100');
+  assert.equal(f.semML, true);
+  assert.equal(f.maxPorHora, 4);
+  assert.deepEqual(f.destinos.map((d) => d.grupo), ['Fitness', 'Beleza']);
+
+  const agora = { t: Date.UTC(2027, 0, 15, 8, 5) };
+  const t = Math.floor(agora.t / 1000) - 60;
+  const store = tmpStore();
+  const espelho = new Espelho({
+    sender: { lerMensagens: async () => [
+      { id: 'l1', jid: '-100', t, foto: 'FOTO_COM_LOGO', texto: 'Creatina Growth 250g\nDe R$ 120 por R$ 69\nhttps://www.amazon.com.br/dp/B0CREAT001' },
+      { id: 'l2', jid: '-100', t, texto: 'Creatina Max Titanium\nPor R$ 59\nhttps://meli.la/abc' },
+      { id: 'l3', jid: '-100', t, texto: 'Air Fryer Mondial 4L\nDe R$ 400 por R$ 199\nhttps://www.amazon.com.br/dp/B0AIRF0001' },
+    ] },
+    store, affiliate: {}, fontes: [f], grupos: [{ nome: 'Fitness', ativo: true, filtros: {} }, { nome: 'Beleza', ativo: true, filtros: {} }],
+    agora: () => agora.t, esperar: async () => {}, amazonTag: 'achadin09027e-20',
+  });
+  const r = await espelho.tick();
+  assert.equal(r.enfileiradas, 1);
+  assert.deepEqual(r.ignoradas, { 'sem link do ML/Amazon': 1, 'fora do nicho': 1 }, 'ML ignorado sem abrir a página; air fryer fora do nicho');
+  const [p] = store.list();
+  assert.equal(p.grupo, 'Fitness');
+  assert.equal(p.linkAfiliado, 'https://www.amazon.com.br/dp/B0CREAT001?tag=achadin09027e-20');
+  assert.equal(p.imagem, null, 'a foto do outro grupo (pode ter a logo dele) não vai');
+  assert.equal(p.textoPronto, undefined, 'formato do bot');
+});
+
+test('Telegram: o bot entrar/sair de um grupo avisa quem escuta (liga/desliga o grupo como fonte)', async () => {
+  const { TelegramSender } = await import('../src/telegram.js');
+  const mudanca = (id, de, para) => ({ update_id: id, my_chat_member: { chat: { id: -100, type: 'supergroup', title: 'A Promo da Luh' }, from: { id: 1 }, old_chat_member: { status: de }, new_chat_member: { status: para } } });
+  const updates = [mudanca(1, 'left', 'member'), mudanca(2, 'member', 'member'), mudanca(3, 'member', 'kicked'), { update_id: 4, message: { message_id: 9, chat: { id: -100, type: 'supergroup' }, date: 1, text: 'oferta' } }];
+  const tg = new TelegramSender({ token: 't', fetchImpl: async () => ({ status: 200, json: async () => ({ ok: true, result: updates }) }) });
+  const vistos = [];
+  tg.aoMudarNoGrupo = async (x) => vistos.push(x);
+  const msgs = await tg.lerMensagens(['-100']);
+  assert.deepEqual(vistos, [{ chatId: '-100', titulo: 'A Promo da Luh', dentro: true }, { chatId: '-100', titulo: 'A Promo da Luh', dentro: false }]);
+  assert.deepEqual(msgs.map((m) => m.texto), ['oferta']);
+});

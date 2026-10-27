@@ -74,5 +74,32 @@
     "fotoDoCanal": true,
     "_comentarioAmazon": "15/10/2026 (noite), pedido do dono: o Perfumes copia só o @promobigodeperfumes; dos outros canais o bot pega SÓ as ofertas da Amazon (\"apenasAmazon\") e monta o post no formato dele (\"copiarTexto\": false), com a etiqueta do dono (AMAZON_PARTNER_TAG) — sem abrir o site da Amazon. Elas vão para o Geral e, se casarem com o nicho, para o Fitness/Beleza (com os filtros de cada grupo: só marcas, desconto, feminino).",
     "_comentarioPausa": "Desligado em 16/10/2026 a pedido do dono: \"pare de copiar dos outros, ficou com muito produto ruim\" — o bot busca tudo nas lojas (ML, Shopee, Awin). Nem o @promobigodeperfumes nem a Amazon dos canais entram."
+  },
+  "_comentarioGruposTelegram": "GRUPOS DO TELEGRAM PARA COPIAR (pedido do dono, 27/10/2026: \"vamo pegar do telegram dela\"): exceção ao \"não copiar\" de 16/10, só para os grupos desta lista. Grupo não tem página pública: o bot (@achadinhosvic_bot) precisa ser membro e estar com a privacidade desligada no @BotFather (/setprivacy > Disable); quando ele entra num grupo cujo título contém o \"titulo\" daqui, começa a copiar sozinho e avisa o dono. As ofertas passam por TODAS as regras do grupo de destino (nicho, só marcas, feminino primeiro, não repetir, Shopee 1 a cada 4) e saem no formato do bot (copiarTexto: false), com a foto da loja (fotoDoCanal: false: a foto do outro grupo pode ter a logo dele). semML: true = links do Mercado Livre ficam de fora (trocar exigiria abrir a página de cada um no ML, o que fez o ML bloquear o bot em 21/10). maxPorHora = no máximo N ofertas desses grupos por hora em cada grupo seu. Depois de mexer aqui, reinicie o bot.",
+  "gruposTelegram": {
+    "ativo": true,
+    "grupos": [
+      {
+        "titulo": "Promo da Luh"
+      }
+    ],
+    "destinos": [
+      {
+        "grupo": "Fitness",
+        "nicho": "fitness"
+      },
+      {
+        "grupo": "Beleza",
+        "nicho": "beleza"
+      },
+      {
+        "grupo": "Perfumes",
+        "nicho": "perfumes"
+      }
+    ],
+    "semML": true,
+    "copiarTexto": false,
+    "fotoDoCanal": false,
+    "maxPorHora": 4
   }
 }

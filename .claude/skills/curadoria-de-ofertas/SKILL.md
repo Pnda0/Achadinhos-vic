@@ -13,7 +13,7 @@ sem repetir, foto boa, texto limpo. Pouca oferta boa vale mais que muita oferta 
 
 | Etapa | Regra | Onde |
 |---|---|---|
-| Fontes | busca própria nas lojas: ML (`config/categorias.json`), Shopee (`config/shopee.json`, uma busca por marca), cupons Awin e produtos dos catálogos da Awin (`src/awin-produtos.js`, precisa de `AWIN_FEED_KEY`). **Não copia canal nenhum** (pedido do dono, 16/10/2026). Amazon só pelo privado do bot (sem API até 3 vendas; raspar o site é proibido pelo Associados) | `src/pipeline.js` `coletar()` |
+| Fontes | busca própria nas lojas: ML (`config/categorias.json`), Shopee (`config/shopee.json`, uma busca por marca), cupons Awin e produtos dos catálogos da Awin (`src/awin-produtos.js`, precisa de `AWIN_FEED_KEY`). **Não copia canal nenhum** (pedido do dono, 16/10/2026), salvo o grupo do Telegram "A Promo da Luh" (exceção de 27/10/2026: `gruposTelegram` em `config/fontes.json`, sem ML, com todas as regras; README 3.15e). Amazon só pelo privado do bot (sem API até 3 vendas; raspar o site é proibido pelo Associados) | `src/pipeline.js` `coletar()` |
 | Nicho | o nome precisa ter palavra do nicho; marcas de cabelo/maquiagem/skincare/fitness contam como palavra (perfume NÃO: Dior vende roupa e casa) | `config/nichos.json`, `config/marcas.json` > `nichos` |
 | Só marcas | Fitness, Beleza e Perfumes só com marca da lista | `"soMarcas"` em `config/grupos.json`, `src/marcas.js` |
 | Força | ML: mais de 50 vendas pelo rótulo; Shopee: 50+ vendas, nota 4,5+, 15%+ de desconto, até 4 por busca | `src/ml/vendas.js`, `config/shopee.json` |
@@ -27,7 +27,7 @@ sem repetir, foto boa, texto limpo. Pouca oferta boa vale mais que muita oferta 
 | ML com calma | ~22 páginas por busca; bloqueio (verificação de tráfego suspeito) = 6 h sem pedir páginas ao ML; reposição NÃO vai ao ML (só nas 3 buscas do dia, ~66 páginas; o bloqueio de 21/10 veio de ~220 páginas/dia) | `ErroBloqueioML` em `src/ml/scraper.js`, `coletar()` |
 | WhatsApp | mesmas regras, 1 mensagem a cada 6 min no total (só os melhores; o dono escolheu assim) | `src/whatsapp-espelho.js` |
 
-Regras que **não se afrouxam sem o dono**: vendas mínimas, não repetir, público feminino, só marcas, ritmo do WhatsApp (risco de banir o chip), não copiar canais.
+Regras que **não se afrouxam sem o dono**: vendas mínimas, não repetir, público feminino, só marcas, ritmo do WhatsApp (risco de banir o chip), não copiar canais (fora os grupos que ele pôs em `gruposTelegram`).
 
 ## Quando o dono reclama de um produto
 
