@@ -24,7 +24,7 @@ sem repetir, foto boa, texto limpo. Pouca oferta boa vale mais que muita oferta 
 | Equilíbrio de lojas | depois de uma oferta de uma loja, a vez é de outra loja do mesmo nível (alterna ML e Shopee quando as duas têm oferta) | `proximo()` em `src/store.js` |
 | Shopee com limite | comissão baixa (dono, 26/10/2026): no máximo 1 Shopee a cada 4 posts por grupo; só Shopee na fila = 1 a cada 12 min | `shopeeLiberada()` em `src/pipeline.js`, `config/shopee.json` > `umACada` |
 | Cupom do dia | pelo menos 1 cupom de loja (Awin) por dia em cada grupo: o do tema/loja do grupo, senão o melhor genérico que não exclua o grupo; passa na frente na fila, nunca dois seguidos | `buscarCuponsAwin()` em `src/awin.js`, `cupomDoDia()` em `src/index.js` |
-| ML com calma | ~22 páginas por busca; bloqueio (verificação de tráfego suspeito) = 6 h sem pedir páginas ao ML; reposição vai ao ML no máx. a cada 3 h | `ErroBloqueioML` em `src/ml/scraper.js`, `coletar()` |
+| ML com calma | ~22 páginas por busca; bloqueio (verificação de tráfego suspeito) = 6 h sem pedir páginas ao ML; reposição NÃO vai ao ML (só nas 3 buscas do dia, ~66 páginas; o bloqueio de 21/10 veio de ~220 páginas/dia) | `ErroBloqueioML` em `src/ml/scraper.js`, `coletar()` |
 | WhatsApp | mesmas regras, 1 mensagem a cada 6 min no total (só os melhores; o dono escolheu assim) | `src/whatsapp-espelho.js` |
 
 Regras que **não se afrouxam sem o dono**: vendas mínimas, não repetir, público feminino, só marcas, ritmo do WhatsApp (risco de banir o chip), não copiar canais.
