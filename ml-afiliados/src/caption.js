@@ -152,8 +152,8 @@ function linhaCupomML(p) {
   return final ? `🎟️ *${formatBRL(final)}* com o cupom de ${formatBRL(v)}` : `🎟️ ${p.cupom.replace(/ com Cupom$/i, '')} com cupom`;
 }
 
-/** Cabeçalho com a loja, no estilo dos grandes grupos ("🧡 AMAZON"); a cor do coração lembra a da loja. */
-const CORACAO = { amazon: '🧡', shopee: '🧡', awin: '💜' };
+/** Cabeçalho com a loja, no estilo dos grandes grupos ("🧡 SHOPEE"); a cor do coração lembra a da loja. A Amazon sai com carrinho (pedido do dono, 27/10/2026). */
+const CORACAO = { amazon: '🛒', shopee: '🧡', awin: '💜' };
 export const cabecalhoLoja = (p) => `${CORACAO[p.loja] || '💛'} *${nomeLoja(p).toUpperCase()}*`;
 
 /**
