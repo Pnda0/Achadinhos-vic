@@ -4,16 +4,21 @@
  *  - Bot rodando: pede pela porta da trava; ele termina o envio/coleta em andamento, grava a fila e sai, e o
  *    3-iniciar.bat (Windows) ou o systemd (Linux, linux/ml-afiliados.service) liga de novo, com git pull.
  *  - Nenhum bot rodando: abre o 3-iniciar.bat numa janela nova.
+ *  - Bot que não responde pela porta mas ainda está aberto (travado): não abre outra cópia, só avisa.
  */
 import { spawn } from 'node:child_process';
 import { ROOT } from './config.js';
-import { botRodando, pedirParada } from './instancia.js';
+import { MSG_BOT_TRAVADO, botRodando, outrosBots, pedirParada } from './instancia.js';
 import { log, sleep } from './util.js';
 
 const abrirJanela = () =>
   spawn('cmd.exe', ['/c', 'start "ml-afiliados" "3-iniciar.bat"'], { cwd: ROOT, detached: true, stdio: 'ignore', windowsVerbatimArguments: true }).unref();
 
-if (!(await botRodando())) {
+const travados = (await botRodando()) ? [] : await outrosBots(); // segura a porta sem responder (27/10/2026)
+if (travados.length) {
+  log(MSG_BOT_TRAVADO(travados));
+  process.exitCode = 1;
+} else if (!(await botRodando())) {
   if (process.platform === 'win32') {
     log('Nenhum bot rodando neste PC: abrindo o 3-iniciar.bat numa janela nova.');
     abrirJanela();

@@ -19,6 +19,12 @@ novo na mesma janela (~10 s). Sem bot rodando, o comando abre o `.bat`. Depois c
 
 **Nunca** abra uma segunda janela do bot (posta tudo em dobro). Matar o processo à força é bloqueado — e desnecessário.
 
+**Bot congelado** (27/10/2026): o log para no meio ("🔁 Reinício pedido" sem "Encerrando"), o processo não gasta CPU e
+a porta 47831 fica presa sem responder. Causa provável: clique dentro da janela preta (edição rápida do Windows segura
+o bot até apertar uma tecla) — desde 27/10 o bot desliga a edição rápida ao ligar (`src/janela.js`). Nesse estado o
+`npm run reiniciar` NÃO abre outra cópia (confere os processos: `outrosBots()` em `src/instancia.js`) e o bot novo
+também se recusa a ligar. Peça ao dono para fechar a janela travada; depois `npm run reiniciar` abre uma só.
+
 ## Investigar
 
 - `data/bot.log` — tudo que o bot fez (hora local). Linhas úteis: `📤 [Grupo]` postou, `📲 [WhatsApp Grupo]`, `⏭️` barrado na hora de postar, `📭 fila vazia`, `🔁 Busca de reposição`, `✅ Coleta:` com recusas por motivo, `Por categoria (vistos → aprovados)`.

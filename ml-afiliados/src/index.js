@@ -30,7 +30,8 @@ import { montarPainel } from './analytics/relatorio.js';
 import { destaquesDoDia, resumoSemanal } from './analytics/destaques.js';
 import { gravarSite } from './analytics/pagina.js';
 import { publicarPainel, urlPublicada } from './analytics/publicar.js';
-import { MSG_OUTRA_COPIA, travarInstancia } from './instancia.js';
+import { MSG_BOT_TRAVADO, MSG_OUTRA_COPIA, outrosBots, travarInstancia } from './instancia.js';
+import { desligarEdicaoRapida } from './janela.js';
 import { EspelhoWhatsApp } from './whatsapp-espelho.js';
 import { generoDoProduto } from './genero.js';
 
@@ -336,6 +337,13 @@ async function main() {
     process.exit(1);
   }
   if (trava.semTrava) log(`⚠️  Não consegui usar a trava de cópia única (${trava.semTrava}). Cuidado para não abrir o bot duas vezes.`);
+  // A porta não pega um bot congelado que segura a trava sem responder (27/10/2026): confere também os processos.
+  const outros = await outrosBots();
+  if (outros.length) {
+    log(`❌ ${MSG_BOT_TRAVADO(outros)}`);
+    process.exit(1);
+  }
+  desligarEdicaoRapida();
   store = new Store();
   sender = createSender();
   avisos = new Avisos({ sender, store });

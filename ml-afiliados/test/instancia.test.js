@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import net from 'node:net';
-import { botRodando, pedirParada, travarInstancia } from '../src/instancia.js';
+import { botRodando, outrosBots, pedirParada, travarInstancia } from '../src/instancia.js';
 
 const PORTA = 47999; // porta só dos testes (o bot usa a 47831)
 
@@ -89,4 +89,20 @@ test('"desligar" (npm run migrar) pede parada SEM religar; "parar" (npm run rein
   } finally {
     t.soltar();
   }
+});
+
+test('outras cópias do bot pelos processos do Windows (bot travado segurando a porta, 27/10/2026)', async () => {
+  const saida = [
+    '3676\tnode  src/index.js',
+    '20124\tnode  src/index.js',
+    String.raw`10244	"node" "C:\npx\build\src\bin\chrome-devtools-mcp.js"`,
+    '999\tnode src/index.js',
+    String.raw`55	"C:\nodejs\node.exe" D:\Github\ml-afiliados\src\index.js`,
+    String.raw`77	"C:\nodejs\node.exe" "C:\nodejs\node_modules\npm\bin\npm-cli.js" start --silent`,
+    '',
+  ].join('\r\n');
+  const executar = (cmd, args, opcoes, cb) => cb(null, saida);
+  assert.deepEqual(await outrosBots({ plataforma: 'win32', eu: 999, executar }), [3676, 20124, 55], 'sem ele mesmo, sem outros programas node');
+  assert.deepEqual(await outrosBots({ plataforma: 'win32', executar: (c, a, o, cb) => cb(new Error('sem powershell')) }), []);
+  assert.deepEqual(await outrosBots({ plataforma: 'linux' }), []);
 });

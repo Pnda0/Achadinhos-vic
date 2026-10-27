@@ -8,6 +8,7 @@
  * a porta, o bot percebe que não é ele e liga mesmo assim (só sem essa proteção).
  * Quem mandar "parar" pela porta (só do próprio PC: `npm run reiniciar`) pede um reinício com calma (index.js).
  */
+import { execFile } from 'node:child_process';
 import net from 'node:net';
 
 export const PORTA_TRAVA = Number(process.env.BOT_PORTA_TRAVA) || 47831;
@@ -94,3 +95,24 @@ export const botRodando = ({ porta = PORTA_TRAVA, timeoutMs = 1500 } = {}) => eh
 
 export const MSG_OUTRA_COPIA =
   'Já tem um bot rodando neste PC (outra janela do 3-iniciar.bat). Feche ESTA janela — duas cópias postariam cada oferta duas vezes.';
+
+/**
+ * Outras cópias do bot rodando neste PC (Windows): os processos "node src/index.js" além deste. A porta não basta
+ * quando um bot congela sem responder (27/10/2026: a janela parou às 8h02 segurando a porta) — o "reiniciar"
+ * achava que não havia bot e abria uma segunda cópia. Devolve os números dos processos; [] fora do Windows ou se
+ * não der para perguntar ao Windows.
+ */
+export function outrosBots({ plataforma = process.platform, executar = execFile, eu = process.pid } = {}) {
+  if (plataforma !== 'win32') return Promise.resolve([]);
+  const ps = "Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | ForEach-Object { \"$($_.ProcessId)`t$($_.CommandLine)\" }";
+  return new Promise((resolve) => {
+    executar('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', ps], { timeout: 20_000, windowsHide: true }, (erro, saida) => {
+      if (erro) return resolve([]);
+      const linhas = String(saida || '').split(/\r?\n/).map((l) => l.split('\t'));
+      resolve(linhas.filter(([pid, cmd]) => Number(pid) && Number(pid) !== eu && /(^|[\s"\\/])src[\\/]index\.js\b/.test(cmd || '')).map(([pid]) => Number(pid)));
+    });
+  });
+}
+
+export const MSG_BOT_TRAVADO = (pids) =>
+  `Já tem um bot rodando neste PC (processo ${pids.join(', ')}) que não responde — provavelmente travado (um clique dentro da janela preta congela o bot até apertar uma tecla). Não ligo uma segunda cópia (cada oferta sairia duas vezes): feche a janela dele e ligue de novo.`;
