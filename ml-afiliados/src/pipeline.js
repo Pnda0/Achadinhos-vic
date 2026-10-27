@@ -4,7 +4,7 @@
  *   gerarLinks()   -> "GERA LINKS DE AFILIADOS" (lotes de 20 com pausa entre eles)
  *   enviarProximo()-> "ENVIAR PRODUTOS PARA O GRUPO" (título + legenda + imagem + digitando...)
  */
-import { loadCategorias, loadGrupos, settings } from './config.js';
+import { loadCategorias, loadGrupos, loadShopee, settings } from './config.js';
 import { ErroBloqueioML, scrapeCategoria } from './ml/scraper.js';
 
 /** Quanto tempo o bot fica sem pedir páginas ao ML depois de um bloqueio (verificação de tráfego suspeito). */
@@ -415,13 +415,38 @@ function vendasNoEnvio(p, grupo) {
  * WuzAPI) todo erro vira ERRO — um timeout depois de a mensagem ter saído pode repetir a oferta (até 3 vezes).
  * E o Telegram não deixa o bot consultar o que já está no canal, então um INCERTO não tem como ser confirmado.
  */
+/** De quantos em quantos posts a Shopee pode aparecer (config/shopee.json > "umACada"; 0 = sem limite). */
+export const umACadaShopee = () => Number(loadShopee().umACada) || 0;
+/** Minutos entre envios (CRON_ENVIO "*\/3 ..." = 3). */
+const minutosEntreEnvios = () => Number(String(settings.cron.envio).match(/^\*\/(\d+)/)?.[1]) || 3;
+
+/**
+ * A Shopee pode sair agora neste grupo? Sim se nenhum dos últimos N-1 posts foi da Shopee — ou, quando só há Shopee
+ * para postar, se o último post dela foi há N envios de tempo (assim o grupo não trava: vira 1 Shopee a cada N×3 min).
+ */
+export function shopeeLiberada(store, grupo, n = umACadaShopee(), minutos = minutosEntreEnvios(), agora = Date.now()) {
+  if (!(n >= 2)) return true;
+  const enviados = store
+    .list((p) => p.grupo === grupo && (p.status === 'ENVIADO' || p.status === 'INCERTO') && p.enviadoEm)
+    .sort((a, b) => String(b.enviadoEm).localeCompare(String(a.enviadoEm)));
+  if (!enviados.slice(0, n - 1).some((p) => p.loja === 'shopee')) return true;
+  const ultimaShopee = enviados.find((p) => p.loja === 'shopee');
+  return agora - Date.parse(ultimaShopee.enviadoEm) >= n * minutos * 60_000;
+}
+
 export async function enviarProximo(sender, grupo, store = new Store()) {
   const dias = grupo.filtros?.diasSemRepetir || 5;
   // Público principal: meninas. Femininos na frente, depois os neutros; masculino no máximo 1 a cada N posts.
   // E as marcas da lista (config/marcas.json) passam na frente das sem marca (pedido do dono, 15/10/2026).
   const feminina = grupo.preferirFeminino ? preferenciaFeminina(store, grupo.nome, grupo.preferirFeminino) : {};
   const marca = preferenciaDeMarca();
-  const preferencia = { aceitar: feminina.aceitar, preferir: (x) => (feminina.preferir ? feminina.preferir(x) : 0) + marca(x) };
+  // Shopee no máximo 1 a cada N posts (a comissão é baixa — pedido do dono, 26/10/2026).
+  const shopeeOk = shopeeLiberada(store, grupo.nome);
+  const temLimite = feminina.aceitar || !shopeeOk;
+  const preferencia = {
+    aceitar: temLimite ? (x) => (feminina.aceitar ? feminina.aceitar(x) : true) && (shopeeOk || x.loja !== 'shopee') : undefined,
+    preferir: (x) => (feminina.preferir ? feminina.preferir(x) : 0) + marca(x),
+  };
   let p = null;
   // Cada candidato barrado sai da fila (muda de status), então o laço termina; null = fila realmente vazia.
   while (!p) {
@@ -440,7 +465,7 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
   }
   if (!p && preferencia.aceitar && store.proximo(grupo.nome)) {
     store.save();
-    log(`⏳ [${grupo.nome}] só masculinos na fila: esperando outro produto (público principal: meninas).`);
+    log(`⏳ [${grupo.nome}] ${shopeeOk ? 'só masculinos na fila' : 'só Shopee/masculinos na fila (Shopee: 1 a cada ' + umACadaShopee() + ' posts)'}: esperando outro produto.`);
     return { esperando: true };
   }
   if (!p) {

@@ -71,5 +71,7 @@
     }
   },
   "maxPorBusca": 4,
-  "_comentarioPrefixo": "\"prefixo\" num grupo vai na frente de cada busca (Perfumes: \"perfume Dior\", não só \"Dior\", que trouxe rack e roupa em 16/10/2026). \"maxPorBusca\": no máximo N produtos por busca, um de cada (a Shopee traz o mesmo perfume de vários vendedores)."
+  "_comentarioPrefixo": "\"prefixo\" num grupo vai na frente de cada busca (Perfumes: \"perfume Dior\", não só \"Dior\", que trouxe rack e roupa em 16/10/2026). \"maxPorBusca\": no máximo N produtos por busca, um de cada (a Shopee traz o mesmo perfume de vários vendedores).",
+  "umACada": 4,
+  "_comentarioUmACada": "Shopee no máximo 1 a cada umACada posts em cada grupo (a comissão é baixa — pedido do dono, 26/10/2026): Mercado Livre, Awin e outras lojas têm prioridade. Se só houver Shopee na fila, sai 1 Shopee a cada umACada envios de tempo (com envio a cada 3 min: 1 a cada 12 min). 0 = sem limite."
 }

@@ -71,7 +71,8 @@ test('grupo "soMarcas" (Fitness, Beleza, Perfumes): só marca da lista entra e s
 
 test('na hora de postar: o que está na fila fora do nicho (ex.: rack "Dior" no Perfumes) não sai; cupom passa', async () => {
   const store = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-')), 'db.json'));
-  const pronto = (id, nome, extra = {}) => store.upsert({ id, grupo: 'Perfumes', nome, status: 'PRONTO', url: `https://x/${id}`, loja: 'shopee', linkAfiliado: `https://s.shopee.com.br/${id}`, descontoPct: 30, coletadoEm: '2026-10-16T10:00:00Z', ...extra });
+  // Mercado Livre (a Shopee tem limite de 1 a cada N posts e faria o 2º esperar a vez)
+  const pronto = (id, nome, extra = {}) => store.upsert({ id, grupo: 'Perfumes', nome, status: 'PRONTO', url: `https://x/${id}`, linkAfiliado: `https://meli.la/${id}`, vendidos: '+1000 vendidos', descontoPct: 30, coletadoEm: '2026-10-16T10:00:00Z', ...extra });
   pronto('R', 'Rack Suspenso para TV Off White Dior');
   pronto('P', 'Perfume Dior J adore Feminino 100ml');
   const enviados = [];
@@ -95,4 +96,29 @@ test('capinha de celular com logo de marca não entra em grupo nenhum (busca "Ni
   }
   const fit = grupos.find((x) => x.nome === 'Fitness').filtros;
   for (const bom of ['Óculos de Natação Profissional Decathlon Nabaiji', 'Meia New Balance Cano Longo Kit 3 Pares', 'Relógio Smartwatch compatível com celular Nike Run']) assert.equal(motivoRecusa(p('Fitness', bom), fit), null, bom);
+});
+
+test('Shopee no máximo 1 a cada 4 posts: ML e Awin primeiro; só Shopee na fila = 1 a cada 12 min (não trava)', async () => {
+  const { shopeeLiberada } = await import('../src/pipeline.js');
+  const store = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-')), 'db.json'));
+  const agora = Date.parse('2026-10-26T15:00:00Z');
+  const enviado = (id, loja, minAtras) => {
+    store.upsert({ id, grupo: 'G', nome: id, status: 'PRONTO', loja, linkAfiliado: 'x' });
+    store.setStatus(store.list((p) => p.id === id)[0], 'ENVIADO', { enviadoEm: new Date(agora - minAtras * 60_000).toISOString() });
+  };
+  assert.equal(shopeeLiberada(store, 'G', 4, 3, agora), true, 'grupo novo');
+  enviado('S1', 'shopee', 3);
+  assert.equal(shopeeLiberada(store, 'G', 4, 3, agora), false, 'acabou de sair uma da Shopee');
+  enviado('M1', undefined, 2);
+  enviado('A1', 'awin', 1);
+  assert.equal(shopeeLiberada(store, 'G', 4, 3, agora), false, 'ainda está entre as 3 últimas');
+  enviado('M2', undefined, 0.5);
+  assert.equal(shopeeLiberada(store, 'G', 4, 3, agora), true, 'saiu das 3 últimas: libera');
+  // só Shopee: depois de 12 min libera mesmo sem outras lojas no meio
+  const s2 = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-')), 'db.json'));
+  s2.upsert({ id: 'S', grupo: 'G', nome: 'S', status: 'PRONTO', loja: 'shopee', linkAfiliado: 'x' });
+  s2.setStatus(s2.list()[0], 'ENVIADO', { enviadoEm: new Date(agora - 11 * 60_000).toISOString() });
+  assert.equal(shopeeLiberada(s2, 'G', 4, 3, agora), false);
+  assert.equal(shopeeLiberada(s2, 'G', 4, 3, agora + 60_000), true);
+  assert.equal(shopeeLiberada(s2, 'G', 0, 3, agora), true, '0 = sem limite');
 });
