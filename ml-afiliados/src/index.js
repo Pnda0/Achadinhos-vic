@@ -75,7 +75,7 @@ const cicloColeta = exclusivo('coleta', async (apenasGrupos) => {
   // Busca de reposição NUNCA vai ao Mercado Livre (só Shopee e Awin): o ML marcou o bot como robô em 21/10/2026
   // depois que as reposições levaram as páginas de ~70 para ~220 por dia. ML só nas 3 buscas do dia (~66 páginas).
   const r = await coletar(store, { apenasGrupos: reposicao ? apenasGrupos : null, mlMinIntervaloH: reposicao ? 24 : 0 });
-  if (r.mlBloqueado) await avisos.avisar('ml-bloqueio', `*Mercado Livre bloqueou a busca* ⛔\n${r.mlBloqueado}.\nO bot fica ${PAUSA_ML_HORAS} h sem pedir páginas ao ML (insistir piora) e segue com a Shopee e os cupons. Se continuar por dias, abra o ML no navegador deste PC e passe pela verificação.`);
+  if (r.mlBloqueado) await avisos.avisar('ml-bloqueio', `*Mercado Livre bloqueou a busca* ⛔\n${r.mlBloqueado}.\nO bot fica ${PAUSA_ML_HORAS} h sem pedir páginas ao ML (insistir piora) e segue com a Shopee e os cupons. Se continuar, passe pela verificação no PC de casa: npm run ml-liberar abre o ML numa janela do Chrome (entre na sua conta ali).`);
   if (!r.encontrados && !r.mlBloqueado) await avisos.coletaVazia();
   if (r.amazonErro) await avisos.avisar('amazon', `*Amazon fora do ar no bot* ⚠️\n${r.amazonErro}`);
   if (r.awinErro) await avisos.avisar('awin', `*Awin fora do ar no bot* ⚠️\n${r.awinErro}`);

@@ -264,6 +264,9 @@ test('Amazon: lê nome, preços, desconto e cupom do texto da mensagem', () => {
   assert.equal(d2.precoOriginal, 449);
   assert.equal(d2.descontoPct, 37);
   assert.equal(dadosDoTexto('https://amzn.to/x').nome, null);
+  // Chamada com minúsculas antes do produto (@xetdaspromocoes): fica com a linha que tem a marca da lista.
+  const d4 = dadosDoTexto('AINDA VALENDO, menor valor no melhor protetor\n\nProtetor Solar Facial Neutrogena Sun Fresh FPS 70 40g\n\nDe R$ 109 por R$ 53 em 2x\nhttps://link.amazon/B0i3MFTKh');
+  assert.deepEqual([d4.nome, d4.precoAtual, d4.precoOriginal], ['Protetor Solar Facial Neutrogena Sun Fresh FPS 70 40g', 53, 109]);
 });
 
 test('Espelho: link da Amazon vira oferta PRONTA com a MINHA etiqueta, sem abrir a Amazon', async () => {

@@ -93,6 +93,37 @@ async function devtools(wsUrl, method, params = {}) {
 }
 
 /**
+ * Abre um Chrome/Edge COMUM (sem automação: o ML recusa login e verificação em janela controlada por robô) com o
+ * perfil do bot, no endereço pedido. Devolve `chamar(método)`, que fala com o navegador pelo DevTools sem mexer em
+ * nenhuma página; falha enquanto o navegador ainda está subindo (e depois que a janela é fechada).
+ */
+export function abrirNavegadorComum(url, { perfil = PERFIL_ML, fetchImpl = fetch } = {}) {
+  fs.mkdirSync(perfil, { recursive: true });
+  const portaArq = path.join(perfil, 'DevToolsActivePort');
+  fs.rmSync(portaArq, { force: true });
+  for (const trava of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) fs.rmSync(path.join(perfil, trava), { force: true });
+  const navegador = spawn(
+    requireBrowserPath(),
+    [`--user-data-dir=${perfil}`, '--remote-debugging-port=0', '--no-first-run', '--no-default-browser-check', '--new-window', url],
+    { detached: true, stdio: 'ignore' }
+  );
+  navegador.unref();
+  let wsUrl = null;
+  return async (method, params) => {
+    try {
+      if (!wsUrl) {
+        const porta = fs.readFileSync(portaArq, 'utf8').split('\n')[0].trim();
+        wsUrl = (await (await fetchImpl(`http://127.0.0.1:${porta}/json/version`)).json()).webSocketDebuggerUrl;
+      }
+      return await devtools(wsUrl, method, params);
+    } catch (e) {
+      wsUrl = null; // ainda subindo: tenta de novo
+      throw e;
+    }
+  };
+}
+
+/**
  * Login com um Chrome/Edge COMUM (o Mercado Livre bloqueia janela controlada por automação).
  * O bot só abre o navegador com um perfil próprio e, de fora, confere de tempos em tempos se os
  * cookies da conta já existem; quando o Link Builder responde logado, guarda a sessão e fecha a janela.
@@ -101,19 +132,9 @@ export async function loginMLNavegadorComum({ timeoutMin = 15, esperar = sleep, 
   if (process.platform === 'linux' && !process.env.DISPLAY) {
     throw new Error('Aqui (Docker/servidor) não há tela para abrir a janela de login. Atualize os cookies pelo F12 do seu navegador e salve em data/cookies.txt (README, seção 3.2).');
   }
-  fs.mkdirSync(perfil, { recursive: true });
-  const portaArq = path.join(perfil, 'DevToolsActivePort');
-  fs.rmSync(portaArq, { force: true });
-  for (const trava of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) fs.rmSync(path.join(perfil, trava), { force: true });
-  const navegador = spawn(
-    requireBrowserPath(),
-    [`--user-data-dir=${perfil}`, '--remote-debugging-port=0', '--no-first-run', '--no-default-browser-check', '--new-window', LOGIN],
-    { detached: true, stdio: 'ignore' }
-  );
-  navegador.unref();
+  const chamar = abrirNavegadorComum(LOGIN, { perfil, fetchImpl });
   log('👉 Abri o navegador: entre no Mercado Livre com a conta de afiliado. Pode demorar o quanto precisar (até 15 min) — a janela fecha sozinha no fim.');
 
-  let wsUrl = null;
   let conectou = false;
   const inicio = Date.now();
   const limite = inicio + timeoutMin * 60_000;
@@ -121,16 +142,11 @@ export async function loginMLNavegadorComum({ timeoutMin = 15, esperar = sleep, 
     await esperar(3000);
     let cookies;
     try {
-      if (!wsUrl) {
-        const porta = fs.readFileSync(portaArq, 'utf8').split('\n')[0].trim();
-        wsUrl = (await (await fetchImpl(`http://127.0.0.1:${porta}/json/version`)).json()).webSocketDebuggerUrl;
-      }
-      ({ cookies } = await devtools(wsUrl, 'Storage.getCookies'));
+      ({ cookies } = await chamar('Storage.getCookies'));
       conectou = true;
     } catch (e) {
       if (conectou) throw new Error('A janela foi fechada antes de concluir o login.');
       if (Date.now() - inicio > 90_000) throw new Error(`O navegador não abriu (${e.message}).`);
-      wsUrl = null; // ainda subindo: tenta de novo
       continue;
     }
     if (!cookies.some((c) => c.name === 'ssid' && c.value && /mercadoli/.test(c.domain))) continue;
@@ -145,7 +161,7 @@ export async function loginMLNavegadorComum({ timeoutMin = 15, esperar = sleep, 
     fs.writeFileSync(cookieFile, cookieStr + '\n', 'utf8');
     const tags = extractTags(html);
     log(`✅ Login do ML salvo. Etiquetas da conta: ${tags.join(', ') || '(nenhuma encontrada)'}`);
-    await devtools(wsUrl, 'Browser.close').catch(() => {});
+    await chamar('Browser.close').catch(() => {});
     return { tags };
   }
   throw new Error('Tempo esgotado esperando o login do Mercado Livre.');

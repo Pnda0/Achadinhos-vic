@@ -25,6 +25,11 @@ o bot até apertar uma tecla) — desde 27/10 o bot desliga a edição rápida a
 `npm run reiniciar` NÃO abre outra cópia (confere os processos: `outrosBots()` em `src/instancia.js`) e o bot novo
 também se recusa a ligar. Peça ao dono para fechar a janela travada; depois `npm run reiniciar` abre uma só.
 
+**ML bloqueado por dias** ("⛔ Mercado Livre bloqueou" toda busca; desde 21/10/2026, em 27/10 até a página de
+ofertas sem o bot caía em "account-verification"): rode `npm run ml-liberar` (em segundo plano) e avise o dono — abre o
+ML numa janela comum do Chrome com o perfil do bot, ele entra na conta e passa pela verificação (até 20 min). Não
+aumente páginas nem tente contornar a verificação.
+
 ## Investigar
 
 - `data/bot.log` — tudo que o bot fez (hora local). Linhas úteis: `📤 [Grupo]` postou, `📲 [WhatsApp Grupo]`, `⏭️` barrado na hora de postar, `📭 fila vazia`, `🔁 Busca de reposição`, `✅ Coleta:` com recusas por motivo, `Por categoria (vistos → aprovados)`.

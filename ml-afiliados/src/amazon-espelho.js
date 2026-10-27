@@ -7,6 +7,7 @@
  * (nome, preço, cupom). Link curto (amzn.to / a.co / link.amazon) é resolvido lendo só o redirecionamento.
  * A foto e o título aparecem pela prévia de link do próprio WhatsApp.
  */
+import { marcaDoProduto } from './marcas.js';
 import { parseBRL } from './util.js';
 
 const HOST_AMAZON = /(^|\.)(amazon\.com\.br|amzn\.to|a\.co|amzn\.com|link\.amazon|amzlinks\.in)$/i;
@@ -123,7 +124,9 @@ export function dadosDoTexto(texto) {
         !/^(cupom|use o cupom|frete|link|compre|corre|aproveita|oferta|promo|🔥)/i.test(l) &&
         !/grupo|whatsapp|chat\.whatsapp|convide/i.test(l)
     );
-  const nome = candidatas[0] || null;
+  // Chamada antes do produto ("AINDA VALENDO, menor valor no melhor protetor", visto no @xetdaspromocoes em
+  // 27/10/2026): a linha com uma marca da lista (config/marcas.json) é o nome; sem marca, a primeira.
+  const nome = candidatas.find((l) => marcaDoProduto({ nome: l })) || candidatas[0] || null;
   const precoObs = (atual && CONDICOES.find(([re]) => re.test(texto))?.[1]) || null;
   return { nome, precoAtual: atual, precoOriginal: original, descontoPct, cupom, precoObs };
 }

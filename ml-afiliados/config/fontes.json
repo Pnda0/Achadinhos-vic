@@ -8,57 +8,24 @@
   "fontes": [],
   "_comentarioCanais": "CANAIS DO TELEGRAM (desde 15/10/2026, a pedido do dono, a fonte principal): canais PÚBLICOS de ofertas que o bot lê sozinho (página t.me/s/<canal>). 'copiarTexto': true = o post sai IGUAL ao do canal (texto e foto), só com os links do Mercado Livre, da Amazon e das lojas da Awin trocados pelos do dono; convites e @ do outro canal e links de outras lojas (AliExpress...) saem (os da Shopee são trocados pelos do dono quando há SHOPEE_APP_ID/SHOPEE_SECRET no .env). 'exigirVendas': false = sem a regra de mais de 50 vendas (o espelho não lê vendas; o dono pediu para copiar tudo). Continuam valendo: nicho do grupo, palavras bloqueadas e não repetir. 'destinos' = para quais grupos vão as ofertas dos canais gerais; com 'nicho', só entra naquele grupo se o texto casar com as palavras do nicho (config/nichos.json). Um canal pode ter opções próprias: {\"canal\": \"nome\", \"destino\": \"Perfumes\", \"maxPorHora\": 12, ...}. 'maxPorHora' = quantas ofertas desses canais entram por hora EM CADA grupo. Amazon só entra com AMAZON_PARTNER_TAG no .env. Depois de mexer aqui, reinicie o bot.",
   "canaisTelegram": {
-    "ativo": false,
-    "soAmazon": false,
-    "maxPorHora": 20,
+    "ativo": true,
+    "apenasAmazon": true,
+    "copiarTexto": false,
+    "maxPorHora": 3,
     "intervaloSegundos": 60,
     "canais": [
       {
-        "canal": "promobigodeperfumes",
-        "destino": "Perfumes"
-      },
-      {
-        "canal": "urubupromo",
-        "apenasAmazon": true,
-        "copiarTexto": false
-      },
-      {
         "canal": "xetdaspromocoes",
-        "apenasAmazon": true,
-        "copiarTexto": false
+        "fotoDoCanal": true
       },
       {
-        "canal": "promobit",
-        "apenasAmazon": true,
-        "copiarTexto": false
+        "canal": "urubupromo"
       },
       {
-        "canal": "gatunopromos",
-        "apenasAmazon": true,
-        "copiarTexto": false
-      },
-      {
-        "canal": "promoloucas",
-        "apenasAmazon": true,
-        "copiarTexto": false
-      },
-      {
-        "canal": "oqcomprei",
-        "fotoDoCanal": false,
-        "apenasAmazon": true,
-        "copiarTexto": false
-      },
-      {
-        "canal": "topfitachados",
-        "destino": "Fitness",
-        "apenasAmazon": true,
-        "copiarTexto": false
+        "canal": "HomemCheiroso"
       }
     ],
     "destinos": [
-      {
-        "grupo": "Geral"
-      },
       {
         "grupo": "Fitness",
         "nicho": "fitness"
@@ -66,18 +33,20 @@
       {
         "grupo": "Beleza",
         "nicho": "beleza"
+      },
+      {
+        "grupo": "Perfumes",
+        "nicho": "perfumes"
       }
     ],
-    "lojasParceiras": true,
-    "copiarTexto": true,
     "exigirVendas": false,
-    "fotoDoCanal": true,
-    "_comentarioAmazon": "15/10/2026 (noite), pedido do dono: o Perfumes copia só o @promobigodeperfumes; dos outros canais o bot pega SÓ as ofertas da Amazon (\"apenasAmazon\") e monta o post no formato dele (\"copiarTexto\": false), com a etiqueta do dono (AMAZON_PARTNER_TAG) — sem abrir o site da Amazon. Elas vão para o Geral e, se casarem com o nicho, para o Fitness/Beleza (com os filtros de cada grupo: só marcas, desconto, feminino).",
-    "_comentarioPausa": "Desligado em 16/10/2026 a pedido do dono: \"pare de copiar dos outros, ficou com muito produto ruim\" — o bot busca tudo nas lojas (ML, Shopee, Awin). Nem o @promobigodeperfumes nem a Amazon dos canais entram."
+    "fotoDoCanal": false,
+    "_comentarioAmazon": "27/10/2026, pedido do dono (\"veja pra pegar amazon... pegue de algum grupo e troque pelo meu link, diversifique, mas avalie, priorize as marcas\"): a Amazon não tem API para a conta antes de 3 vendas e o Associados proíbe robô no site, então ela vem destes canais públicos. Do canal entra SÓ a oferta da Amazon (apenasAmazon), montada no formato do bot com a etiqueta do dono (AMAZON_PARTNER_TAG), e passa por TODAS as regras do grupo (nicho, só marcas, feminino primeiro, desconto, não repetir). Mercado Livre, Shopee e Awin dos canais ficam de fora (o bot já busca essas lojas sozinho). Canais escolhidos medindo ~120 posts de cada (27/10/2026): @xetdaspromocoes ~37 ofertas da Amazon por dia, ~12 passariam no Beleza (Neutrogena, L'Oréal, Lola...), foto boa e sem logo (fotoDoCanal: true); @urubupromo ~9 da Amazon por dia, poucas de marca; @HomemCheiroso perfumes, ~3 da Amazon por dia (muito masculino: o Perfumes segura 1 a cada 5). Ficaram de fora por quase não ter Amazon de beleza/perfume/fitness: promobit, gatunopromos, promoloucas, oqcomprei, topfitachados, promobigodeperfumes, promotop, ofertasbr, pelandobr (só links próprios) e canais parados. maxPorHora = no máximo N por hora em cada grupo (marca da lista conta o dobro).",
+    "_comentarioPausa": "De 16/10 a 27/10/2026 desligado (\"pare de copiar dos outros, ficou com muito produto ruim\"); religado em 27/10 só para a Amazon, com só marcas valendo em todos os grupos."
   },
-  "_comentarioGruposTelegram": "GRUPOS DO TELEGRAM PARA COPIAR (pedido do dono, 27/10/2026: \"vamo pegar do telegram dela\"): exceção ao \"não copiar\" de 16/10, só para os grupos desta lista. Grupo não tem página pública: o bot (@achadinhosvic_bot) precisa ser membro e estar com a privacidade desligada no @BotFather (/setprivacy > Disable); quando ele entra num grupo cujo título contém o \"titulo\" daqui, começa a copiar sozinho e avisa o dono. As ofertas passam por TODAS as regras do grupo de destino (nicho, só marcas, feminino primeiro, não repetir, Shopee 1 a cada 4) e saem no formato do bot (copiarTexto: false), com a foto da loja (fotoDoCanal: false: a foto do outro grupo pode ter a logo dele). semML: true = links do Mercado Livre ficam de fora (trocar exigiria abrir a página de cada um no ML, o que fez o ML bloquear o bot em 21/10). maxPorHora = no máximo N ofertas desses grupos por hora em cada grupo seu. Depois de mexer aqui, reinicie o bot.",
+  "_comentarioGruposTelegram": "GRUPOS DO TELEGRAM PARA COPIAR — DESLIGADO (27/10/2026, o dono: \"vamos deixar grupo da lu de fora\"). Como funciona quando ligado: exceção ao \"não copiar\" de 16/10, só para os grupos desta lista. Grupo não tem página pública: o bot (@achadinhosvic_bot) precisa ser membro e estar com a privacidade desligada no @BotFather (/setprivacy > Disable); quando ele entra num grupo cujo título contém o \"titulo\" daqui, começa a copiar sozinho e avisa o dono. As ofertas passam por TODAS as regras do grupo de destino (nicho, só marcas, feminino primeiro, não repetir, Shopee 1 a cada 4) e saem no formato do bot (copiarTexto: false), com a foto da loja (fotoDoCanal: false: a foto do outro grupo pode ter a logo dele). semML: true = links do Mercado Livre ficam de fora (trocar exigiria abrir a página de cada um no ML, o que fez o ML bloquear o bot em 21/10). maxPorHora = no máximo N ofertas desses grupos por hora em cada grupo seu. Depois de mexer aqui, reinicie o bot.",
   "gruposTelegram": {
-    "ativo": true,
+    "ativo": false,
     "grupos": [
       {
         "titulo": "Promo da Luh"
