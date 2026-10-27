@@ -17,6 +17,7 @@ sem repetir, foto boa, texto limpo. Pouca oferta boa vale mais que muita oferta 
 | Nicho | o nome precisa ter palavra do nicho; marcas de cabelo/maquiagem/skincare/fitness contam como palavra (perfume NÃO: Dior vende roupa e casa) | `config/nichos.json`, `config/marcas.json` > `nichos` |
 | Só marcas | Fitness, Beleza e Perfumes só com marca da lista | `"soMarcas"` em `config/grupos.json`, `src/marcas.js` |
 | Força | ML: mais de 50 vendas pelo rótulo; Shopee: 50+ vendas, nota 4,5+, 15%+ de desconto, até 4 por busca | `src/ml/vendas.js`, `config/shopee.json` |
+| Falsificação | marca cara vendida barata demais fica de fora (27/10/2026: "Lattafa Yara" de R$ 27): árabes abaixo de R$ 60, grifes abaixo de R$ 100 | `config/marcas.json` > `precoMinimo`, `motivoPrecoDaMarca()` em `src/marcas.js` |
 | Preço real | já esteve >10% mais barato em 30 dias = fora; menor preço em 30 dias = pontos na fila (sem selo no post: o dono não gostou) | `src/precos.js` (`data/precos.json`) |
 | Repetido | mesmo id, mesmo nome, ou mesmo produto escrito de outro jeito (70% das palavras) em 5 dias | `parecido()` em `src/store.js` |
 | Ordem | femininos > neutros > masculino (1 a cada 4; 1 a cada 5 no Perfumes), marca +1,5; dentro disso, **nota de qualidade** (desconto + vendas + avaliação + menor preço), sorteio entre as 3 melhores | `src/genero.js`, `notaDeQualidade()` em `src/store.js` |

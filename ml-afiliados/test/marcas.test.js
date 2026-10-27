@@ -133,3 +133,24 @@ test('Shopee no máximo 1 a cada 4 posts: ML e Awin primeiro; só Shopee na fila
   assert.equal(shopeeLiberada(s2, 'G', 4, 3, agora + 60_000), true);
   assert.equal(shopeeLiberada(s2, 'G', 0, 3, agora), true, '0 = sem limite');
 });
+
+// Caso real (27/10/2026): "Kit de 1 Ate 2 Perfumes Lataffa Yara Arabe 100ml" a R$ 27,44 saiu no Perfumes (o original custa R$ 150+).
+test('marca cara barata demais = suspeita de falso: fica de fora na busca e na hora de postar', async () => {
+  const { motivoPrecoDaMarca } = await import('../src/marcas.js');
+  const { loadGrupos } = await import('../src/config.js');
+  const { motivoRecusa } = await import('../src/pipeline.js');
+  const yara = { nome: 'Kit de 1 Ate 2 Perfumes  Lataffa Yara Arabe 100ml Feminino - Excelente fixa', precoAtual: 27.44, descontoPct: 48, nota: 4.5, loja: 'shopee' };
+  assert.match(motivoPrecoDaMarca(yara), /barato demais para Lattafa/);
+  assert.equal(motivoPrecoDaMarca({ ...yara, precoAtual: 149.9 }), null);
+  assert.equal(motivoPrecoDaMarca({ nome: 'Maison Alhambra 30ml Perfume Arabe Feminino', precoAtual: 63.6 }), null, '30 ml original passa');
+  assert.equal(motivoPrecoDaMarca({ nome: 'Perfume Natura Essencial Feminino', precoAtual: 30 }), null, 'marca sem preço mínimo');
+  const perf = loadGrupos().find((g) => g.nome === 'Perfumes').filtros;
+  assert.match(motivoRecusa(yara, perf), /suspeita de falso/);
+  assert.equal(motivoRecusa({ ...yara, manual: true }, perf), null, 'link mandado pelo dono passa');
+
+  const s = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-')), 'db.json'));
+  s.upsert({ id: 'Y', grupo: 'Perfumes', ...yara, url: 'https://shopee.com.br/product/1/2', imagem: 'i', linkAfiliado: 'https://s.shopee.com.br/abc' });
+  const grupo = { nome: 'Perfumes', jid: '-1', mensagemAdicional: '', filtros: { diasSemRepetir: 5 } };
+  assert.equal(await enviarProximo({ sendImage: async () => ({ comImagem: true }), sendText: async () => {} }, grupo, s), null, 'o que já estava na fila não sai');
+  assert.equal(s.list()[0].status, 'REJEITADO');
+});

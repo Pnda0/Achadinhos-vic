@@ -25,7 +25,7 @@ import path from 'node:path';
 import { VENDAS_MINIMAS, motivoVendas } from './ml/vendas.js';
 import { evento, origemDe } from './eventos.js';
 import { preferenciaFeminina } from './genero.js';
-import { marcaDoProduto, preferenciaDeMarca } from './marcas.js';
+import { marcaDoProduto, motivoPrecoDaMarca, preferenciaDeMarca } from './marcas.js';
 import { BrowserSession, sessaoNavegador } from './browser.js';
 import { montarLegenda, tituloCupom } from './caption.js';
 import { Store } from './store.js';
@@ -40,6 +40,8 @@ export function motivoRecusa(p, f, store, { descontoDesconhecidoPassa = false, e
   if ((f.palavrasBloqueadas || []).some((w) => casaTermo(nome, w))) return 'palavra bloqueada';
   // Grupo "soMarcas" (grupos.json): só produto de uma marca de config/marcas.json. Cupom de loja passa.
   if (f.soMarcas && p.tipo !== 'cupom' && !marcaDoProduto(p)) return 'sem marca da lista';
+  const falso = p.tipo !== 'cupom' && !p.manual && motivoPrecoDaMarca(p);
+  if (falso) return falso;
   // Mercado Livre: só com MAIS de N vendas confirmadas pelo rótulo do card (src/ml/vendas.js). A caixa de entrada
   // do dono (escolha manual dele) passa `exigirVendas: false`.
   const vendas = exigirVendas && motivoVendas(p, f.vendasMinimas ?? VENDAS_MINIMAS);
@@ -391,9 +393,13 @@ function nichoNoEnvio(p, grupo) {
   return null;
 }
 
-/** Catálogo da Awin: o que entrou na fila antes da regra do público (masculino, infantil, caro demais) não sai. */
+/**
+ * O que entrou na fila antes destas regras não sai: marca cara vendida barata demais (falsa) e, do catálogo da Awin, o
+ * que não é para o público (masculino, infantil, caro demais). Cupom e caixa de entrada passam.
+ */
 function publicoNoEnvio(p, grupo) {
-  return doCatalogoAwin(p) ? motivoForaDoPublico(p, grupo, loadAwin().produtos || {}) : null;
+  if (p.manual || p.tipo === 'cupom' || origemDe(p) === 'caixa') return null;
+  return motivoPrecoDaMarca(p) || (doCatalogoAwin(p) ? motivoForaDoPublico(p, grupo, loadAwin().produtos || {}) : null);
 }
 
 /** Grupo "soMarcas": o que entrou na fila antes do filtro (ou sem marca) não sai. Cupom e caixa de entrada passam. */

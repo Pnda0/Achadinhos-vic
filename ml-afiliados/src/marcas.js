@@ -39,6 +39,21 @@ export function marcaDoProduto(p, lista = listaDeMarcas()) {
   return null;
 }
 
+let cachePreco = { em: 0, minimos: null };
+
+/**
+ * Marca cara vendida barata demais = falsificação (27/10/2026: "Lattafa Yara" de R$ 27 no Perfumes; o de verdade custa
+ * R$ 150+). config/marcas.json > "precoMinimo": { "Marca": reais }. null = preço ok.
+ */
+export function motivoPrecoDaMarca(p, minimos) {
+  if (!minimos) {
+    if (!cachePreco.minimos || Date.now() - cachePreco.em > 60_000) cachePreco = { em: Date.now(), minimos: loadMarcas()?.precoMinimo || {} };
+    minimos = cachePreco.minimos;
+  }
+  const marca = p.precoAtual != null && Object.keys(minimos).length ? marcaDoProduto(p) : null;
+  return marca && p.precoAtual < Number(minimos[marca]) ? `barato demais para ${marca} (suspeita de falso)` : null;
+}
+
 /** Nota extra na fila para oferta de marca (0 sem marca; a marca com `peso` próprio usa o dela). Lê o arquivo uma vez por chamada de envio. */
 export function preferenciaDeMarca(cfg = loadMarcas()) {
   const lista = listaDeMarcas(cfg);

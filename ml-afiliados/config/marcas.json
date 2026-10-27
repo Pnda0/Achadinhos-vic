@@ -159,6 +159,24 @@
     "Simple Organic",
     "The Ordinary"
   ],
+  "precoMinimo": {
+    "_comentario": "Marca cara vendida mais barata que isto (R$) = suspeita de falso e fica de fora (27/10/2026: um 'Lattafa Yara' de R$ 27 saiu no Perfumes; o de verdade custa R$ 150+; na Shopee os árabes originais com vendas custam de R$ 63 (30 ml) para cima).",
+    "Lattafa": 60,
+    "Maison Alhambra": 60,
+    "Al Wataniah": 60,
+    "Armaf": 60,
+    "Afnan": 60,
+    "Rasasi": 60,
+    "Al Haramain": 60,
+    "Orientica": 60,
+    "Carolina Herrera": 100,
+    "Lancôme": 100,
+    "Dior": 100,
+    "Yves Saint Laurent": 100,
+    "Paco Rabanne": 100,
+    "Jean Paul Gaultier": 100,
+    "Burberry": 100
+  },
   "perfumes": [
     {
       "marca": "WePink",
