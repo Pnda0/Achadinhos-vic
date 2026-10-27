@@ -14,7 +14,8 @@ import readline from 'node:readline';
 import { Readable } from 'node:stream';
 import zlib from 'node:zlib';
 import { DATA_DIR } from './config.js';
-import { log } from './util.js';
+import { marcaDoProduto } from './marcas.js';
+import { casaTermo, log, normalizar } from './util.js';
 
 const BASE = 'https://productdata.awin.com/datafeed';
 const COLUNAS = [
@@ -137,7 +138,7 @@ export async function buscarProdutosAwin({ grupos, api, cfg = {}, chave = chaveD
   const porId = new Map(lojas.map((l) => [Number(l.id), l]));
   const descontoMin = cfg.descontoMinimo ?? 15;
   const aceitar = (p) => p.emEstoque && (p.descontoPct || 0) >= descontoMin && p.precoAtual >= (cfg.precoMinimo ?? 15);
-  const feeds = (await listarCatalogos(chave, { fetchImpl })).filter((f) => porId.has(f.lojaId) && (!f.idioma || /^pt/i.test(f.idioma)));
+  const feeds = (await listarCatalogos(chave, { fetchImpl })).filter((f) => porId.has(f.lojaId) && (!f.idioma || /^(pt|portug)/i.test(f.idioma))); // a lista da Awin diz "Portuguese" (27/10/2026)
   fs.mkdirSync(pasta, { recursive: true });
   const candidatos = [];
   const categorias = {};
@@ -160,16 +161,20 @@ export async function buscarProdutosAwin({ grupos, api, cfg = {}, chave = chaveD
       }
     }
     candidatos.push(...cache.produtos);
-    categorias[`Awin: ${loja.nome}`] = { encontrados: cache.produtos.length, aceitos: 0 };
+    (categorias[`Awin: ${loja.nome}`] ??= { encontrados: 0, aceitos: 0 }).encontrados += cache.produtos.length; // loja com vários catálogos
   }
-  // Cada grupo ligado recebe uma fatia, revezando (os filtros do grupo decidem depois em coletar()).
+  // Cada grupo ligado recebe uma fatia, revezando (os filtros do grupo decidem depois em coletar()). A fatia sai só do
+  // que é do assunto do grupo (e de marca da lista, se ele for "só marcas"): no meio de 16 mil roupas e tênis, o Beleza e
+  // o Perfumes nunca recebiam os ~30 produtos de beleza e ~40 perfumes da Dafiti (27/10/2026).
   const produtos = [];
   const n = cfg.porGrupo ?? 8;
   for (const g of grupos.filter((x) => x.ativo)) {
-    if (!candidatos.length) break;
-    const inicio = (vez[g.nome] || 0) % candidatos.length;
-    const lote = Array.from({ length: Math.min(candidatos.length, n * 6) }, (_, i) => candidatos[(inicio + i) % candidatos.length]);
-    vez[g.nome] = (inicio + lote.length) % candidatos.length;
+    const termos = g.filtros?.palavrasObrigatorias || [];
+    const doGrupo = candidatos.filter((p) => (!termos.length || termos.some((t) => casaTermo(normalizar(p.nome), t))) && (!g.filtros?.soMarcas || marcaDoProduto(p)));
+    if (!doGrupo.length) continue;
+    const inicio = (vez[g.nome] || 0) % doGrupo.length;
+    const lote = Array.from({ length: Math.min(doGrupo.length, n * 6) }, (_, i) => doGrupo[(inicio + i) % doGrupo.length]);
+    vez[g.nome] = (inicio + lote.length) % doGrupo.length;
     produtos.push(...lote.map((p) => ({ ...p, grupo: g.nome })));
   }
   return { produtos, categorias };

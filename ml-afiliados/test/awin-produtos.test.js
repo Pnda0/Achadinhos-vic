@@ -11,7 +11,7 @@ const { motivoLinkInvalido } = await import('../src/pipeline.js');
 
 const LISTA = [
   '"Advertiser ID","Advertiser Name","Primary Region","Membership Status","Feed ID","Feed Name","Language","Vertical","Last Imported","Last Checked","No of products","URL"',
-  '17652,"Nike","BR","active",9001,"Nike BR","pt","Retail","","","3","https://x"',
+  '17652,"Nike","BR","active",9001,"Nike BR","Portuguese","Retail","","","3","https://x"', // como a Awin escreve de verdade
   '99999,"Loja não aprovada","BR","not joined",9002,"Outra","pt","Retail","","","10","https://y"',
 ].join('\n');
 const CATALOGO = [
@@ -51,5 +51,12 @@ test('busca de produtos da Awin: só lojas aprovadas, só com desconto e em esto
   await buscarProdutosAwin({ grupos, api, chave: 'k', pasta, cfg: {}, fetchImpl: fetchFalso(chamadas) });
   assert.equal(chamadas.filter((u) => u.includes('/download/')).length, 1, 'catálogo de hoje fica guardado');
   assert.match((await buscarProdutosAwin({ grupos, api, chave: '', pasta })).motivo, /AWIN_FEED_KEY/);
+  // Cada grupo recebe só o que é do assunto dele (e de marca, se for "só marcas"): o Perfumes não ganha o tênis.
+  const comNicho = [
+    { nome: 'Fitness', ativo: true, filtros: { palavrasObrigatorias: ['tenis'], soMarcas: true } },
+    { nome: 'Perfumes', ativo: true, filtros: { palavrasObrigatorias: ['perfume'] } },
+  ];
+  const r2 = await buscarProdutosAwin({ grupos: comNicho, api, chave: 'k', pasta, cfg: {}, fetchImpl: fetchFalso(chamadas) });
+  assert.deepEqual(r2.produtos.map((p) => [p.grupo, p.id]), [['Fitness', 'AWF-1']]);
   await assert.rejects(listarCatalogos('ruim', { fetchImpl: async () => new Response('{}', { status: 401 }) }), /recusou a chave/);
 });
