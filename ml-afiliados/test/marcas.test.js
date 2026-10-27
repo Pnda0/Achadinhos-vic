@@ -42,6 +42,17 @@ test('fila: oferta de marca sai antes da sem marca; feminino continua valendo', 
   assert.deepEqual(ordem, ['Batom Ruby Rose Feminino', 'Tênis Nike Revolution', 'Vestido Midi Feminino']);
   assert.equal(preferenciaDeMarca({ peso: 2, x: ['Nike'] })({ nome: 'Tênis Nike' }), 2);
   assert.equal(preferenciaDeMarca({})({ nome: 'Tênis Nike' }), 0);
+  // Marca com prioridade própria (WePink, pedido do dono, 27/10/2026) passa na frente das outras marcas.
+  const pref = preferenciaDeMarca({ peso: 1.5, perfumes: [{ marca: 'WePink', termos: ['wepink', 'we pink'], peso: 3 }, 'Dior'] });
+  assert.deepEqual([pref({ nome: 'Body Splash We Pink 200ml' }), pref({ nome: 'Perfume Dior Jadore' }), pref({ nome: 'Perfume qualquer' })], [3, 1.5, 0]);
+  // A lista real tem a WePink, e os brindes com a marca dela (sacola, porta-perfume) ficam de fora dos grupos.
+  const { loadGrupos } = await import('../src/config.js');
+  const { motivoRecusa } = await import('../src/pipeline.js');
+  const perfumes = loadGrupos().find((g) => g.nome === 'Perfumes').filtros;
+  assert.equal(marcaDoProduto({ nome: 'Body Splash Wepink Virginia 200ml' }), 'WePink');
+  for (const nome of ['Porta Body Splash Wepink 200ml Expositor Organizador de Perfumes', 'Sacolas Plásticas Com Logo Wepink Body Splash']) {
+    assert.equal(motivoRecusa({ id: 'X', nome, precoAtual: 50, descontoPct: 30, nota: 4.8, vendidos: '+100 vendidos' }, perfumes), 'palavra bloqueada', nome);
+  }
 });
 
 test('grupo "soMarcas" (Fitness, Beleza, Perfumes): só marca da lista entra e sai; Geral não filtra; cupom passa', async () => {

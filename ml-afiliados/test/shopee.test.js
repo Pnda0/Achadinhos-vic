@@ -108,10 +108,11 @@ test('busca própria na Shopee: marcas da lista + palavras, só produto forte, r
   assert.deepEqual(buscasDoGrupo({ marcas: ['cabelo'], buscas: ['Wella', 'escova'] }, marcas), ['Wella', "L'Oréal", 'escova']);
 
   const buscados = [];
+  const paginas = [];
   const item = (id, extra = {}) => ({ itemId: id, shopId: '9', nome: `Shampoo Wella ${id}`, precoAtual: 50, descontoPct: 30, vendas: 500, vendidos: '500 vendidos', nota: 4.8, imagem: 'https://cf/x.jpg', url: `https://shopee.com.br/product/9/${id}`, linkAfiliado: `https://s.shopee.com.br/${id}`, ...extra });
   const api = {
     ligada: () => true,
-    buscar: async (termo) => (buscados.push(termo), [item('1'), item('2', { vendas: 10 }), item('3', { nota: 3.9 }), item('4', { descontoPct: 5 }), item('5', { linkAfiliado: null })]),
+    buscar: async (termo, { pagina } = {}) => (buscados.push(termo), paginas.push(pagina), [item('1'), item('2', { vendas: 10 }), item('3', { nota: 3.9 }), item('4', { descontoPct: 5 }), item('5', { linkAfiliado: null })]),
   };
   const cfg = { buscasPorColeta: 2, vendasMinimas: 50, notaMinima: 4.5, descontoMinimo: 15, grupos: { Beleza: { buscas: ['a', 'b', 'c'] }, Geral: { buscas: ['d'] }, Perfumes: { ativo: false, buscas: ['p'] } } };
   const grupos = [{ nome: 'Beleza', ativo: true }, { nome: 'Geral', ativo: false }, { nome: 'Perfumes', ativo: true }];
@@ -125,6 +126,7 @@ test('busca própria na Shopee: marcas da lista + palavras, só produto forte, r
   assert.deepEqual(r.categorias['Shopee: Beleza'], { encontrados: 10, aceitos: 0 });
   await buscarOfertasShopee({ grupos, api, cfg, vez, esperar: async () => {} });
   assert.deepEqual(buscados.slice(2), ['c', 'a']); // a próxima coleta continua de onde parou
+  assert.deepEqual(paginas, [1, 1, 1, 2]); // deu a volta na lista: a página seguinte de resultados (coisa nova)
 
   const sem = await buscarOfertasShopee({ grupos, api: { ligada: () => false }, cfg });
   assert.match(sem.motivo, /SHOPEE_APP_ID/);

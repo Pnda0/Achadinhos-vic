@@ -8,7 +8,10 @@ import { casaTermo, normalizar } from './util.js';
 
 let cache = { em: 0, lista: null };
 
-/** Lista plana [{ marca, termos }] do arquivo (termo "re:..." = expressão regular no texto original). Sem `cfg`: relê o arquivo no máximo 1x por minuto. */
+/**
+ * Lista plana [{ marca, termos, peso? }] do arquivo (termo "re:..." = expressão regular no texto original). Sem `cfg`:
+ * relê o arquivo no máximo 1x por minuto. `peso` no item = prioridade própria da marca (WePink, pedido do dono, 27/10/2026).
+ */
 export function listaDeMarcas(cfg) {
   if (!cfg) {
     if (!cache.lista || Date.now() - cache.em > 60_000) cache = { em: Date.now(), lista: listaDeMarcas(loadMarcas()) };
@@ -19,7 +22,7 @@ export function listaDeMarcas(cfg) {
     if (chave.startsWith('_') || !Array.isArray(itens)) continue;
     for (const item of itens) {
       const o = typeof item === 'string' ? { marca: item } : item;
-      if (o?.marca) lista.push({ marca: o.marca, termos: o.termos?.length ? o.termos : [o.marca] });
+      if (o?.marca) lista.push({ marca: o.marca, termos: o.termos?.length ? o.termos : [o.marca], ...(Number(o.peso) > 0 && { peso: Number(o.peso) }) });
     }
   }
   return lista;
@@ -36,9 +39,13 @@ export function marcaDoProduto(p, lista = listaDeMarcas()) {
   return null;
 }
 
-/** Nota extra na fila para oferta de marca (0 sem marca). Lê o arquivo uma vez por chamada de envio. */
+/** Nota extra na fila para oferta de marca (0 sem marca; a marca com `peso` próprio usa o dela). Lê o arquivo uma vez por chamada de envio. */
 export function preferenciaDeMarca(cfg = loadMarcas()) {
   const lista = listaDeMarcas(cfg);
   const peso = Number(cfg?.peso) || 1.5;
-  return (p) => (lista.length && marcaDoProduto(p, lista) ? peso : 0);
+  const proprio = new Map(lista.filter((m) => m.peso).map((m) => [m.marca, m.peso]));
+  return (p) => {
+    const marca = lista.length ? marcaDoProduto(p, lista) : null;
+    return marca ? proprio.get(marca) ?? peso : 0;
+  };
 }

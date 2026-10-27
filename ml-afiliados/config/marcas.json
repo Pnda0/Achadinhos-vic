@@ -1,5 +1,5 @@
 {
-  "_comentario": "MARCAS QUE SAEM PRIMEIRO (pedido do dono, 15/10/2026, listas da Victória). Em TODOS os grupos, oferta com uma destas marcas no nome ou no texto do post passa na frente das outras (o público feminino continua valendo: masculino no máximo 1 a cada N posts). Cada item é o nome da marca ou {\"marca\": \"Nome\", \"termos\": [\"jeito 1\", \"jeito 2\"]} quando ela aparece escrita de outro jeito. Maiúsculas e acentos não importam. 'peso' = quanto a marca vale na fila: com 1,5 uma oferta de marca neutra (ex.: Nike unissex) passa na frente de uma feminina sem marca. Depois de mexer aqui, reinicie o bot.",
+  "_comentario": "MARCAS QUE SAEM PRIMEIRO (pedido do dono, 15/10/2026, listas da Victória). Em TODOS os grupos, oferta com uma destas marcas no nome ou no texto do post passa na frente das outras (o público feminino continua valendo: masculino no máximo 1 a cada N posts). Cada item é o nome da marca ou {\"marca\": \"Nome\", \"termos\": [\"jeito 1\", \"jeito 2\"]} quando ela aparece escrita de outro jeito. Maiúsculas e acentos não importam. 'peso' = quanto a marca vale na fila: com 1,5 uma oferta de marca neutra (ex.: Nike unissex) passa na frente de uma feminina sem marca. Depois de mexer aqui, reinicie o bot. Um item pode ter 'peso' próprio, que vale no lugar do geral: a WePink tem 3 (pedido do dono, 27/10/2026: 'procure por perfumes da wepink também e priorize') e passa na frente das outras marcas. Brindes com o nome dela (sacola, caneca, porta-perfume, expositor) estão nas palavras bloqueadas de Beleza e Perfumes (config/nichos.json).",
   "peso": 1.5,
   "_comentarioNichos": "Cada lista também vale como palavra do grupo do nicho: produto dessas marcas entra no grupo mesmo sem a palavra do produto no nome (ex.: 'Elseve' vai para o Beleza). Perfumes fica de fora (16/10/2026): Dior, Calvin Klein, Burberry... vendem roupa e casa — no Perfumes o nome precisa ter palavra de perfume.",
   "nichos": {
@@ -160,6 +160,14 @@
     "The Ordinary"
   ],
   "perfumes": [
+    {
+      "marca": "WePink",
+      "termos": [
+        "wepink",
+        "we pink"
+      ],
+      "peso": 3
+    },
     "Carolina Herrera",
     {
       "marca": "Lancôme",

@@ -34,14 +34,18 @@ export async function buscarOfertasShopee({ grupos, api = new Shopee(), cfg = lo
     const lista = buscasDoGrupo(cfg.grupos[g.nome], marcas);
     if (!lista.length) continue;
     const n = Math.min(lista.length, cfg.buscasPorColeta || 12);
-    const inicio = (vez[g.nome] || 0) % lista.length;
-    vez[g.nome] = (inicio + n) % lista.length;
+    // Cada volta completa na lista usa a página seguinte de resultados (1, 2, 3, 1...): a página 1 de sempre só trazia o
+    // que já tinha saído ("enviado recentemente") e a fila do Perfumes e do Fitness ficava vazia (27/10/2026).
+    const ciclo = lista.length * Math.max(1, cfg.paginas ?? 3);
+    const inicio = (vez[g.nome] || 0) % ciclo;
+    vez[g.nome] = (inicio + n) % ciclo;
     const c = (categorias[`Shopee: ${g.nome}`] = { encontrados: 0, aceitos: 0 });
     for (let i = 0; i < n; i++) {
-      const termo = lista[(inicio + i) % lista.length];
+      const k = (inicio + i) % ciclo;
+      const termo = lista[k % lista.length];
       let itens;
       try {
-        itens = await api.buscar(termo, { limite: cfg.porBusca || 20 });
+        itens = await api.buscar(termo, { limite: cfg.porBusca || 20, pagina: Math.floor(k / lista.length) + 1 });
       } catch (e) {
         log(`  🛍️  Shopee "${termo}": ${String(e.message).split('\n')[0]}`);
         if (/signature|credential|10020|10031|auth/i.test(e.message)) throw e; // credencial errada: não adianta seguir

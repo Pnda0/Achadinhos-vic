@@ -254,6 +254,8 @@ Inspirado nos grandes grupos (o Promobit compara cada oferta com um preço de re
 
 ## 3.13f Busca de reposição
 
+**Desde 27/10/2026** (o dono: "não pode existir a fila vazia de jeito nenhum"): no máximo uma a cada **30 min** por grupo (`REPOSICAO_MIN` em `src/index.js`; eram 2 h por causa do ML, que a reposição não usa mais), e cada volta na lista de buscas da Shopee usa a página seguinte de resultados (`"paginas": 3` em `config/shopee.json`), porque a página 1 só trazia o que já tinha saído. Os canais de perfume (@promobigodeperfumes, @perfumepromo) postam quase só Mercado Livre (link meli.la), que não dá para trocar enquanto o ML barrar o bot.
+
 Desde 15/10/2026: grupo com busca própria (categorias do ML ou Shopee) que fica com a fila vazia ganha uma busca extra — conferido ao ligar e a cada 10 min das 8h às 21h, no máximo uma busca extra a cada 2 horas (`REPOSICAO_MIN` em `src/index.js`). Assim, horário de coleta perdido (PC desligado, bot reiniciando) não deixa o grupo parado até o dia seguinte.
 
 ## 3.13e Busca própria na Shopee
@@ -261,6 +263,8 @@ Desde 15/10/2026: grupo com busca própria (categorias do ML ou Shopee) que fica
 Desde 15/10/2026 (`src/shopee-busca.js`, `config/shopee.json`), em cada busca (`CRON_COLETA`) o bot procura na Shopee pela API de afiliados: no Fitness, Beleza e Perfumes, uma busca por marca da lista de cada nicho (`config/marcas.json`); no Geral, palavras femininas (vestido, bolsa, bijuteria...). Os mais vendidos primeiro, e só entra com **50+ vendas, nota 4,5+ e 15%+ de desconto** (ajustável no arquivo), além dos filtros do grupo. Cada coleta faz `buscasPorColeta` buscas por grupo, revezando a lista. O link já vem da API com o seu id de afiliado. Precisa de `SHOPEE_APP_ID`/`SHOPEE_SECRET` no `.env`.
 
 ## 3.13d Marcas primeiro
+
+**WePink com prioridade (27/10/2026, pedido do dono):** item da lista pode ter `"peso"` próprio (`config/marcas.json`); a WePink tem 3 (as outras marcas, o `peso` geral de 1,5), então passa na frente de qualquer outra marca na fila. Ela não tem loja oficial na Shopee nem programa na Awin: entra pela busca da Shopee ("perfume WePink", "body splash wepink"), pelos canais da Amazon e pela caixa de entrada; brindes com o nome dela (sacola, caneca, porta-perfume, expositor, penteadeira, camiseta) são palavras bloqueadas em Beleza e Perfumes.
 
 `config/marcas.json` (listas da Victória, 15/10/2026: cabelo, maquiagem, skincare, perfumes, fitness) vale em todos os grupos. Oferta com uma dessas marcas no nome ou no texto do post ganha `peso` (1,5) na fila, somado à preferência feminina: feminina de marca > neutra de marca > feminina sem marca > neutra sem marca. O limite de masculino (1 a cada N) continua. No espelho, oferta de marca pode entrar até o dobro do `maxPorHora`. **Só marcas**: grupo com `"soMarcas": true` em `config/grupos.json` (hoje Fitness, Beleza e Perfumes, escolha do dono em 15/10/2026) só recebe produto de marca da lista, na busca e de novo na hora de postar (cupom de loja e caixa de entrada passam). Cada lista também vale como palavra do nicho (`"nichos"` em marcas.json): Elseve entra no Beleza sem "shampoo" no nome. Para incluir uma marca, acrescente na lista e reinicie o bot. Marca escrita de outro jeito: `{"marca": "Nome", "termos": ["jeito 1", "jeito 2"]}` (`src/marcas.js`).
 

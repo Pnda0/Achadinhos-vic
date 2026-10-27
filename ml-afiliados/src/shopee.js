@@ -129,8 +129,8 @@ export class Shopee {
    * Busca por palavra (a busca própria, src/shopee-busca.js): os mais vendidos primeiro (sortType 2).
    * Cada item já vem com `offerLink`, o link de afiliado do dono.
    */
-  async buscar(palavra, { limite = 20, ordem = 2 } = {}) {
-    const d = await this.graphql(`{ productOfferV2(keyword: ${JSON.stringify(String(palavra))}, sortType: ${Number(ordem)}, page: 1, limit: ${Number(limite)}) { nodes { ${CAMPOS} } } }`);
+  async buscar(palavra, { limite = 20, ordem = 2, pagina = 1 } = {}) {
+    const d = await this.graphql(`{ productOfferV2(keyword: ${JSON.stringify(String(palavra))}, sortType: ${Number(ordem)}, page: ${Number(pagina) || 1}, limit: ${Number(limite)}) { nodes { ${CAMPOS} } } }`);
     return (d.productOfferV2?.nodes || []).map(produtoDaShopee);
   }
 

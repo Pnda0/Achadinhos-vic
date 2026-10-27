@@ -355,7 +355,14 @@
       "cortador+grama",
       "secador+roupa",
       "escova+dente",
-      "escova+dental"
+      "escova+dental",
+      "porta+perfume",
+      "porta+body+splash",
+      "expositor",
+      "penteadeira",
+      "sacola",
+      "caneca",
+      "camiseta"
     ],
     "titulos": {
       "alto": [
@@ -429,7 +436,13 @@
       "frasco+recarregavel",
       "atomizador",
       "borrifador",
-      "contratipo"
+      "contratipo",
+      "porta+body+splash",
+      "expositor",
+      "penteadeira",
+      "sacola",
+      "caneca",
+      "camiseta"
     ],
     "titulos": {
       "alto": [

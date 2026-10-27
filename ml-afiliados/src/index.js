@@ -85,9 +85,11 @@ const cicloColeta = exclusivo('coleta', async (apenasGrupos) => {
 /**
  * Busca de reposição (pedido do dono, 15/10/2026: "acabaram as ofertas do Beleza e do Fitness"): grupo que tem
  * busca própria (categorias do ML ou Shopee) e ficou sem nada na fila ganha uma busca extra — no máximo uma a cada
- * REPOSICAO_MIN minutos, para não forçar o Mercado Livre. Vale também ao ligar (o PC pode ter perdido o horário).
+ * REPOSICAO_MIN minutos. Vale também ao ligar (o PC pode ter perdido o horário). Era 2 h para não forçar o ML; como a
+ * reposição não vai mais ao ML (só Shopee, Awin e cupons), caiu para 30 min (o dono, 27/10/2026: "não pode existir a
+ * fila vazia de jeito nenhum"). Cada busca da Shopee pega outra página de resultados (shopee-busca.js).
  */
-const REPOSICAO_MIN = 120;
+const REPOSICAO_MIN = 30;
 function gruposSemFila() {
   const shopee = loadShopee();
   const comBusca = new Set([
