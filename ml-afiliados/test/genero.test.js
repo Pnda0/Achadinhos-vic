@@ -71,3 +71,15 @@ test('Geral (1 masculino a cada 4): feminino > neutro > masculino', async () => 
   assert.match(ordem[3], /^M/);
   assert.equal(ordem[4], 'espera');
 });
+
+// Casos reais de 27/10/2026 (o dono: "tá postando coisa masculina demais"): camisas de homem e árabes masculinos saíam como neutros.
+test('masculino que o anúncio não chama de masculino: camisas sem "feminina", árabes masculinos famosos, plural', () => {
+  assert.equal(generoDoProduto({ nome: 'Kit com 3 Camisas Dry Fit "Max Titanium" Ultra Fit Para Treino Academia' }), 'm');
+  assert.equal(generoDoProduto({ nome: 'Camisa Social Feminina Manga Longa' }), 'f');
+  assert.equal(generoDoProduto({ nome: 'Bermuda Ciclista Feminina' }), 'f');
+  assert.equal(generoDoProduto({ nome: 'Lattafa QAED Al Fursan' }), 'm');
+  assert.equal(generoDoProduto({ nome: 'Perfume Arabe Dubai Odyssey Mandarin Sky Armaf M 100ml' }), 'm');
+  assert.equal(generoDoProduto({ nome: 'Kit 2 Camisetas Masculinas Básicas' }), 'm');
+  assert.equal(generoDoProduto({ nome: 'Leggings Femininas Kit 3' }), 'f');
+  assert.equal(generoDoProduto({ nome: 'Creatina Monohidratada 300g' }), null);
+});

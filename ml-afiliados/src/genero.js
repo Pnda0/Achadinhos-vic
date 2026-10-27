@@ -9,15 +9,19 @@ import { normalizar } from './util.js';
 // Palavras que dizem o gênero (o ML quase sempre escreve "Feminino"/"Masculino" no nome do anúncio).
 // Perfumes masculinos famosos que o anúncio às vezes não chama de "masculino" (visto em 15/10/2026: Bad Boy, Le Beau...).
 const MASCULINO =
-  /\b(masculino|masculina|masc|homme|homem|homens|for men|for him|pour homme|men|man|uomo|hombre|cueca|cuecas|barba|barbear|barbeador|bad boy|le beau|le male|invictus|phantom|1 million|one million|sauvage|bleu de chanel|acqua di gio|eros|toy boy|wanted|aventus|boss bottled|club 6|malbec|quasar|kaiak|asad|hawas|fakhar black|ameeri|polo blue|polo red)\b/;
+  /\b(masculino|masculina|masculinos|masculinas|masc|homme|homem|homens|for men|for him|pour homme|men|man|uomo|hombre|cueca|cuecas|barba|barbear|barbeador|bad boy|le beau|le male|invictus|phantom|1 million|one million|sauvage|bleu de chanel|acqua di gio|eros|toy boy|wanted|aventus|boss bottled|club 6|malbec|quasar|kaiak|asad|hawas|fakhar black|ameeri|polo blue|polo red|al fursan|qaed|mandarin sky|club de nuit intense|9pm|supremacy|safeer)\b/;
+// Peças que, sem "feminina" no anúncio, quase sempre são de homem (27/10/2026: "Kit com 3 Camisas Dry Fit Max Titanium").
+const MASCULINO_SE_NAO_FEMININO = /\b(camisa|camisas|bermuda|bermudas|sunga|sungas)\b/;
 const FEMININO =
-  /\b(feminino|feminina|fem|femme|woman|women|for her|pour femme|mulher|mulheres|lady|girl|menina|meninas|sutia|calcinha|calcinhas|lingerie|biquini|maio|vestido|saia|blusinha|cropped|legging|top fitness|batom|maquiagem|rimel|mascara de cilios|base liquida|esmalte|chapinha|prancha|babyliss|depilador|depiladora|absorvente|yara|olympea|la vie est belle|idole|miss dior|jadore|j adore|coco mademoiselle|alien|scandal|fame|la belle|bareeq al dhahab)\b/;
+  /\b(feminino|feminina|femininos|femininas|fem|femme|woman|women|for her|pour femme|mulher|mulheres|lady|girl|menina|meninas|sutia|calcinha|calcinhas|lingerie|biquini|maio|vestido|saia|blusinha|cropped|legging|top fitness|batom|maquiagem|rimel|mascara de cilios|base liquida|esmalte|chapinha|prancha|babyliss|depilador|depiladora|absorvente|yara|olympea|la vie est belle|idole|miss dior|jadore|j adore|coco mademoiselle|alien|scandal|fame|la belle|bareeq al dhahab)\b/;
 
 export function generoDoProduto(p) {
   const t = normalizar(`${p.nome || ''} ${p.textoPronto || ''}`);
   const m = MASCULINO.test(t);
   const f = FEMININO.test(t);
-  return m && !f ? 'm' : f && !m ? 'f' : null;
+  if (m && !f) return 'm';
+  if (f && !m) return 'f';
+  return !f && MASCULINO_SE_NAO_FEMININO.test(t) ? 'm' : null;
 }
 export const generoDoPerfume = generoDoProduto;
 

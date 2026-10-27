@@ -115,7 +115,7 @@
       },
       "nicho": "fitness",
       "telegram": "-1004454980210",
-      "preferirFeminino": 4,
+      "preferirFeminino": 10,
       "whatsapp": "Achadinhos Vic - Fitness",
       "soMarcas": true
     },
@@ -127,7 +127,7 @@
       "filtros": {},
       "nicho": "beleza",
       "telegram": "-1004455813335",
-      "preferirFeminino": 4,
+      "preferirFeminino": 10,
       "whatsapp": "Achadinhos Vic - Beleza",
       "soMarcas": true
     },
@@ -141,10 +141,11 @@
       },
       "nicho": "perfumes",
       "telegram": "-1004316376505",
-      "preferirFeminino": 5,
+      "preferirFeminino": 10,
       "whatsapp": "Achadinhos Vic - Perfumes",
       "soMarcas": true
     }
   ],
+  "_comentarioMasculino": "Masculino no máximo 1 a cada 10 posts em Fitness, Beleza e Perfumes (o dono, 27/10/2026: 'tá postando coisa masculina demais'); antes era 1 a cada 4 (1 a cada 5 no Perfumes). O número é o 'preferirFeminino' de cada grupo.",
   "_comentarioCapinha": "Capinha, capa e película de celular bloqueadas em todos os grupos (pedido do dono, 21/10/2026): a busca da Shopee por marca (\"Nike\") trazia capinha falsificada com o logo."
 }
