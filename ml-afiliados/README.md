@@ -351,6 +351,7 @@ Com as páginas de ofertas bloqueadas, o ML voltou pela **API oficial**, com o a
 - **O que a API não deixa** (aplicativo não certificado, testado em 27/10/2026): busca por palavra, anúncios avulsos (`/items`) e avaliações dão 403. Por isso só os itens "PRODUCT" da lista de mais vendidos.
 - Roda nas 3 buscas do dia e na de reposição, mesmo com as páginas de ofertas em pausa (são caminhos diferentes). Nomes e fotos dos produtos ficam guardados 7 dias (`data/ml-produtos-cache.json`): cada busca pede só a lista e os preços.
 - Medido em 27/10/2026: ~60 ofertas diferentes no Beleza, ~7 no Fitness (suplementos; roupa fitness feminina não tem marca da lista entre os mais vendidos), 0 no Perfumes (os mais vendidos estavam com menos de 20% de desconto).
+- **Reserva, só no Perfumes** (o dono, 27/10/2026: "quando for 20% de desconto, pode colocar, mas só se não tiver as outras… só pra perfume"): mais vendido do ML com desconto entre 10% e 20% (`"reservaDescontoMinimo": 10` no grupo, em `config/grupos.json`) entra na fila marcado como `reserva` e só sai quando nenhuma outra oferta pode sair naquela hora — inclusive quando a Shopee está esperando a vez dela (`Store.proximo`). Os outros grupos seguem com o mínimo de sempre.
 
 ## 3.15d Shopee com limite
 
@@ -382,10 +383,13 @@ Para tirar o bot do PC de casa (22/10/2026: um PC com 4 GB de memória só para 
 2. **No PC de casa**: `cd ml-afiliados && npm run migrar` — desliga o bot daqui **sem religar**, tira o atalho do início automático do Windows (vira `.desligado`) e gera `Downloads/achadinhos-migracao-AAAA-MM-DD.tar.gz` (~2 MB) com o `.env` (já com `WHATSAPP_NUMERO`, o chip do bot), a pasta `data/` (fila, histórico, preços, analytics, cookies do ML; sem perfil de navegador nem sessão do WhatsApp) e o login do Cloudflare do wrangler (o painel continua publicando). **Tem senhas**: pendrive ou rede local, e apague depois. (`npm run migrar -- --teste` só gera o arquivo.)
 3. **No servidor**: `bash /opt/achadinhos/ml-afiliados/linux/receber.sh <arquivo>` — põe tudo no lugar e liga o bot. Em ~1 min chega no Telegram do dono o **código para conectar o WhatsApp** (celular do chip → Aparelhos conectados → Conectar com número de telefone).
 4. Dia a dia: `journalctl -u ml-afiliados -f` (ver), `systemctl restart ml-afiliados` ou `cd /opt/achadinhos/ml-afiliados && sudo -u bot npm run reiniciar` (reiniciar, com `git pull`), `systemctl stop ml-afiliados` (parar).
+5. **Para o Claude cuidar daqui do PC** (27/10/2026): `sudo bash /opt/achadinhos/ml-afiliados/linux/liberar-claude.sh` no servidor deixa o usuário do SSH ligar/parar/reiniciar o serviço sem senha e ler o log; no PC, o apelido `achadinhos` no `~/.ssh/config` com chave sem senha. Aí: `ssh achadinhos "sudo systemctl restart ml-afiliados"` e `ssh achadinhos "tail -50 /opt/achadinhos/ml-afiliados/data/bot.log"`.
+
+**Passo a passo para o dono**, do primeiro SSH até o bot ligado (chave, apelido, `scp` do arquivo da mudança, problemas comuns): [`linux/CONECTAR-SSH.md`](linux/CONECTAR-SSH.md).
 
 Voltar para o PC de casa: pare o serviço no servidor, tire o `.desligado` do atalho na pasta Inicializar e abra o `3-iniciar.bat` (com a pasta `data/` de volta do servidor, se quiser a fila e o histórico atuais). **Nunca os dois ligados.**
 
-Atenção: o Mercado Livre bloqueia leitura automática de páginas (verificação/captcha desde 21/10/2026) — no servidor também; Shopee e Awin usam API oficial e não mudam.
+Atenção: o Mercado Livre bloqueia leitura automática das páginas de ofertas (verificação/captcha desde 21/10/2026) — no servidor também; os mais vendidos pela API oficial (3.15f), a Shopee e a Awin usam API e não mudam (`ML_CLIENT_ID`/`ML_CLIENT_SECRET` vão no `.env` do arquivo da mudança).
 
 ## 4. Uso
 

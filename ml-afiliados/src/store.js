@@ -230,6 +230,10 @@ export class Store {
   proximo(grupo, { aceitar = () => true, preferir = null } = {}) {
     let prontos = this.list((p) => p.grupo === grupo && p.status === 'PRONTO' && aceitar(p));
     if (!prontos.length) return null;
+    // Reserva (Perfumes: mais vendido do ML com desconto abaixo do mínimo — o dono, 27/10/2026: "pode colocar, mas só
+    // se não tiver as outras"): só sai quando nenhuma outra oferta pode sair agora.
+    const normais = prontos.filter((p) => !p.reserva);
+    if (normais.length) prontos = normais;
     const enviados = this.list((p) => p.grupo === grupo && p.status === 'ENVIADO' && p.enviadoEm).sort((a, b) => String(a.enviadoEm).localeCompare(String(b.enviadoEm)));
     const ultimo = enviados.at(-1);
     // Cupom de loja (Awin) passa na frente ANTES das preferências (ele não tem gênero nem marca no nome e perdia a vez

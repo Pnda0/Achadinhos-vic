@@ -156,19 +156,25 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
       log(`❌ Mercado Livre (API): ${mlApiErro}`);
       break;
     }
+    // Reserva (só o Perfumes, "reservaDescontoMinimo" em grupos.json): desconto abaixo do mínimo do grupo, mas acima
+    // deste, entra marcado como reserva e só sai quando não há outra oferta (Store.proximo).
+    const minimo = grupo.filtros?.descontoMinimo || 0;
+    const reserva = grupo.reservaDescontoMinimo;
+    const filtros = reserva != null ? { ...grupo.filtros, descontoMinimo: Math.min(minimo, reserva) } : grupo.filtros;
     for (const p of lista) {
       c.encontrados++;
       encontrados++;
-      const motivo = recusa(p, grupo.filtros);
+      const motivo = recusa(p, filtros);
       if (motivo) {
         recusas[motivo] = (recusas[motivo] || 0) + 1;
         evento('recusado', p, motivo);
         continue;
       }
+      p.reserva = (p.descontoPct || 0) < minimo;
       c.aceitos++;
       if (store.upsert(p)) {
         novos++;
-        evento('na_fila', p);
+        evento('na_fila', p, p.reserva ? `reserva (desconto abaixo de ${minimo}%)` : null);
       }
     }
     store.save();

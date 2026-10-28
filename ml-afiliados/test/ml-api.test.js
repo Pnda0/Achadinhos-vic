@@ -109,3 +109,37 @@ test('API oficial do ML na coleta: roda mesmo com as páginas de ofertas em paus
   assert.equal(r.recusas['desconto baixo'], 1);
   assert.equal(s.list((p) => p.id === 'MLB10')[0].status, 'PENDENTE', 'vai para o gerador de links como as outras do ML');
 });
+
+test('Perfumes: mais vendido do ML com desconto abaixo de 20% entra como reserva e só sai quando não há outra oferta', async () => {
+  const s = new Store(path.join(tmp(), 'db.json'));
+  const desligado = async () => ({ produtos: [], categorias: {}, motivo: 'desligada' });
+  const base = { imagem: 'https://img/x.jpg', maisVendidoML: 3, vendidos: null };
+  const filtros = { descontoMinimo: 20, diasSemRepetir: 5 };
+  const r = await coletar(s, {
+    grupos: [
+      { nome: 'Perfumes', ativo: true, filtros, reservaDescontoMinimo: 10 },
+      { nome: 'Beleza', ativo: true, filtros }, // sem reserva: a regra de sempre
+    ],
+    categoriasML: [
+      { grupo: 'Perfumes', nome: 'ML mais vendidos: Perfumes', maisVendidos: 'MLB6284', ativo: true },
+      { grupo: 'Beleza', nome: 'ML mais vendidos: Pele', maisVendidos: 'MLB199407', ativo: true },
+    ],
+    maisVendidosML: async (cat) => [
+      { ...base, grupo: cat.grupo, id: `${cat.grupo}-A`, nome: 'Floratta O Boticário', url: `https://p/${cat.grupo}A`, precoAtual: 108, descontoPct: 15 },
+      { ...base, grupo: cat.grupo, id: `${cat.grupo}-B`, nome: 'Humor Natura', url: `https://p/${cat.grupo}B`, precoAtual: 65, descontoPct: 5 },
+    ],
+    esperar: async () => {},
+    shopee: desligado, amazon: desligado, awin: desligado, awinProdutos: desligado,
+  });
+  assert.equal(r.novos, 1, 'só o Floratta (15%) do Perfumes; 5% não, e no Beleza 15% também não');
+  const floratta = s.list((p) => p.id === 'Perfumes-A')[0];
+  assert.equal(floratta.reserva, true);
+  s.setLink('https://p/PerfumesA', 'https://meli.la/a');
+
+  // Com outra oferta na fila, a reserva espera; sozinha, sai.
+  s.upsert({ id: 'SH1', grupo: 'Perfumes', loja: 'shopee', nome: 'Yara Lattafa', url: 'https://s/1', linkAfiliado: 'https://s.shopee.com.br/x', precoAtual: 180, descontoPct: 40 });
+  assert.equal(s.proximo('Perfumes').id, 'SH1');
+  assert.equal(s.proximo('Perfumes', { aceitar: (p) => p.loja !== 'shopee' }).id, 'Perfumes-A', 'Shopee esperando a vez: a reserva preenche');
+  s.setStatus(s.list((p) => p.id === 'SH1')[0], 'ENVIADO', { enviadoEm: new Date().toISOString() });
+  assert.equal(s.proximo('Perfumes').id, 'Perfumes-A');
+});

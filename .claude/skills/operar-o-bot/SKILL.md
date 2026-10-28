@@ -34,6 +34,14 @@ Enquanto isso, o ML chega pela **API oficial** (27/10/2026, README 3.15f): mais 
 dono no DevCenter (`ML_CLIENT_ID`/`ML_CLIENT_SECRET` no `.env`, token sozinho em `data/ml-token-app.json`). Erro dela
 aparece no log como `❌ Mercado Livre (API)`. Busca por palavra, `/items` e avaliações dão 403 (aplicativo não certificado).
 
+## Se o bot estiver no servidor Linux
+
+Depois da mudança (`ml-afiliados/linux/CONECTAR-SSH.md`), o bot NÃO roda mais neste PC (o atalho de início vira
+`.desligado`). Confira antes: `ssh achadinhos "systemctl is-active ml-afiliados"`. Aí, pelo PC:
+`ssh achadinhos "sudo systemctl restart ml-afiliados"` (reinicia com calma e puxa o GitHub) e
+`ssh achadinhos "tail -50 /opt/achadinhos/ml-afiliados/data/bot.log"`. Os arquivos (`data/`, `.env`) ficam em
+`/opt/achadinhos/ml-afiliados/` no servidor. Nunca ligue o bot no PC com o serviço ativo.
+
 ## Investigar
 
 - `data/bot.log` — tudo que o bot fez (hora local). Linhas úteis: `📤 [Grupo]` postou, `📲 [WhatsApp Grupo]`, `⏭️` barrado na hora de postar, `📭 fila vazia`, `🔁 Busca de reposição`, `✅ Coleta:` com recusas por motivo, `Por categoria (vistos → aprovados)`.

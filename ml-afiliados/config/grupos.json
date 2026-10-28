@@ -143,7 +143,9 @@
       "telegram": "-1004316376505",
       "preferirFeminino": 10,
       "whatsapp": "Achadinhos Vic - Perfumes",
-      "soMarcas": true
+      "soMarcas": true,
+      "reservaDescontoMinimo": 10,
+      "_comentarioReserva": "27/10/2026, o dono (só para perfume): mais vendido do Mercado Livre com desconto abaixo do mínimo (20%) pode entrar, mas só se não tiver as outras. Entre 10% e 20% entra na fila como reserva e só sai quando nenhuma outra oferta pode sair naquela hora (inclusive quando a Shopee está esperando a vez dela)."
     }
   ],
   "_comentarioMasculino": "Masculino no máximo 1 a cada 10 posts em Fitness, Beleza e Perfumes (o dono, 27/10/2026: 'tá postando coisa masculina demais'); antes era 1 a cada 4 (1 a cada 5 no Perfumes). O número é o 'preferirFeminino' de cada grupo.",
