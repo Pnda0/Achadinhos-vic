@@ -110,5 +110,119 @@
     "url": "https://www.mercadolivre.com.br/ofertas?category=MLB1246&container_id=MLB779362-1&promotion_type=lightning",
     "ativo": true,
     "paginas": 2
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML mais vendidos: Perfumes",
+    "maisVendidos": "MLB6284",
+    "ativo": true
+  },
+  {
+    "grupo": "Beleza",
+    "nome": "ML mais vendidos: Beleza e Cuidado Pessoal",
+    "maisVendidos": "MLB1246",
+    "ativo": true
+  },
+  {
+    "grupo": "Beleza",
+    "nome": "ML mais vendidos: Maquiagem",
+    "maisVendidos": "MLB1248",
+    "ativo": true
+  },
+  {
+    "grupo": "Beleza",
+    "nome": "ML mais vendidos: Maquiagem: lábios",
+    "maisVendidos": "MLB437496",
+    "ativo": true
+  },
+  {
+    "grupo": "Beleza",
+    "nome": "ML mais vendidos: Maquiagem: rosto",
+    "maisVendidos": "MLB437489",
+    "ativo": true
+  },
+  {
+    "grupo": "Beleza",
+    "nome": "ML mais vendidos: Maquiagem: olhos",
+    "maisVendidos": "MLB437499",
+    "ativo": true
+  },
+  {
+    "grupo": "Beleza",
+    "nome": "ML mais vendidos: Kit de maquiagem",
+    "maisVendidos": "MLB70617",
+    "ativo": true
+  },
+  {
+    "grupo": "Beleza",
+    "nome": "ML mais vendidos: Cabelo",
+    "maisVendidos": "MLB1263",
+    "ativo": true
+  },
+  {
+    "grupo": "Beleza",
+    "nome": "ML mais vendidos: Shampoos e condicionadores",
+    "maisVendidos": "MLB1265",
+    "ativo": true
+  },
+  {
+    "grupo": "Beleza",
+    "nome": "ML mais vendidos: Tratamentos para o cabelo",
+    "maisVendidos": "MLB32130",
+    "ativo": true
+  },
+  {
+    "grupo": "Beleza",
+    "nome": "ML mais vendidos: Cremes de pentear",
+    "maisVendidos": "MLB388017",
+    "ativo": true
+  },
+  {
+    "grupo": "Beleza",
+    "nome": "ML mais vendidos: Pele",
+    "maisVendidos": "MLB199407",
+    "ativo": true
+  },
+  {
+    "grupo": "Beleza",
+    "nome": "ML mais vendidos: Cuidado facial",
+    "maisVendidos": "MLB264874",
+    "ativo": true
+  },
+  {
+    "grupo": "Beleza",
+    "nome": "ML mais vendidos: Cuidado do corpo",
+    "maisVendidos": "MLB1262",
+    "ativo": true
+  },
+  {
+    "grupo": "Beleza",
+    "nome": "ML mais vendidos: Kits de cuidado com a pele",
+    "maisVendidos": "MLB264880",
+    "ativo": true
+  },
+  {
+    "grupo": "Beleza",
+    "nome": "ML mais vendidos: Proteção solar",
+    "maisVendidos": "MLB8133",
+    "ativo": true
+  },
+  {
+    "grupo": "Beleza",
+    "nome": "ML mais vendidos: Limpeza facial",
+    "maisVendidos": "MLB1257",
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML mais vendidos: Esportes e Fitness",
+    "maisVendidos": "MLB1276",
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML mais vendidos: Suplementos alimentares",
+    "maisVendidos": "MLB264201",
+    "ativo": true
   }
 ]

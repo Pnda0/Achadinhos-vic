@@ -30,6 +30,9 @@ ofertas sem o bot caía em "account-verification"). Tentado em 27/10 sem sucesso
 login na janela) e cookies novos copiados do Chrome do dono, onde as ofertas abriam (o bot seguiu caindo em
 `captcha/wall/logged`; o gerador de links continuou abrindo). Ou seja, o ML barra o bot em si: não insista, não aumente
 páginas nem tente se passar por navegador. O bot tenta sozinho nas buscas do dia e volta quando o ML liberar.
+Enquanto isso, o ML chega pela **API oficial** (27/10/2026, README 3.15f): mais vendidos por categoria, aplicativo do
+dono no DevCenter (`ML_CLIENT_ID`/`ML_CLIENT_SECRET` no `.env`, token sozinho em `data/ml-token-app.json`). Erro dela
+aparece no log como `❌ Mercado Livre (API)`. Busca por palavra, `/items` e avaliações dão 403 (aplicativo não certificado).
 
 ## Investigar
 

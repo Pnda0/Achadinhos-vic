@@ -125,6 +125,9 @@ export const settings = {
   affiliateTag: env.ML_AFFILIATE_TAG?.trim() || '',
   cookiesEnv: env.ML_COOKIES?.trim() || '',
   csrfToken: env.ML_CSRF_TOKEN?.trim() || '',
+  // Aplicativo do dono no DevCenter do ML (API oficial: mais vendidos por categoria — src/ml/api.js).
+  mlClientId: env.ML_CLIENT_ID?.trim() || '',
+  mlClientSecret: env.ML_CLIENT_SECRET?.trim() || '',
   sender: (env.SENDER || 'console').toLowerCase(),
   evolution: { url: env.EVOLUTION_URL, instance: env.EVOLUTION_INSTANCE, apikey: env.EVOLUTION_APIKEY },
   wuzapi: { url: env.WUZAPI_URL, token: env.WUZAPI_TOKEN },

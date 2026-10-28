@@ -44,6 +44,8 @@ export const ehDoMercadoLivre = (p) => !p.loja || p.loja === 'ml' || p.loja === 
 /** Motivo para barrar o produto pela regra de vendas, ou null se ele pode seguir. */
 export function motivoVendas(p, minimo = VENDAS_MINIMAS) {
   if (!ehDoMercadoLivre(p)) return null;
+  // Da API oficial (src/ml/api.js): entre os 20 mais vendidos de uma categoria grande. A API não dá o número.
+  if (p.maisVendidoML) return null;
   const v = lerVendas(p.vendidos);
   if (!v) return p.vendidos == null || p.vendidos === '' ? 'sem dado de vendas' : 'vendas ilegíveis';
   return v.minimo > minimo ? null : `até ${minimo} vendas`;

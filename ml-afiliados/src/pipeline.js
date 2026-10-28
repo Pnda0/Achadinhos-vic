@@ -6,6 +6,7 @@
  */
 import { loadCategorias, loadGrupos, loadShopee, settings } from './config.js';
 import { ErroBloqueioML, scrapeCategoria } from './ml/scraper.js';
+import { buscarMaisVendidosML } from './ml/api.js';
 
 /** Quanto tempo o bot fica sem pedir páginas ao ML depois de um bloqueio (verificação de tráfego suspeito). */
 export const PAUSA_ML_HORAS = 6;
@@ -18,6 +19,8 @@ import { buscarProdutosAwin, motivoForaDoPublico } from './awin-produtos.js';
 const produtosAwinPadrao = process.env.NODE_TEST_CONTEXT
   ? async () => ({ produtos: [], categorias: {}, motivo: 'desligada (teste)' })
   : (o) => buscarProdutosAwin({ api: new Awin(), cfg: loadAwin().produtos || {}, ...o });
+// Nem a API do ML (os testes passam a sua).
+const maisVendidosPadrao = process.env.NODE_TEST_CONTEXT ? async () => [] : buscarMaisVendidosML;
 import { buscarOfertasShopee } from './shopee-busca.js';
 import { HistoricoDePrecos } from './precos.js';
 import fs from 'node:fs';
@@ -31,15 +34,22 @@ import { montarLegenda, tituloCupom } from './caption.js';
 import { Store } from './store.js';
 import { casaTermo, chunk, diaLocal, log, normalizar, randomDelay, shuffle, sleep } from './util.js';
 
-/** Aplica os filtros do grupo. Retorna o motivo da recusa ou null se passou. */
-export function motivoRecusa(p, f, store, { descontoDesconhecidoPassa = false, exigirVendas = true } = {}) {
+/** O que dá para decidir só pelo nome: nicho, palavras bloqueadas e "só marcas". */
+export function motivoPeloNome(p, f) {
   const nome = normalizar(p.nome);
-  const semDesconto = p.descontoPct === null || p.descontoPct === undefined;
   // Nicho: o nome precisa casar com pelo menos uma das palavras obrigatórias (ex.: fitness).
   if (f.palavrasObrigatorias?.length && !f.palavrasObrigatorias.some((t) => casaTermo(nome, t))) return 'fora do nicho';
   if ((f.palavrasBloqueadas || []).some((w) => casaTermo(nome, w))) return 'palavra bloqueada';
   // Grupo "soMarcas" (grupos.json): só produto de uma marca de config/marcas.json. Cupom de loja passa.
   if (f.soMarcas && p.tipo !== 'cupom' && !marcaDoProduto(p)) return 'sem marca da lista';
+  return null;
+}
+
+/** Aplica os filtros do grupo. Retorna o motivo da recusa ou null se passou. */
+export function motivoRecusa(p, f, store, { descontoDesconhecidoPassa = false, exigirVendas = true } = {}) {
+  const semDesconto = p.descontoPct === null || p.descontoPct === undefined;
+  const peloNome = motivoPeloNome(p, f);
+  if (peloNome) return peloNome;
   const falso = p.tipo !== 'cupom' && !p.manual && motivoPrecoDaMarca(p);
   if (falso) return falso;
   // Mercado Livre: só com MAIS de N vendas confirmadas pelo rótulo do card (src/ml/vendas.js). A caixa de entrada
@@ -81,7 +91,7 @@ export function motivoLinkInvalido(p) {
   return /(^|\.)mercadoli[vb]re\.com(\.br)?$/.test(host) && u.searchParams.get('matt_word') ? null : 'link do ML sem afiliado';
 }
 
-export async function coletar(store = new Store(), { amazon = buscarOfertasAmazon, awin = buscarCuponsAwin, awinProdutos = produtosAwinPadrao, shopee = buscarOfertasShopee, categoriasML = null, raspar = scrapeCategoria, esperar = randomDelay, grupos: gruposDados = null, apenasGrupos = null, precos = null, mlMinIntervaloH = 0, soCupons = false } = {}) {
+export async function coletar(store = new Store(), { amazon = buscarOfertasAmazon, awin = buscarCuponsAwin, awinProdutos = produtosAwinPadrao, shopee = buscarOfertasShopee, categoriasML = null, raspar = scrapeCategoria, maisVendidosML = maisVendidosPadrao, esperar = randomDelay, grupos: gruposDados = null, apenasGrupos = null, precos = null, mlMinIntervaloH = 0, soCupons = false } = {}) {
   // `soCupons`: só os cupons da Awin (garantia de 1 cupom por dia em cada grupo), sem ML, Shopee nem Amazon.
   // Histórico de preços (src/precos.js), ao lado do db.json desta fila (nos testes, numa pasta temporária).
   const historico = precos ?? new HistoricoDePrecos({ arquivo: path.join(path.dirname(store.file), 'precos.json') });
@@ -118,7 +128,8 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
   if (pausadoAte > agoraMs) pularML = `em pausa até ${new Date(pausadoAte).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: settings.tz })} (o ML bloqueou)`;
   else if (mlMinIntervaloH && agoraMs - ultimaML < mlMinIntervaloH * 3_600_000) pularML = `última ida ao ML há menos de ${mlMinIntervaloH} h`;
   if (soCupons) pularML = 'só cupons nesta busca';
-  const categorias = pularML ? [] : shuffle((categoriasML ?? loadCategorias()).filter((c) => c.ativo && grupos[c.grupo]?.ativo !== false));
+  const ativas = (categoriasML ?? loadCategorias()).filter((c) => c.ativo && grupos[c.grupo]?.ativo !== false);
+  const categorias = pularML ? [] : shuffle(ativas.filter((c) => !c.maisVendidos));
   if (pularML) log(`🔎 Mercado Livre: pulado nesta busca (${pularML}).`);
   else log(`🔎 Coletando ${categorias.length} categoria(s) ativa(s)...`);
   if (categorias.length) store.data.ultimaColetaML = new Date(agoraMs).toISOString();
@@ -126,6 +137,43 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
   let encontrados = 0;
   const recusas = {};
   const porCategoria = {};
+
+  // Mercado Livre pela API oficial (src/ml/api.js, 27/10/2026): os mais vendidos de cada categoria com
+  // "maisVendidos" em config/categorias.json. Não depende da pausa das páginas de ofertas: é outro caminho, o permitido.
+  let mlApiErro = null;
+  const catsApi = soCupons ? [] : ativas.filter((c) => c.maisVendidos);
+  if (catsApi.length) log(`🔎 Mercado Livre (API oficial): mais vendidos de ${catsApi.length} categoria(s)...`);
+  for (const cat of catsApi) {
+    const grupo = grupos[cat.grupo];
+    if (!grupo) continue;
+    const c = (porCategoria[cat.nome] ??= { encontrados: 0, aceitos: 0 });
+    let lista;
+    try {
+      // Só os que passam pelo nome (marca, nicho) custam a consulta de preço.
+      lista = await maisVendidosML(cat, { antes: (p) => !motivoPeloNome(p, grupo.filtros) });
+    } catch (e) {
+      mlApiErro = String(e.message).split('\n')[0];
+      log(`❌ Mercado Livre (API): ${mlApiErro}`);
+      break;
+    }
+    for (const p of lista) {
+      c.encontrados++;
+      encontrados++;
+      const motivo = recusa(p, grupo.filtros);
+      if (motivo) {
+        recusas[motivo] = (recusas[motivo] || 0) + 1;
+        evento('recusado', p, motivo);
+        continue;
+      }
+      c.aceitos++;
+      if (store.upsert(p)) {
+        novos++;
+        evento('na_fila', p);
+      }
+    }
+    store.save();
+  }
+
   const paginas = new Map(); // a mesma página de ofertas serve a mais de um grupo: baixa uma vez só
   for (const cat of categorias) {
     if (mlBloqueado) break;
@@ -295,7 +343,7 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
 
   log(`✅ Coleta: ${encontrados} visto(s), ${novos} novo(s). Recusados: ${JSON.stringify(recusas)}`);
   log(`   Por categoria (vistos → aprovados): ${Object.entries(porCategoria).map(([n, x]) => `${n} ${x.encontrados}→${x.aceitos}`).join(' | ')}`);
-  const resultado = { encontrados, novos, recusas, categorias: porCategoria, amazonErro, awinErro, awinProdutosErro, shopeeErro, mlBloqueado };
+  const resultado = { encontrados, novos, recusas, categorias: porCategoria, amazonErro, awinErro, awinProdutosErro, shopeeErro, mlBloqueado, mlApiErro };
   historico.salvar();
   store.registrarColeta(resultado);
   const agora = new Date().toISOString(); // quando cada grupo foi buscado (a reposição conta por grupo)
