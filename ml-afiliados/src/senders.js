@@ -176,18 +176,23 @@ class WWebJsSender {
     }
     return this.client.pupPage.evaluate(async (codigo) => {
       const jidDe = (x) => (typeof x === 'string' ? x : x?._serialized || (x?.server === 'g.us' && x.user ? `${x.user}@g.us` : null));
-      const nomes = Object.keys(window.require('__debug').modulesMap).filter((n) => /^WAWeb.*Invite/i.test(n));
+      // Só módulos de lógica (sem tela, protobuf ou estatística) com "Join"/"Invite" no nome; de cada um, as funções
+      // "join...". Chama só a que é claramente "entrar no grupo por convite/link"; senão, só lista o que achou.
+      const nomes = Object.keys(window.require('__debug').modulesMap).filter(
+        (n) => /^WAWeb.*(Join|Invite)/i.test(n) && !/react|loadable|graphql|stylex|wam|schema|proto|gating|newsletter|channel|call|community|event|payment|email|sms|contact/i.test(n)
+      );
+      const candidatas = [];
       for (const nome of nomes) {
         let m = null;
         try {
           m = window.require(nome);
         } catch (e) {}
-        const chave = m && Object.keys(m).find((k) => typeof m[k] === 'function' && /^(mex)?join.*invite/i.test(k) && !/v4/i.test(k));
-        if (!chave) continue;
-        const r = await m[chave](codigo);
-        return jidDe(r?.gid) || jidDe(r?.id) || jidDe(r?.groupJid) || jidDe(r) || null;
+        for (const k of m ? Object.keys(m) : []) if (typeof m[k] === 'function' && /join/i.test(k)) candidatas.push([nome, k, m[k]]);
       }
-      throw new Error(`não achei como entrar por convite no WhatsApp Web (módulos: ${nomes.join(', ') || 'nenhum'})`);
+      const certa = candidatas.find(([, k]) => /join.*(invite|link)|(invite|link).*join/i.test(k) && !/v4|newsletter|call/i.test(k));
+      if (!certa) throw new Error(`não achei como entrar por convite no WhatsApp Web (funções: ${candidatas.map(([n, k]) => `${n}.${k}`).join(', ') || 'nenhuma'}; módulos: ${nomes.join(', ')})`);
+      const r = await certa[2](codigo);
+      return jidDe(r?.gid) || jidDe(r?.id) || jidDe(r?.groupJid) || jidDe(r) || null;
     }, codigo);
   }
   /** JID de um número de telefone (só dígitos, com DDI 55). Null se o número não tiver WhatsApp. */
