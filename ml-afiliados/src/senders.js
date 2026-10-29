@@ -163,9 +163,32 @@ class WWebJsSender {
     const chat = await this.client.getChatById(jid);
     return `https://chat.whatsapp.com/${await chat.getInviteCode()}`;
   }
-  /** Entra num grupo pelo código do convite (chat.whatsapp.com/<código>). Devolve o JID do grupo. */
+  /**
+   * Entra num grupo pelo código do convite (chat.whatsapp.com/<código>). Devolve o JID do grupo (ou null se o WhatsApp
+   * não disser). O acceptInvite do whatsapp-web.js 1.34.7 chama um módulo do WhatsApp Web que não existe mais
+   * (29/10/2026: "reading 'joinGroupViaInvite'"); aí procura na página o módulo de convite que tem a função de entrar.
+   */
   async entrarNoGrupo(codigo) {
-    return this.client.acceptInvite(codigo);
+    try {
+      return await this.client.acceptInvite(codigo);
+    } catch (e) {
+      if (!/joinGroupViaInvite|undefined|not a function/i.test(String(e.message))) throw e;
+    }
+    return this.client.pupPage.evaluate(async (codigo) => {
+      const jidDe = (x) => (typeof x === 'string' ? x : x?._serialized || (x?.server === 'g.us' && x.user ? `${x.user}@g.us` : null));
+      const nomes = Object.keys(window.require('__debug').modulesMap).filter((n) => /^WAWeb.*Invite/i.test(n));
+      for (const nome of nomes) {
+        let m = null;
+        try {
+          m = window.require(nome);
+        } catch (e) {}
+        const chave = m && Object.keys(m).find((k) => typeof m[k] === 'function' && /^(mex)?join.*invite/i.test(k) && !/v4/i.test(k));
+        if (!chave) continue;
+        const r = await m[chave](codigo);
+        return jidDe(r?.gid) || jidDe(r?.id) || jidDe(r?.groupJid) || jidDe(r) || null;
+      }
+      throw new Error(`não achei como entrar por convite no WhatsApp Web (módulos: ${nomes.join(', ') || 'nenhum'})`);
+    }, codigo);
   }
   /** JID de um número de telefone (só dígitos, com DDI 55). Null se o número não tiver WhatsApp. */
   async jidDoNumero(numero) {

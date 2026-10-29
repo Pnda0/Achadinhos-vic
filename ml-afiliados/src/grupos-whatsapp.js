@@ -35,7 +35,8 @@ export async function ligarGruposWhatsApp(whats, c, { nichos = {}, lojasParceira
     let grupo = meus.find((g) => codigo && g.jid === entrou[codigo]) || meus.find((g) => normalizar(g.nome).includes(normalizar(item.titulo)));
     if (!grupo && codigo) {
       try {
-        const jid = await whats.entrarNoGrupo(codigo);
+        // Sem o JID na resposta, o grupo aparece na lista logo depois de entrar.
+        const jid = (await whats.entrarNoGrupo(codigo)) || (await whats.listGroups()).find((g) => normalizar(g.nome).includes(normalizar(item.titulo)))?.jid;
         if (!jid) throw new Error('o WhatsApp não devolveu o grupo');
         entrou[codigo] = jid;
         fs.writeFileSync(arquivo, JSON.stringify(entrou, null, 2) + '\n');
