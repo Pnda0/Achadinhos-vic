@@ -48,7 +48,7 @@ test('grupo do WhatsApp para copiar (Apromo da Luh, 29/10/2026): o chip entra um
   // Convite recusado (ex.: grupo com aprovação do admin): avisa o dono e segue sem o grupo.
   const recusa = { listGroups: async () => [], entrarNoGrupo: async () => { throw new Error('not-authorized'); } };
   assert.deepEqual(await ligarGruposWhatsApp(recusa, c, { ...opcoes, arquivo: path.join(dir, 'outro.json') }), []);
-  assert.match(avisos.at(-1), /Não consegui entrar.*not-authorized/);
+  assert.match(avisos.at(-1), /Não consegui entrar.*celular do chip/);
 
   // As mensagens do grupo passam pelo espelho: Amazon de beleza entra, Shopee e Sephora ficam de fora.
   const agora = Date.UTC(2027, 0, 15, 12, 0);

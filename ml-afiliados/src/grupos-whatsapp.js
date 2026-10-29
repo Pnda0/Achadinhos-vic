@@ -45,7 +45,7 @@ export async function ligarGruposWhatsApp(whats, c, { nichos = {}, lojasParceira
       } catch (e) {
         const motivo = String(e.message || e).split('\n')[0];
         log(`⚠️  Não consegui entrar no grupo do WhatsApp "${item.titulo}": ${motivo}`);
-        await avisar(`Não consegui entrar no grupo do WhatsApp "${item.titulo}" (${motivo}). Se o grupo pede aprovação do admin, o pedido fica lá; quando aceitarem, reinicie o bot.`);
+        await avisar(`Não consegui entrar no grupo do WhatsApp "${item.titulo}" com o chip do bot. Abra o convite no celular do chip e toque em "Entrar no grupo": quando o bot ligar de novo, ele acha o grupo pelo nome.`, { falhou: true });
         continue;
       }
     }

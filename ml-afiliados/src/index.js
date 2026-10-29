@@ -310,7 +310,8 @@ async function iniciarGruposWhatsApp(whats) {
   const fontes = await ligarGruposWhatsApp(whats, c, {
     nichos: loadNichos(),
     lojasParceiras: c.lojasParceiras !== false && awin.ligada(),
-    avisar: (texto) => avisos.avisar('grupo-whatsapp', texto, { sempre: true }),
+    // Falha ao entrar repete a cada vez que o bot liga: avisa no máximo no intervalo normal dos avisos.
+    avisar: (texto, { falhou = false } = {}) => avisos.avisar(falhou ? 'grupo-whatsapp-falha' : 'grupo-whatsapp', texto, { sempre: !falhou }),
   });
   if (!fontes.length) return log('👥 Grupos do WhatsApp para copiar: nenhum ligado.');
   const maxPorHora = c.maxPorHora ?? 3;
