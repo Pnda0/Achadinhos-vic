@@ -21,8 +21,9 @@ export const codigoDoConvite = (convite) =>
 /**
  * Liga os grupos do bloco como fontes. Cada item é { "titulo": parte do nome do grupo, "convite": link }: se o chip
  * ainda não estiver no grupo, entra pelo convite (e avisa o dono). Devolve as fontes prontas para o Espelho.
+ * `entrar: false` = só procura os grupos em que o chip já está (a conferência de 30 em 30 min), sem log nem aviso.
  */
-export async function ligarGruposWhatsApp(whats, c, { nichos = {}, lojasParceiras = false, arquivo = path.join(DATA_DIR, 'whatsapp-fontes.json'), avisar = async () => {} } = {}) {
+export async function ligarGruposWhatsApp(whats, c, { nichos = {}, lojasParceiras = false, arquivo = path.join(DATA_DIR, 'whatsapp-fontes.json'), avisar = async () => {}, entrar = true } = {}) {
   if (!c || c.ativo === false || !(c.grupos || []).length) return [];
   let entrou = {};
   try {
@@ -33,7 +34,7 @@ export async function ligarGruposWhatsApp(whats, c, { nichos = {}, lojasParceira
   for (const item of c.grupos.map((x) => (typeof x === 'string' ? { titulo: x } : x)).filter((x) => x?.titulo)) {
     const codigo = codigoDoConvite(item.convite);
     let grupo = meus.find((g) => codigo && g.jid === entrou[codigo]) || meus.find((g) => normalizar(g.nome).includes(normalizar(item.titulo)));
-    if (!grupo && codigo) {
+    if (!grupo && codigo && entrar) {
       try {
         // Sem o JID na resposta, o grupo aparece na lista logo depois de entrar.
         const jid = (await whats.entrarNoGrupo(codigo)) || (await whats.listGroups()).find((g) => normalizar(g.nome).includes(normalizar(item.titulo)))?.jid;
@@ -45,11 +46,12 @@ export async function ligarGruposWhatsApp(whats, c, { nichos = {}, lojasParceira
       } catch (e) {
         const motivo = String(e.message || e).split('\n')[0];
         log(`⚠️  Não consegui entrar no grupo do WhatsApp "${item.titulo}": ${motivo}`);
-        await avisar(`Não consegui entrar no grupo do WhatsApp "${item.titulo}" com o chip do bot. Abra o convite no celular do chip e toque em "Entrar no grupo": quando o bot ligar de novo, ele acha o grupo pelo nome.`, { falhou: true });
+        await avisar(`Não consegui entrar no grupo do WhatsApp "${item.titulo}" com o chip do bot. Abra o convite no celular do chip e toque em "Entrar no grupo": em até 30 min o bot acha o grupo pelo nome e começa a copiar.`, { falhou: true });
         continue;
       }
     }
     if (!grupo) {
+      if (!entrar) continue;
       log(`⚠️  O chip do bot não está no grupo do WhatsApp "${item.titulo}" e não há convite em config/fontes.json.`);
       continue;
     }

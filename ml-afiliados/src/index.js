@@ -307,18 +307,34 @@ async function iniciarGruposWhatsApp(whats) {
   const { cfg } = loadFontes();
   const c = cfg.gruposWhatsApp;
   if (!c || c.ativo === false || !(c.grupos || []).length) return;
-  const fontes = await ligarGruposWhatsApp(whats, c, {
+  const opcoes = {
     nichos: loadNichos(),
     lojasParceiras: c.lojasParceiras !== false && awin.ligada(),
     // Falha ao entrar repete a cada vez que o bot liga: avisa no máximo no intervalo normal dos avisos.
     avisar: (texto, { falhou = false } = {}) => avisos.avisar(falhou ? 'grupo-whatsapp-falha' : 'grupo-whatsapp', texto, { sempre: !falhou }),
-  });
-  if (!fontes.length) return log('👥 Grupos do WhatsApp para copiar: nenhum ligado.');
+  };
+  const fontes = await ligarGruposWhatsApp(whats, c, opcoes);
   const maxPorHora = c.maxPorHora ?? 3;
   const espelho = new Espelho({ sender: whats, store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), carregarGrupos: loadGrupos, cfg: { ...cfg, maxPorHora }, avisos, awin, shopee, mlApi: new MLApi() });
   const seg = Math.max(60, Number(c.intervaloSegundos) || 60);
   agendarEspelho(espelho, seg);
-  log(`👥 Grupos do WhatsApp para copiar (até ${maxPorHora} por hora em cada grupo; confere a cada ${seg}s): ${fontes.map((f) => `"${f.nome}" (${f.apenasAmazon ? `Amazon${f.mlPeloNome ? ' e ML achado pelo nome' : ''}` : 'Amazon, ML e lojas'} → ${f.destinos.map((d) => d.grupo).join(', ')})`).join(' | ')}`);
+  const descricao = (f) => `"${f.nome}" (${f.apenasAmazon ? `Amazon${f.mlPeloNome ? ' e ML achado pelo nome' : ''}` : 'Amazon, ML e lojas'} → ${f.destinos.map((d) => d.grupo).join(', ')})`;
+  log(`👥 Grupos do WhatsApp para copiar (até ${maxPorHora} por hora em cada grupo; confere a cada ${seg}s): ${fontes.length ? fontes.map(descricao).join(' | ') : 'nenhum ainda'}`);
+  // O chip pode entrar no grupo depois (o dono abre o convite no celular do chip): a cada 30 min confere a lista de
+  // grupos dele, sem tentar entrar de novo, e começa a copiar o que aparecer.
+  if (fontes.length === c.grupos.length) return;
+  setInterval(async () => {
+    try {
+      for (const f of await ligarGruposWhatsApp(whats, c, { ...opcoes, entrar: false })) {
+        if (espelho.fontes.has(f.jid)) continue;
+        espelho.fontes.set(f.jid, f);
+        log(`👥 Grupo do WhatsApp para copiar ligado: ${descricao(f)}`);
+        await avisos.avisar('grupo-whatsapp', `Achei o grupo do WhatsApp "${f.nome}" no chip do bot: começo a copiar as ofertas da Amazon e do Mercado Livre de lá para ${f.destinos.map((d) => d.grupo).join(', ')}, com as suas regras.`, { sempre: true });
+      }
+    } catch (e) {
+      registrarErro('grupos-whatsapp', e);
+    }
+  }, 30 * 60_000);
 }
 
 /** Liga o espelho de grupos, se houver grupos-fonte em config/fontes.json. */

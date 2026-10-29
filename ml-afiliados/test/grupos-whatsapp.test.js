@@ -50,6 +50,12 @@ test('grupo do WhatsApp para copiar (Apromo da Luh, 29/10/2026): o chip entra um
   assert.deepEqual(await ligarGruposWhatsApp(recusa, c, { ...opcoes, arquivo: path.join(dir, 'outro.json') }), []);
   assert.match(avisos.at(-1), /Não consegui entrar.*celular do chip/);
 
+  // A conferência de 30 em 30 min não tenta entrar: só acha o grupo quando o dono põe o chip nele.
+  const semGrupo = { listGroups: async () => [], entrarNoGrupo: async () => assert.fail('não pode tentar entrar') };
+  assert.deepEqual(await ligarGruposWhatsApp(semGrupo, c, { ...opcoes, arquivo: path.join(dir, 'nada.json'), entrar: false }), []);
+  const comGrupo = { listGroups: async () => [{ jid: '777@g.us', nome: '38 - Apromo da Luh 👠💄' }], entrarNoGrupo: semGrupo.entrarNoGrupo };
+  assert.equal((await ligarGruposWhatsApp(comGrupo, c, { ...opcoes, arquivo: path.join(dir, 'nada.json'), entrar: false }))[0].jid, '777@g.us');
+
   // As mensagens do grupo passam pelo espelho: Amazon de beleza entra, Shopee e Sephora ficam de fora.
   const agora = Date.UTC(2027, 0, 15, 12, 0);
   const t = Math.floor(agora / 1000) - 60;
