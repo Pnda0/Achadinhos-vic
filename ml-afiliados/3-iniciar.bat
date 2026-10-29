@@ -38,6 +38,14 @@ if exist "data\.reiniciar" (
   echo Reiniciando o bot...
   goto :inicio
 )
+rem Queda (erro inesperado, ou sem internet ao ligar): o bot saiu deixando data\.caiu - espera 1 min e liga de novo.
+if exist "data\.caiu" (
+  del "data\.caiu"
+  echo.
+  echo O bot caiu - ligo de novo em 1 minuto. Para nao ligar, feche esta janela.
+  timeout /t 60 /nobreak >nul
+  goto :inicio
+)
 echo.
 echo O bot parou. Veja a mensagem acima.
 pause

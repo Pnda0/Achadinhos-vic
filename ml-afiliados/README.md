@@ -252,6 +252,8 @@ Inspirado nos grandes grupos (o Promobit compara cada oferta com um preço de re
 
 `npm run reiniciar` (na pasta do bot, no PC de casa): o bot não começa tarefa nova, espera o envio/coleta em andamento (até 90 s), grava a fila, fecha o WhatsApp Web e sai deixando `data/.reiniciar`; o `3-iniciar.bat` vê o aviso e liga de novo **na mesma janela**, com `git pull` e `npm install`. Sem bot rodando, o comando abre o `3-iniciar.bat`. O pedido vai pela porta da trava (127.0.0.1:47831), então só funciona no próprio PC.
 
+**Queda** (desde 28/10/2026, quando o bot ficou parado das 14h11 às 20h03 por falta de internet ao ligar e das 20h18 às 21h43 por um erro de timeout, com a janela esperando uma tecla): erro inesperado, ou 30 min sem internet ao ligar, faz o bot sair deixando `data/.caiu`, e o `3-iniciar.bat` liga de novo em 1 minuto (com `git pull`). Mais de 3 quedas com menos de 15 min entre elas param de religar (`data/.quedas.json`, `pedirParaReligar()` em `src/logfile.js`): aí é defeito que religar não resolve, e a janela fica parada mostrando o erro. Erro claro ao ligar (token errado, outra cópia aberta) também não religa.
+
 ## 3.13f Busca de reposição
 
 **Desde 27/10/2026** (o dono: "não pode existir a fila vazia de jeito nenhum"): no máximo uma a cada **30 min** por grupo (`REPOSICAO_MIN` em `src/index.js`; eram 2 h por causa do ML, que a reposição não usa mais), e cada volta na lista de buscas da Shopee usa a página seguinte de resultados (`"paginas": 3` em `config/shopee.json`), porque a página 1 só trazia o que já tinha saído. Os canais de perfume (@promobigodeperfumes, @perfumepromo) postam quase só Mercado Livre (link meli.la), que não dá para trocar enquanto o ML barrar o bot.

@@ -19,6 +19,8 @@ novo na mesma janela (~10 s). Sem bot rodando, o comando abre o `.bat`. Depois c
 
 **Nunca** abra uma segunda janela do bot (posta tudo em dobro). Matar o processo à força é bloqueado — e desnecessário.
 
+**Bot caiu** (erro inesperado ou sem internet ao ligar): desde 28/10/2026 ele liga sozinho em 1 min (`data/.caiu`, lido pelo `3-iniciar.bat`); só para depois de 4 quedas seguidas com menos de 15 min entre elas (`data/.quedas.json`). Se o log termina em `❌ Erro inesperado`/`❌ Falha ao iniciar` sem `🔁 O bot liga de novo sozinho`, rode `npm run reiniciar` (sem bot rodando, ele abre o `.bat`).
+
 **Bot congelado** (27/10/2026): o log para no meio ("🔁 Reinício pedido" sem "Encerrando"), o processo não gasta CPU e
 a porta 47831 fica presa sem responder. Causa provável: clique dentro da janela preta (edição rápida do Windows segura
 o bot até apertar uma tecla) — desde 27/10 o bot desliga a edição rápida ao ligar (`src/janela.js`). Nesse estado o

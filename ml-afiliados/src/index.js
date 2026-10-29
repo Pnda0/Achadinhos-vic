@@ -22,7 +22,7 @@ import { createSender } from './senders.js';
 import { Store } from './store.js';
 import { diaLocal, log, sleep } from './util.js';
 
-import { instalarLogEmArquivo, registrarErro } from './logfile.js';
+import { instalarLogEmArquivo, pedirParaReligar, registrarErro } from './logfile.js';
 import { gerarDia, porEmDia } from './analytics/dia.js';
 import { membrosDoDia, registrarMembros } from './analytics/membros.js';
 import { registrarAwin } from './analytics/ganhos.js';
@@ -35,7 +35,12 @@ import { desligarEdicaoRapida } from './janela.js';
 import { EspelhoWhatsApp } from './whatsapp-espelho.js';
 import { generoDoProduto } from './genero.js';
 
-instalarLogEmArquivo('iniciar');
+// Caiu (erro inesperado, ou sem internet por 30 min ao ligar): o 3-iniciar.bat liga de novo em 1 min (src/logfile.js).
+const religar = () => {
+  if (pedirParaReligar()) log('🔁 O bot liga de novo sozinho em 1 minuto.');
+  else log('⛔ Várias quedas seguidas: o bot fica parado até alguém ligar de novo.');
+};
+instalarLogEmArquivo('iniciar', { aoCair: religar });
 
 // Criados no main(), DEPOIS da trava de cópia única: uma 2ª cópia não pode nem abrir o db.json.
 let store;
@@ -502,5 +507,6 @@ async function main() {
 main().catch((e) => {
   registrarErro('iniciar', e);
   log('❌ Falha ao iniciar:', e.message);
+  if (e.incerto) religar(); // sem internet: tenta de novo daqui a 1 min (erro claro, como token errado, para)
   process.exit(1);
 });
