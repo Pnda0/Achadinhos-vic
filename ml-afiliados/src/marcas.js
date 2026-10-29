@@ -10,7 +10,7 @@ let cache = { em: 0, lista: null };
 
 /**
  * Lista plana [{ marca, termos, peso? }] do arquivo (termo "re:..." = expressão regular no texto original). Sem `cfg`:
- * relê o arquivo no máximo 1x por minuto. `peso` no item = prioridade própria da marca (WePink, pedido do dono, 27/10/2026).
+ * relê o arquivo no máximo 1x por minuto. `peso` no item = prioridade própria da marca (foi da WePink de 27 a 29/10/2026; hoje nenhuma usa).
  */
 export function listaDeMarcas(cfg) {
   if (!cfg) {

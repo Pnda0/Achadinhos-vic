@@ -6,6 +6,8 @@
     "precoMaximo": 5000,
     "notaMinima": 4,
     "palavrasBloqueadas": [
+      "wepink",
+      "we pink",
       "usado",
       "recondicionado",
       "refil",
@@ -34,6 +36,8 @@
       "mensagemAdicional": "",
       "filtros": {
         "palavrasBloqueadas": [
+          "wepink",
+          "we pink",
           "usado",
           "recondicionado",
           "refil",

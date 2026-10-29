@@ -45,14 +45,24 @@ test('fila: oferta de marca sai antes da sem marca; feminino continua valendo', 
   // Marca com prioridade própria (WePink, pedido do dono, 27/10/2026) passa na frente das outras marcas.
   const pref = preferenciaDeMarca({ peso: 1.5, perfumes: [{ marca: 'WePink', termos: ['wepink', 'we pink'], peso: 3 }, 'Dior'] });
   assert.deepEqual([pref({ nome: 'Body Splash We Pink 200ml' }), pref({ nome: 'Perfume Dior Jadore' }), pref({ nome: 'Perfume qualquer' })], [3, 1.5, 0]);
-  // A lista real tem a WePink, e os brindes com a marca dela (sacola, porta-perfume) ficam de fora dos grupos.
+  // A WePink saiu dos grupos (o dono, 29/10/2026: cara, sem afiliado, no ML acima do valor): não é marca da lista e
+  // é palavra bloqueada em todos eles, inclusive os brindes com o nome dela.
   const { loadGrupos } = await import('../src/config.js');
   const { motivoRecusa } = await import('../src/pipeline.js');
   const perfumes = loadGrupos().find((g) => g.nome === 'Perfumes').filtros;
-  assert.equal(marcaDoProduto({ nome: 'Body Splash Wepink Virginia 200ml' }), 'WePink');
-  for (const nome of ['Porta Body Splash Wepink 200ml Expositor Organizador de Perfumes', 'Sacolas Plásticas Com Logo Wepink Body Splash']) {
-    assert.equal(motivoRecusa({ id: 'X', nome, precoAtual: 50, descontoPct: 30, nota: 4.8, vendidos: '+100 vendidos' }, perfumes), 'palavra bloqueada', nome);
+  assert.equal(marcaDoProduto({ nome: 'Body Splash Wepink Virginia 200ml' }), null);
+  for (const g of loadGrupos()) {
+    for (const nome of ['Body Splash Wepink Virginia 200ml', 'Perfume We Pink Bloom 100ml', 'Porta Body Splash Wepink 200ml Expositor Organizador de Perfumes']) {
+      const motivo = motivoRecusa({ id: 'X', nome: `${nome} Feminino`, precoAtual: 120, descontoPct: 30, nota: 4.8, vendidos: '+100 vendidos' }, g.filtros);
+      // Fora do nicho do grupo o nicho barra antes (body splash não é fitness); no nicho, a palavra bloqueada.
+      assert.ok(['fora do nicho', 'palavra bloqueada'].includes(motivo), `${g.nome}: ${nome} (${motivo})`);
+    }
   }
+  const fitness = loadGrupos().find((g) => g.nome === 'Fitness').filtros;
+  const oferta = (nome) => ({ id: 'X', nome, precoAtual: 120, descontoPct: 30, nota: 4.8, vendidos: '+100 vendidos' });
+  assert.equal(motivoRecusa(oferta('Perfume We Pink Bloom 100ml Feminino'), perfumes), 'palavra bloqueada');
+  assert.equal(motivoRecusa(oferta('Legging Feminina WePink Fitness'), fitness), 'palavra bloqueada');
+  assert.equal(motivoRecusa({ id: 'X', nome: 'Sacolas Plásticas Com Logo Body Splash', precoAtual: 50, descontoPct: 30, nota: 4.8, vendidos: '+100 vendidos' }, perfumes), 'palavra bloqueada');
 });
 
 test('grupo "soMarcas" (Fitness, Beleza, Perfumes): só marca da lista entra e sai; Geral não filtra; cupom passa', async () => {
