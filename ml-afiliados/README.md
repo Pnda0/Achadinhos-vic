@@ -365,6 +365,8 @@ A comissão da Shopee é baixa (pedido do dono, 26/10/2026): em cada grupo sai *
 
 **Desligado em 27/10/2026** (o dono: "vamos deixar grupo da lu de fora"): `"ativo": false` em `gruposTelegram`. O código ficou para outro grupo, se o dono pedir.
 
+**Grupo de WhatsApp da Apromo da Luh (beleza), desde 29/10/2026** (o dono: "esse grupo tem muita coisa boa feminina"; convite em `config/fontes.json` > `gruposWhatsApp`): o chip do bot — o mesmo do espelho no WhatsApp — entra sozinho pelo link de convite quando o WhatsApp conecta (`src/grupos-whatsapp.js`; o grupo em que entrou fica em `data/whatsapp-fontes.json`, para não pedir de novo) e só **lê** as mensagens. Elas passam pelo mesmo espelho dos canais do Telegram com as opções do bloco: só a Amazon (etiqueta do dono) e o ML achado pelo nome na API oficial (`"apenasAmazon"` + `"mlPeloNome"`), no formato do bot, com as regras de Fitness/Beleza/Perfumes e sem a regra de vendas; Shopee, Sephora e lojas sem programa de afiliados ficam de fora. Até `maxPorHora` (3) por hora em cada grupo. Se o convite for recusado (grupo com aprovação do admin), o bot avisa o dono e segue sem ele.
+
 Exceção ao "não copiar" de 16/10, pedida pelo dono em 27/10/2026, só para os grupos de `config/fontes.json` > `gruposTelegram`. Grupo não tem página pública como os canais (`t.me/s/...`), então o bot lê como membro:
 
 1. No @BotFather: `/setprivacy` → `@achadinhosvic_bot` → **Disable** (senão bot só vê comandos em grupo). O bot avisa no privado enquanto isso não for feito.

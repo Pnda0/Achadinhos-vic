@@ -163,6 +163,10 @@ class WWebJsSender {
     const chat = await this.client.getChatById(jid);
     return `https://chat.whatsapp.com/${await chat.getInviteCode()}`;
   }
+  /** Entra num grupo pelo código do convite (chat.whatsapp.com/<código>). Devolve o JID do grupo. */
+  async entrarNoGrupo(codigo) {
+    return this.client.acceptInvite(codigo);
+  }
   /** JID de um número de telefone (só dígitos, com DDI 55). Null se o número não tiver WhatsApp. */
   async jidDoNumero(numero) {
     const r = await this.client.getNumberId(numero);

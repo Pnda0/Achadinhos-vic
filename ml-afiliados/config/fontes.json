@@ -58,6 +58,36 @@
     "_comentarioML": "29/10/2026, pedido do dono (\"vamos pegar mais posts do ml e amazon de grupos que dão certo\"): \"mlPeloNome\" = a oferta do Mercado Livre dos canais também entra. O link do canal (meli.la) só abre no site do ML, que barra o bot desde 21/10, então o produto é achado pela API oficial com o NOME e o PREÇO do post (src/ml/api.js, acharPeloNome): nome igual (sem trocar refil, kit, presente, tamanho, feminino/masculino) e um anúncio com o preço do post ou até 8% acima (preço no Pix). Sai no formato do bot com nome, foto e preço do anúncio, o link do dono e todas as regras do grupo; sem a regra de vendas (dono, 27/10). Medido em 29/10 (posts de até 3 dias; ao vivo o preço bate mais): @promobigodeperfumes ~39 por dia (perfume, muito masculino), @xetdaspromocoes ~6, @topfitachados ~4 (Fitness), @oqcomprei ~2, @HomemCheiroso ~2, @perfumepromo ~1. Ficou de fora @gatunopromos (preço do post é com cupom: nenhum bateu). Os canais novos quase não têm Amazon. Se a API recusar (ex.: HTTP 429), o ML dos canais pausa 15 min; a Amazon segue.",
     "_comentarioPausa": "De 16/10 a 27/10/2026 desligado (\"pare de copiar dos outros, ficou com muito produto ruim\"); religado em 27/10 só para a Amazon, com só marcas valendo em todos os grupos."
   },
+  "_comentarioGruposWhatsApp": "GRUPOS DO WHATSAPP PARA COPIAR (29/10/2026, o dono sobre o grupo de beleza da Apromo da Luh: \"esse grupo tem muita coisa boa feminina\"). O chip do bot (o do espelho no WhatsApp) entra sozinho pelo \"convite\" e só LÊ as mensagens; o grupo é achado pelo \"titulo\" (parte do nome). Como nos canais: só a Amazon (etiqueta do dono) e o ML achado pelo nome na API oficial (mlPeloNome), no formato do bot, com todas as regras do grupo de destino e sem a regra de vendas. Shopee, Sephora e lojas sem programa ficam de fora. maxPorHora = no máximo N ofertas por hora em cada grupo seu (marca da lista conta o dobro). Depois de mexer aqui, reinicie o bot.",
+  "gruposWhatsApp": {
+    "ativo": true,
+    "grupos": [
+      {
+        "titulo": "Apromo da Luh",
+        "convite": "https://chat.whatsapp.com/ESjEPXL0XmPIt3085EaK3Y"
+      }
+    ],
+    "destinos": [
+      {
+        "grupo": "Fitness",
+        "nicho": "fitness"
+      },
+      {
+        "grupo": "Beleza",
+        "nicho": "beleza"
+      },
+      {
+        "grupo": "Perfumes",
+        "nicho": "perfumes"
+      }
+    ],
+    "apenasAmazon": true,
+    "mlPeloNome": true,
+    "exigirVendas": false,
+    "copiarTexto": false,
+    "fotoDoCanal": false,
+    "maxPorHora": 3
+  },
   "_comentarioGruposTelegram": "GRUPOS DO TELEGRAM PARA COPIAR — DESLIGADO (27/10/2026, o dono: \"vamos deixar grupo da lu de fora\"). Como funciona quando ligado: exceção ao \"não copiar\" de 16/10, só para os grupos desta lista. Grupo não tem página pública: o bot (@achadinhosvic_bot) precisa ser membro e estar com a privacidade desligada no @BotFather (/setprivacy > Disable); quando ele entra num grupo cujo título contém o \"titulo\" daqui, começa a copiar sozinho e avisa o dono. As ofertas passam por TODAS as regras do grupo de destino (nicho, só marcas, feminino primeiro, não repetir, Shopee 1 a cada 4) e saem no formato do bot (copiarTexto: false), com a foto da loja (fotoDoCanal: false: a foto do outro grupo pode ter a logo dele). semML: true = links do Mercado Livre ficam de fora (trocar exigiria abrir a página de cada um no ML, o que fez o ML bloquear o bot em 21/10). maxPorHora = no máximo N ofertas desses grupos por hora em cada grupo seu. Depois de mexer aqui, reinicie o bot.",
   "gruposTelegram": {
     "ativo": false,

@@ -34,6 +34,7 @@ import { publicarPainel, urlPublicada } from './analytics/publicar.js';
 import { MSG_BOT_TRAVADO, MSG_OUTRA_COPIA, outrosBots, travarInstancia } from './instancia.js';
 import { desligarEdicaoRapida } from './janela.js';
 import { EspelhoWhatsApp } from './whatsapp-espelho.js';
+import { ligarGruposWhatsApp } from './grupos-whatsapp.js';
 import { generoDoProduto } from './genero.js';
 
 // Caiu (erro inesperado, ou sem internet por 30 min ao ligar): o 3-iniciar.bat liga de novo em 1 min (src/logfile.js).
@@ -232,6 +233,10 @@ async function iniciarWhatsApp() {
     const convites = await espelhoWhats.convites().catch(() => ({}));
     for (const [nome, link] of Object.entries(convites)) log(`   🔗 Convite do WhatsApp ${nome}: ${link}`);
     espelhoWhats.rodar().catch((e) => registrarErro('whatsapp', e));
+    iniciarGruposWhatsApp(whats).catch((e) => {
+      registrarErro('grupos-whatsapp', e);
+      log(`❌ Grupos do WhatsApp para copiar: ${String(e.message).split('\n')[0]}`);
+    });
   } catch (e) {
     registrarErro('whatsapp', e);
     log(`⚠️  WhatsApp não conectou: ${String(e.message).split('\n')[0]} — o Telegram segue normal.`);
@@ -292,6 +297,27 @@ function iniciarCanais() {
   const descricao = (f) =>
     `${f.nome} (${f.apenasAmazon ? `${f.mlPeloNome ? 'Amazon e ML (achado pelo nome na API oficial)' : 'só Amazon'}${f.copiarTexto ? '' : ', no formato do bot'}` : `${f.soAmazon ? 'só Amazon' : 'Amazon e ML'}${f.lojasParceiras ? ' + lojas da Awin' : ''}${shopee.ligada() ? ' + Shopee' : ''}`}${f.exigirVendas ? '' : ', sem a regra de vendas'} → ${f.destinos.map((d) => d.grupo).join(', ')})`;
   log(`📡 Canais do Telegram ligados (até ${maxPorHora} por hora em cada grupo; confere a cada ${seg}s): ${fontes.map(descricao).join(' | ')}`);
+}
+
+/**
+ * Grupos de WhatsApp para copiar (config/fontes.json > gruposWhatsApp; pedido do dono, 29/10/2026): o chip do bot
+ * entra pelo convite e só lê. As ofertas passam pelo mesmo espelho dos canais do Telegram.
+ */
+async function iniciarGruposWhatsApp(whats) {
+  const { cfg } = loadFontes();
+  const c = cfg.gruposWhatsApp;
+  if (!c || c.ativo === false || !(c.grupos || []).length) return;
+  const fontes = await ligarGruposWhatsApp(whats, c, {
+    nichos: loadNichos(),
+    lojasParceiras: c.lojasParceiras !== false && awin.ligada(),
+    avisar: (texto) => avisos.avisar('grupo-whatsapp', texto, { sempre: true }),
+  });
+  if (!fontes.length) return log('👥 Grupos do WhatsApp para copiar: nenhum ligado.');
+  const maxPorHora = c.maxPorHora ?? 3;
+  const espelho = new Espelho({ sender: whats, store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), carregarGrupos: loadGrupos, cfg: { ...cfg, maxPorHora }, avisos, awin, shopee, mlApi: new MLApi() });
+  const seg = Math.max(60, Number(c.intervaloSegundos) || 60);
+  agendarEspelho(espelho, seg);
+  log(`👥 Grupos do WhatsApp para copiar (até ${maxPorHora} por hora em cada grupo; confere a cada ${seg}s): ${fontes.map((f) => `"${f.nome}" (${f.apenasAmazon ? `Amazon${f.mlPeloNome ? ' e ML achado pelo nome' : ''}` : 'Amazon, ML e lojas'} → ${f.destinos.map((d) => d.grupo).join(', ')})`).join(' | ')}`);
 }
 
 /** Liga o espelho de grupos, se houver grupos-fonte em config/fontes.json. */

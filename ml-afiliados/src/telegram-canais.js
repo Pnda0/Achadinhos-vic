@@ -56,6 +56,8 @@ export function fontesDosCanais(c, { destinoPadrao = 'Geral', nichos = {}, lojas
  * mensagens pela mesma conversa com o Telegram da caixa de entrada. O item de "grupos" casa com o título do grupo
  * ({ "titulo": "Promo da Luh" } casa com "A Promo da Luh 🛍🌸"). Null se o grupo não estiver na lista.
  * "semML" (padrão true): links do ML ficam de fora — trocar exigiria abrir a página de cada um no ML.
+ * "apenasAmazon" e "mlPeloNome" valem como nos canais (fontesDosCanais). Serve também para os grupos de WhatsApp
+ * (src/grupos-whatsapp.js).
  */
 export function fonteDoGrupoTelegram(c, { jid, titulo }, { nichos = {}, lojasParceiras = false } = {}) {
   if (!c || c.ativo === false) return null;
@@ -65,7 +67,8 @@ export function fonteDoGrupoTelegram(c, { jid, titulo }, { nichos = {}, lojasPar
   const destinos = (o.destinos?.length ? o.destinos : [{ grupo: o.destino || 'Geral' }]).map((d) => ({ grupo: d.grupo, palavras: d.nicho ? nichos[d.nicho]?.obrigatorias || [] : null }));
   return {
     nome: titulo, nomeWhats: titulo, jid: String(jid), destino: destinos[0].grupo, destinos,
-    semML: o.semML !== false, lojasParceiras: lojasParceiras && o.lojasParceiras !== false,
+    semML: o.semML !== false, lojasParceiras: lojasParceiras && o.lojasParceiras !== false && !o.apenasAmazon,
+    apenasAmazon: !!o.apenasAmazon, soAmazon: !!o.apenasAmazon, mlPeloNome: !!o.mlPeloNome,
     exigirVendas: o.exigirVendas !== false, fotoDoCanal: !!o.fotoDoCanal, copiarTexto: !!o.copiarTexto,
     ...(Number.isInteger(o.maxPorHora) && { maxPorHora: o.maxPorHora }),
   };
