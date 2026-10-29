@@ -17,6 +17,7 @@ import { iniciarHeartbeat } from './heartbeat.js';
 import { Espelho, resolverFontes } from './espelho.js';
 import { LeitorDeCanais, fonteDoGrupoTelegram, fontesDosCanais } from './telegram-canais.js';
 import { MLAffiliate } from './ml/affiliate.js';
+import { MLApi } from './ml/api.js';
 import { PAUSA_ML_HORAS, coletar, filaDeOutroDia, gerarLinks, enviarParaTodos, limpar } from './pipeline.js';
 import { createSender } from './senders.js';
 import { Store } from './store.js';
@@ -285,11 +286,11 @@ function iniciarCanais() {
   const fontes = fontesDosCanais(c, { destinoPadrao: cfg.destinoPadrao, nichos: loadNichos(), lojasParceiras, amazonTag: process.env.AMAZON_PARTNER_TAG?.trim() });
   if (!fontes.length) return log('📡 Canais do Telegram desligados: falta AMAZON_PARTNER_TAG no .env.');
   const maxPorHora = c.maxPorHora ?? 1;
-  const espelho = new Espelho({ sender: new LeitorDeCanais(), store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), carregarGrupos: loadGrupos, cfg: { ...cfg, maxPorHora }, avisos, awin, shopee });
+  const espelho = new Espelho({ sender: new LeitorDeCanais(), store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), carregarGrupos: loadGrupos, cfg: { ...cfg, maxPorHora }, avisos, awin, shopee, mlApi: new MLApi() });
   const seg = Math.max(60, Number(c.intervaloSegundos) || 180);
   agendarEspelho(espelho, seg);
   const descricao = (f) =>
-    `${f.nome} (${f.apenasAmazon ? `só Amazon${f.copiarTexto ? '' : ', no formato do bot'}` : `${f.soAmazon ? 'só Amazon' : 'Amazon e ML'}${f.lojasParceiras ? ' + lojas da Awin' : ''}${shopee.ligada() ? ' + Shopee' : ''}`}${f.exigirVendas ? '' : ', sem a regra de vendas'} → ${f.destinos.map((d) => d.grupo).join(', ')})`;
+    `${f.nome} (${f.apenasAmazon ? `${f.mlPeloNome ? 'Amazon e ML (achado pelo nome na API oficial)' : 'só Amazon'}${f.copiarTexto ? '' : ', no formato do bot'}` : `${f.soAmazon ? 'só Amazon' : 'Amazon e ML'}${f.lojasParceiras ? ' + lojas da Awin' : ''}${shopee.ligada() ? ' + Shopee' : ''}`}${f.exigirVendas ? '' : ', sem a regra de vendas'} → ${f.destinos.map((d) => d.grupo).join(', ')})`;
   log(`📡 Canais do Telegram ligados (até ${maxPorHora} por hora em cada grupo; confere a cada ${seg}s): ${fontes.map(descricao).join(' | ')}`);
 }
 

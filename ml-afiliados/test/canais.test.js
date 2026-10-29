@@ -141,6 +141,81 @@ test('canal "apenasAmazon": só as ofertas da Amazon (ML/Awin ficam de fora), no
   assert.equal(p.textoPronto, undefined, 'formato do bot, não cópia');
 });
 
+test('canal com "mlPeloNome" (29/10/2026): a oferta do ML é achada pela API oficial com o nome e o preço do post, sem abrir o meli.la', async () => {
+  const c = { canais: ['promobigodeperfumes'], apenasAmazon: true, mlPeloNome: true, exigirVendas: false, destinos: [{ grupo: 'Perfumes' }] };
+  const [f] = fontesDosCanais(c, { amazonTag: 'achadin09027e-20' });
+  assert.equal(f.mlPeloNome, true);
+  // Respostas reais da API (29/10/2026), resumidas: a busca devolve o refil antes do frasco.
+  const caminhos = [];
+  const mlApi = {
+    configurada: true,
+    get: async (c) => {
+      caminhos.push(c.split('?')[0]);
+      if (c.startsWith('/products/search') && /Oud/.test(decodeURIComponent(c))) return { results: [{ id: 'MLB111', name: 'Refil Deo Parfum Natura Essencial Oud Masculino 100ml' }, { id: 'MLB222', name: 'Deo Parfum Natura Essencial Oud 100ml' }] };
+      if (c.startsWith('/products/search')) return { results: [{ id: 'MLB333', name: 'Perfume Natura Kaiak Pulso Masculino 100ml' }] };
+      if (c.startsWith('/products/MLB222/items')) return { results: [
+        { item_id: 'MLB5001', price: 189.9, condition: 'new' },
+        { item_id: 'MLB5002', price: 169.98, original_price: 249.9, official_store_id: 1, condition: 'new', shipping: { free_shipping: true } },
+      ] };
+      throw new Error(`não esperado: ${c}`);
+    },
+    produto: async (id) => ({ nome: 'Deo Parfum Natura Essencial Oud 100ml', imagem: `https://http2.mlstatic.com/${id}.jpg` }),
+    salvarCache() {},
+  };
+  const links = [];
+  const affiliate = { refresh: async () => {}, createLinks: async (urls) => (links.push(...urls), new Map(urls.map((u) => [u, 'https://meli.la/MEU1']))) };
+  const agora = { t: Date.UTC(2027, 0, 15, 11, 5) };
+  const t = Math.floor(agora.t / 1000) - 60;
+  const store = tmpStore();
+  const espelho = new Espelho({
+    sender: { lerMensagens: async () => [
+      { id: 'b1', jid: f.jid, t, texto: 'Natura Essencial Oud 100ml\n💸 Por R$ 169\n🛒 https://meli.la/2xYz' },
+      { id: 'b2', jid: f.jid, t, texto: 'Perfume Natura K Max 100ml\nR$ 153\nhttps://meli.la/3abc' }, // a busca só acha outro perfume
+      { id: 'b3', jid: f.jid, t, texto: 'Natura Essencial Oud 100ml\n💸 Por R$ 169\n🛒 https://meli.la/9qwe' }, // o mesmo, em outro post
+    ] },
+    store, affiliate, fontes: [f], grupos: [{ nome: 'Geral', ativo: false, filtros: {} }, { nome: 'Perfumes', ativo: true, filtros: { diasSemRepetir: 5 } }], // o Geral (pausado) é o destino padrão
+    agora: () => agora.t, esperar: async () => {}, amazonTag: 'achadin09027e-20', mlApi,
+  });
+  const r = await espelho.tick();
+  assert.equal(r.enfileiradas, 1);
+  assert.deepEqual(r.ignoradas, { 'ML: produto do post não achado': 1, 'já está na fila': 1 });
+  const [p] = store.list();
+  assert.equal(p.id, 'MLB5002', 'o anúncio com o preço do post, não o mais caro nem o refil');
+  assert.equal(p.nome, 'Deo Parfum Natura Essencial Oud 100ml');
+  assert.equal(p.url, 'https://produto.mercadolivre.com.br/MLB-5002-deo-parfum-natura-essencial-oud-100ml-_JM');
+  assert.deepEqual([p.precoAtual, p.precoOriginal, p.descontoPct], [169.98, 249.9, 32]);
+  assert.equal(p.linkAfiliado, 'https://meli.la/MEU1');
+  assert.equal(p.semRegraVendas, true);
+  assert.equal(p.status, 'PRONTO');
+  assert.deepEqual(links, [p.url], 'um link só: o meli.la do outro canal nunca é aberto');
+  assert.equal(caminhos.filter((c) => c === '/products/search').length, 2, 'o post repetido não busca de novo');
+
+  // API recusando (ex.: HTTP 429): pausa o ML dos canais por 15 min em vez de insistir; a Amazon segue.
+  const store2 = tmpStore();
+  const e2 = new Espelho({
+    sender: { lerMensagens: async () => [
+      { id: 'c1', jid: f.jid, t, texto: 'Lattafa Asad 100ml\nR$ 213\nhttps://meli.la/1' },
+      { id: 'c2', jid: f.jid, t, texto: 'Lattafa Yara 100ml\nR$ 180\nhttps://meli.la/2' },
+      { id: 'c3', jid: f.jid, t, texto: 'Perfume Lattafa Yara 100ml\nDe R$ 300 por R$ 199\nhttps://www.amazon.com.br/dp/B0YARA0001' },
+    ] },
+    store: store2, affiliate, fontes: [f], grupos: [{ nome: 'Geral', ativo: false, filtros: {} }, { nome: 'Perfumes', ativo: true, filtros: {} }],
+    agora: () => agora.t, esperar: async () => {}, amazonTag: 'achadin09027e-20',
+    mlApi: { ...mlApi, get: async () => { throw new Error('HTTP 429 em /products/search'); } },
+  });
+  const r2 = await e2.tick();
+  assert.deepEqual(r2.ignoradas, { 'API do ML indisponível': 1, 'ML pausado': 1 });
+  assert.equal(r2.enfileiradas, 1, 'a Amazon do mesmo canal entra');
+
+  // No máximo 20 buscas novas por hora na API (é a mesma que traz os mais vendidos nas coletas).
+  const e3 = new Espelho({
+    sender: { lerMensagens: async () => [{ id: 'd1', jid: f.jid, t, texto: 'Lattafa Khamrah 100ml\nR$ 199\nhttps://meli.la/4' }] },
+    store: tmpStore(), affiliate, fontes: [f], grupos: [{ nome: 'Geral', ativo: false, filtros: {} }, { nome: 'Perfumes', ativo: true, filtros: {} }],
+    agora: () => agora.t, esperar: async () => {}, amazonTag: 'achadin09027e-20', mlApi,
+  });
+  e3.buscasML = Array(20).fill(agora.t - 10 * 60_000);
+  assert.deepEqual((await e3.tick()).ignoradas, { 'ML: limite de buscas por hora': 1 });
+});
+
 test('grupo do Telegram para copiar ("A Promo da Luh", 27/10/2026): casa pelo título, sem ML, só o que passa nas regras de cada grupo', async () => {
   const { fonteDoGrupoTelegram } = await import('../src/telegram-canais.js');
   const { loadNichos } = await import('../src/config.js');

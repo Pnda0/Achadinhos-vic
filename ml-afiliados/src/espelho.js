@@ -16,12 +16,14 @@ import { extrairLinksShopee, urlDoProdutoShopee } from './shopee.js';
 import { nomeLoja } from './caption.js';
 import { marcaDoProduto } from './marcas.js';
 import { evento } from './eventos.js';
-import { motivoRecusa } from './pipeline.js';
+import { motivoPeloNome, motivoRecusa } from './pipeline.js';
+import { acharPeloNome } from './ml/api.js';
 import { encontrarGrupo } from './configfile.js';
 import crypto from 'node:crypto';
 import { casaTermo, log, normalizar, sleep } from './util.js';
 
 const MIN = 60_000;
+const BUSCAS_ML_POR_HORA = 20; // ofertas do ML dos canais procuradas na API oficial (cada uma gasta até ~7 consultas)
 
 /**
  * A foto do post, se pode ser usada. Canal com "fotoDoCanal": false (fontes.json) põe a marca dele nas fotos
@@ -93,7 +95,11 @@ export function resolverFontes(fontes, gruposWhats) {
 }
 
 export class Espelho {
-  constructor({ sender, store, affiliate, fontes, grupos, cfg = {}, resolver = resolverOferta, agora = () => Date.now(), esperar = sleep, avisos = null, amazonTag = process.env.AMAZON_PARTNER_TAG?.trim() || '', resolverAmazon = resolverLinkAmazon, awin = null, resolverLoja = resolverLinkLoja, carregarGrupos = null, shopee = null }) {
+  constructor({ sender, store, affiliate, fontes, grupos, cfg = {}, resolver = resolverOferta, agora = () => Date.now(), esperar = sleep, avisos = null, amazonTag = process.env.AMAZON_PARTNER_TAG?.trim() || '', resolverAmazon = resolverLinkAmazon, awin = null, resolverLoja = resolverLinkLoja, carregarGrupos = null, shopee = null, mlApi = null }) {
+    this.mlApi = mlApi?.configurada ? mlApi : null; // API oficial do ML (src/ml/api.js): acha a oferta do ML dos canais pelo nome
+    this.cacheML = new Map();
+    this.buscasML = [];
+    this.mlPausadoAte = 0;
     this.shopee = shopee?.ligada() ? shopee : null; // Shopee de afiliados (src/shopee.js); sem ela, link da Shopee sai do post
     this.avisos = avisos;
     this.awin = awin; // lojas parceiras da Awin (src/awin.js); sem ela, link de loja é ignorado
@@ -226,7 +232,7 @@ export class Espelho {
       };
       const motivo = this.store.conhecido(produto.id, g.nome)
         ? 'já está na fila'
-        : motivoRecusa(produto, this.filtros(fonte, g), this.store, { descontoDesconhecidoPassa: true, exigirVendas: !fonte.manual });
+        : motivoRecusa(produto, this.filtros(fonte, g), this.store, { descontoDesconhecidoPassa: true, exigirVendas: !fonte.manual && !base.semRegraVendas });
       if (motivo) {
         motivos.push(motivo);
         evento('recusado', produto, motivo);
@@ -250,6 +256,76 @@ export class Espelho {
       log(`🪞 [${g.nome}] ${nomeLoja(base)} de "${fonte.nomeWhats || fonte.nome}": ${base.nome.slice(0, 55)} — ${linkAfiliado}`);
     }
     return aceitos ? 'ok' : motivos[0];
+  }
+
+  /**
+   * Oferta do Mercado Livre de canal com "mlPeloNome" (29/10/2026, o dono: "vamos pegar mais posts do ml e amazon de
+   * grupos que dão certo"). O link do canal (meli.la) só abre pela página do ML, que barra o bot desde 21/10: o produto
+   * é achado na API oficial pelo nome e pelo preço do post (acharPeloNome em src/ml/api.js) e sai no formato do bot,
+   * com nome, foto e preço do catálogo, o link do dono e as regras do grupo. Sem a regra de vendas se o canal tiver
+   * "exigirVendas": false (o dono liberou o ML dos canais em 27/10/2026).
+   */
+  async processarMLPeloNome(m, fonte, destino) {
+    if (!this.mlApi) return 'ML sem a API oficial';
+    if (this.agora() < this.mlPausadoAte) return 'ML pausado';
+    const d = dadosDoTexto(m.texto);
+    if (!d.nome || !d.precoAtual) return 'ML sem nome ou preço no post';
+    const destinos = this.alvosDe(d.nome, fonte, destino);
+    // O nome do post já passa pelo nicho, pelas bloqueadas e pelo "só marcas" antes de gastar a API.
+    destinos.alvos = destinos.alvos.filter((g) => {
+      const r = motivoPeloNome({ nome: d.nome }, g.filtros || {});
+      if (r) destinos.motivos.push(r);
+      return !r;
+    });
+    if (!destinos.alvos.length) return destinos.motivos[0] || 'sem destino';
+    let produto;
+    try {
+      produto = await this.acharML(d.nome, d.precoAtual);
+    } catch (e) {
+      this.mlPausadoAte = this.agora() + 15 * MIN; // ex.: HTTP 429 (muitas buscas): não insiste
+      log(`  🪞 API do ML: ${String(e.message).split('\n')[0]} — ML dos canais pausado por 15 min`);
+      return 'API do ML indisponível';
+    }
+    if (produto === undefined) return 'ML: limite de buscas por hora';
+    if (!produto) return 'ML: produto do post não achado';
+    const dados ={ ...d, precoAtual: produto.precoAtual, precoOriginal: produto.precoOriginal ?? d.precoOriginal, descontoPct: produto.descontoPct ?? d.descontoPct, precoObs: null };
+    const link = async () => {
+      if (this.agora() - this.ultimoRefresh > 30 * MIN) {
+        await this.affiliate.refresh();
+        this.ultimoRefresh = this.agora();
+      }
+      const mapa = await this.affiliate.createLinks([produto.url]);
+      const meu = mapa.get(produto.url) || [...mapa.values()][0];
+      if (!meu) throw new Error('o ML não devolveu link de afiliado');
+      return meu;
+    };
+    // A foto do canal pode ter o preço dele escrito: só vale se o anúncio tiver o mesmo preço do post.
+    const comFoto = precoBate(d.precoAtual, produto.precoAtual) ? fonte : { ...fonte, fotoDoCanal: false };
+    try {
+      return await this.enfileirarDoTexto(m, comFoto, destinos, dados, { ...produto, semRegraVendas: fonte.exigirVendas === false }, link);
+    } catch (e) {
+      this.mlPausadoAte = this.agora() + 60 * MIN;
+      log(`  🪞 ML: link de afiliado não saiu (${String(e.message).split('\n')[0]}) — ML dos canais pausado por 1 h`);
+      return 'ML não devolveu link de afiliado';
+    }
+  }
+
+  /**
+   * acharPeloNome com memória de 6 h (o mesmo produto aparece em vários canais, e repetido no mesmo canal) e no máximo
+   * BUSCAS_ML_POR_HORA buscas novas: a API recusa quem pergunta demais (HTTP 429, visto em 29/10/2026) e é a mesma que
+   * traz os mais vendidos nas coletas. Undefined = limite da hora.
+   */
+  async acharML(nome, preco) {
+    const chave = `${normalizar(nome)}|${preco}`;
+    const guardado = this.cacheML.get(chave);
+    if (guardado && this.agora() - guardado.em < 6 * 60 * MIN) return guardado.produto;
+    this.buscasML = this.buscasML.filter((t) => this.agora() - t < 60 * MIN);
+    if (this.buscasML.length >= BUSCAS_ML_POR_HORA) return undefined;
+    this.buscasML.push(this.agora());
+    const produto = await acharPeloNome(this.mlApi, nome, preco);
+    if (this.cacheML.size > 2000) this.cacheML.clear();
+    this.cacheML.set(chave, { produto, em: this.agora() });
+    return produto;
   }
 
   /** Oferta da Amazon: troca a etiqueta e usa o texto da mensagem (sem abrir a página da Amazon). */
@@ -330,6 +406,7 @@ export class Espelho {
     // Fonte "soAmazon"/"semML": os links do ML ficam de fora (o ML já tem a busca própria).
     const links = fonte.soAmazon || fonte.semML ? [] : extrairLinksML(m.texto).filter((l) => tipoLink(l) !== 'outro');
     const linksAmazon = links.length ? [] : extrairLinksAmazon(m.texto);
+    if (fonte.mlPeloNome && !linksAmazon.length && extrairLinksML([m.texto, ...(m.links || [])].join('\n')).length) return this.processarMLPeloNome(m, fonte, destino);
     if (fonte.apenasAmazon && !linksAmazon.length) return 'sem link da Amazon'; // canal só para Amazon: ML/Shopee/Awin ficam de fora
     if (!links.length && !linksAmazon.length) {
       const linksShopee = this.shopee ? extrairLinksShopee(m.links || [], m.texto) : [];

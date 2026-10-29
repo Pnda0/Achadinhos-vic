@@ -20,7 +20,9 @@ export const jidDoCanal = (nome) => PREFIXO + String(nome).trim().replace(/^(htt
  * "copiarTexto": true = o post sai IGUAL ao do canal (texto e foto), só com os links trocados pelos do dono.
  * "apenasAmazon": true = do canal só interessam as ofertas da Amazon (ML, Shopee e Awin são ignorados); com
  * "copiarTexto": false, o post é montado no formato do bot (nome, preço, cupom) com a etiqueta do dono.
- * "exigirVendas", "fotoDoCanal" e "copiarTexto" também valem no bloco, para todos os canais.
+ * "mlPeloNome": true = a oferta do Mercado Livre também entra: o produto é achado pela API oficial com o nome e o
+ * preço do post (o link meli.la só abre no site do ML, que barra o bot) — src/espelho.js, processarMLPeloNome.
+ * "exigirVendas", "fotoDoCanal", "copiarTexto" e "mlPeloNome" também valem no bloco, para todos os canais.
  */
 export function fontesDosCanais(c, { destinoPadrao = 'Geral', nichos = {}, lojasParceiras = false, amazonTag = '' } = {}) {
   const destino = c.destino || destinoPadrao;
@@ -41,6 +43,7 @@ export function fontesDosCanais(c, { destinoPadrao = 'Geral', nichos = {}, lojas
         exigirVendas: (o.exigirVendas ?? c.exigirVendas) !== false,
         fotoDoCanal: !!(o.fotoDoCanal ?? c.fotoDoCanal),
         copiarTexto: !!(o.copiarTexto ?? c.copiarTexto),
+        mlPeloNome: !!(o.mlPeloNome ?? c.mlPeloNome),
         ...(Number.isInteger(o.maxPorHora) && { maxPorHora: o.maxPorHora }),
       };
     })

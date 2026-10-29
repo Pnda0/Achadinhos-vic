@@ -10,6 +10,7 @@
   "canaisTelegram": {
     "ativo": true,
     "apenasAmazon": true,
+    "mlPeloNome": true,
     "copiarTexto": false,
     "maxPorHora": 3,
     "intervaloSegundos": 60,
@@ -23,6 +24,18 @@
       },
       {
         "canal": "HomemCheiroso"
+      },
+      {
+        "canal": "promobigodeperfumes"
+      },
+      {
+        "canal": "topfitachados"
+      },
+      {
+        "canal": "oqcomprei"
+      },
+      {
+        "canal": "perfumepromo"
       }
     ],
     "destinos": [
@@ -42,6 +55,7 @@
     "exigirVendas": false,
     "fotoDoCanal": false,
     "_comentarioAmazon": "27/10/2026, pedido do dono (\"veja pra pegar amazon... pegue de algum grupo e troque pelo meu link, diversifique, mas avalie, priorize as marcas\"): a Amazon não tem API para a conta antes de 3 vendas e o Associados proíbe robô no site, então ela vem destes canais públicos. Do canal entra SÓ a oferta da Amazon (apenasAmazon), montada no formato do bot com a etiqueta do dono (AMAZON_PARTNER_TAG), e passa por TODAS as regras do grupo (nicho, só marcas, feminino primeiro, desconto, não repetir). Mercado Livre, Shopee e Awin dos canais ficam de fora (o bot já busca essas lojas sozinho). Canais escolhidos medindo ~120 posts de cada (27/10/2026): @xetdaspromocoes ~37 ofertas da Amazon por dia, ~12 passariam no Beleza (Neutrogena, L'Oréal, Lola...), foto boa e sem logo (fotoDoCanal: true); @urubupromo ~9 da Amazon por dia, poucas de marca; @HomemCheiroso perfumes, ~3 da Amazon por dia (muito masculino: o Perfumes segura 1 a cada 5). Ficaram de fora por quase não ter Amazon de beleza/perfume/fitness: promobit, gatunopromos, promoloucas, oqcomprei, topfitachados, promobigodeperfumes, promotop, ofertasbr, pelandobr (só links próprios) e canais parados. maxPorHora = no máximo N por hora em cada grupo (marca da lista conta o dobro).",
+    "_comentarioML": "29/10/2026, pedido do dono (\"vamos pegar mais posts do ml e amazon de grupos que dão certo\"): \"mlPeloNome\" = a oferta do Mercado Livre dos canais também entra. O link do canal (meli.la) só abre no site do ML, que barra o bot desde 21/10, então o produto é achado pela API oficial com o NOME e o PREÇO do post (src/ml/api.js, acharPeloNome): nome igual (sem trocar refil, kit, presente, tamanho, feminino/masculino) e um anúncio com o preço do post ou até 8% acima (preço no Pix). Sai no formato do bot com nome, foto e preço do anúncio, o link do dono e todas as regras do grupo; sem a regra de vendas (dono, 27/10). Medido em 29/10 (posts de até 3 dias; ao vivo o preço bate mais): @promobigodeperfumes ~39 por dia (perfume, muito masculino), @xetdaspromocoes ~6, @topfitachados ~4 (Fitness), @oqcomprei ~2, @HomemCheiroso ~2, @perfumepromo ~1. Ficou de fora @gatunopromos (preço do post é com cupom: nenhum bateu). Os canais novos quase não têm Amazon. Se a API recusar (ex.: HTTP 429), o ML dos canais pausa 15 min; a Amazon segue.",
     "_comentarioPausa": "De 16/10 a 27/10/2026 desligado (\"pare de copiar dos outros, ficou com muito produto ruim\"); religado em 27/10 só para a Amazon, com só marcas valendo em todos os grupos."
   },
   "_comentarioGruposTelegram": "GRUPOS DO TELEGRAM PARA COPIAR — DESLIGADO (27/10/2026, o dono: \"vamos deixar grupo da lu de fora\"). Como funciona quando ligado: exceção ao \"não copiar\" de 16/10, só para os grupos desta lista. Grupo não tem página pública: o bot (@achadinhosvic_bot) precisa ser membro e estar com a privacidade desligada no @BotFather (/setprivacy > Disable); quando ele entra num grupo cujo título contém o \"titulo\" daqui, começa a copiar sozinho e avisa o dono. As ofertas passam por TODAS as regras do grupo de destino (nicho, só marcas, feminino primeiro, não repetir, Shopee 1 a cada 4) e saem no formato do bot (copiarTexto: false), com a foto da loja (fotoDoCanal: false: a foto do outro grupo pode ter a logo dele). semML: true = links do Mercado Livre ficam de fora (trocar exigiria abrir a página de cada um no ML, o que fez o ML bloquear o bot em 21/10). maxPorHora = no máximo N ofertas desses grupos por hora em cada grupo seu. Depois de mexer aqui, reinicie o bot.",

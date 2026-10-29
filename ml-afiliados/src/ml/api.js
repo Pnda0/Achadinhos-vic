@@ -5,8 +5,10 @@
  *
  * O que o aplicativo consegue ler (testado em 27/10/2026): a lista dos 20 mais vendidos de cada categoria
  * (/highlights), o produto do catálogo (/products/{id}: nome e fotos) e os anúncios dele (/products/{id}/items:
- * preço, preço antigo, loja oficial, frete). A busca por palavra, os anúncios avulsos (/items) e as avaliações dão
- * 403 para aplicativo não certificado — por isso só entram os itens "PRODUCT" da lista de mais vendidos.
+ * preço, preço antigo, loja oficial, frete). A busca de anúncios por palavra (/sites/MLB/search), os anúncios avulsos
+ * (/items) e as avaliações dão 403 para aplicativo não certificado — por isso só entram os itens "PRODUCT" da lista de
+ * mais vendidos. A busca no CATÁLOGO por nome (/products/search) funciona (29/10/2026): é por ela que as ofertas do ML
+ * dos canais do Telegram são achadas (acharPeloNome).
  *
  * Vendas: a API não diz quantas. O produto está entre os 20 mais vendidos de uma categoria com milhares de anúncios
  * (só usamos categorias com MIN_ANUNCIOS ou mais), o que vale mais que as "mais de 50 vendas" do rótulo do card:
@@ -18,6 +20,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DATA_DIR, settings } from '../config.js';
 import { normalizar, sleep } from '../util.js';
+import { generoDoProduto } from '../genero.js';
+import { parecido } from '../store.js';
 import { imageUrlFromId, normalizeImageUrl } from './parser.js';
 
 const API = 'https://api.mercadolibre.com';
@@ -180,4 +184,53 @@ export async function buscarMaisVendidosML(cat, { api = new MLApi(), antes = () 
   }
   api.salvarCache();
   return out;
+}
+
+/** Mesmo preço, com o arredondamento dos canais (até R$ 1 ou 1%) — igual a precoBate() em src/espelho.js. */
+const precoIgual = (doPost, doAnuncio) => Math.abs(doPost - doAnuncio) <= Math.max(1, doAnuncio * 0.01);
+/** O canal costuma postar o preço no Pix (alguns % abaixo do anúncio): até 8% acima do post ainda é a mesma oferta. */
+const precoPerto = (doPost, doAnuncio) => precoIgual(doPost, doAnuncio) || (doAnuncio > doPost && doAnuncio <= doPost * 1.08);
+
+// No nome de um e não no do outro = outro produto (refil x frasco, kit/presente x unidade, shampoo x máscara...).
+const VARIANTES = /\b(refil|kit|presente|estojo|miniatura|decant|amostra|tester|combo|body splash|shampoo|condicionador|mascara|sabonete|locao)\b/g;
+const variantes = (nome) => new Set(normalizar(nome).match(VARIANTES) || []);
+const juntarUnidade = (nome) => String(nome).replace(/(\d)\s+(ml|g|kg|l|mg)\b/gi, '$1$2'); // "100 ml" = "100ml"
+
+/**
+ * O nome do post e o do catálogo são o MESMO produto? Mesmas palavras que dizem qual é (parecido(), 70%), mesmo
+ * tamanho, sem refil/kit/tipo diferente e sem feminino x masculino. Na dúvida, não: em 29/10/2026 a busca devolvia
+ * "Natura Kaiak Pulso" para "Natura K Max" e "Club de Nuit Intense" para "Club de Nuit Sillage".
+ */
+export function mesmoProduto(doPost, doCatalogo) {
+  if (!parecido(juntarUnidade(doPost), juntarUnidade(doCatalogo))) return false;
+  const a = variantes(doPost);
+  const b = variantes(doCatalogo);
+  if (a.size !== b.size || [...a].some((v) => !b.has(v))) return false;
+  const ga = generoDoProduto({ nome: doPost });
+  const gb = generoDoProduto({ nome: doCatalogo });
+  return !(ga && gb && ga !== gb);
+}
+
+/**
+ * Oferta do ML de um canal do Telegram: o link do canal (meli.la) só abre pela página do ML, que barra o bot desde
+ * 21/10/2026. Então o produto é procurado no catálogo pelo nome do post, e só vale se o nome for o mesmo
+ * (mesmoProduto) e algum anúncio novo tiver o preço do post (ou até 8% acima: preço no Pix) — senão é outra oferta
+ * (ou preço com cupom). O post sai com o preço do anúncio, não o do canal. Null se não achar.
+ */
+export async function acharPeloNome(api, nome, preco, { resultados = 5 } = {}) {
+  if (!nome || !(preco > 0)) return null;
+  const busca = await api.get(`/products/search?status=active&site_id=MLB&limit=${resultados}&q=${encodeURIComponent(nome.slice(0, 80))}`);
+  for (const r of busca?.results || []) {
+    if (!r.name || !mesmoProduto(nome, r.name)) continue;
+    const anuncios = await api.get(`/products/${r.id}/items?limit=20`);
+    const lista = anuncios?.results || [];
+    const exatos = lista.filter((x) => precoIgual(preco, x.price));
+    const anuncio = escolherAnuncio(exatos.length ? exatos : lista.filter((x) => precoPerto(preco, x.price)));
+    if (!anuncio) continue;
+    const info = await api.produto(r.id);
+    if (!info?.imagem) continue;
+    api.salvarCache();
+    return montarProduto(info, anuncio, { produtoId: r.id });
+  }
+  return null;
 }

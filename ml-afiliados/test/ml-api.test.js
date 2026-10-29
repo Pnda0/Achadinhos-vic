@@ -143,3 +143,25 @@ test('Perfumes: mais vendido do ML com desconto abaixo de 20% entra como reserva
   s.setStatus(s.list((p) => p.id === 'SH1')[0], 'ENVIADO', { enviadoEm: new Date().toISOString() });
   assert.equal(s.proximo('Perfumes').id, 'Perfumes-A');
 });
+
+test('mesmoProduto: nome do post x nome do catálogo (casos reais de 29/10/2026)', async () => {
+  const { mesmoProduto } = await import('../src/ml/api.js');
+  const sim = [
+    ['Asad Elixir Lattafa 100 ml', 'Lattafa Asad Elixir 100 ML'],
+    ['Mochila Adidas Esportiva Defender', 'Mochila Esportiva Defender adidas'],
+    ['Hiper Mass 1kg Growth Supplements Chocolate', 'Hiper Mass 1kg Growth Supplements - Sabor Chocolate'],
+    ['Eudora Pulse Masculino Perfume Colônia 100ml', 'Eudora Pulse Colônia 100ml'],
+  ];
+  const nao = [
+    ['Perfume Natura K Max 100ml', 'Perfume Natura Kaiak Pulso Masculino 100ml'],
+    ['Perfume Árabe Armaf Club de Nuit Sillage EDP 105ml', 'Perfume Árabe Club De Nuit Intense Da Armaf Edt 105ml'],
+    ['Natura Essencial Exclusivo 100ml', 'Refil Deo Parfum Natura Essencial Exclusivo Masculino 100ml'],
+    ['Lattafa Asad 100 ml', 'Kit Perfume lattafa Asad 100ml + Desodorante'],
+    ['Lattafa Asad 100 ml', 'Lattafa Asad Elixir 100 ML'],
+    ['Eudora Siage Cica-therapy (Shampoo+ Máscara)', 'Eudora Siàge Cica-Therapy Shampoo Condicionador'],
+    ['Lattafa Yara 100ml', 'Lattafa Yara 50ml'],
+    ['O Boticário Floratta Red Passion Edp 75ml', 'Presente O Boticário Floratta Red Passion'],
+  ];
+  for (const [a, b] of sim) assert.equal(mesmoProduto(a, b), true, `${a} = ${b}`);
+  for (const [a, b] of nao) assert.equal(mesmoProduto(a, b), false, `${a} ≠ ${b}`);
+});
