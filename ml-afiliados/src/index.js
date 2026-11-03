@@ -26,7 +26,7 @@ import { diaLocal, log, sleep } from './util.js';
 import { instalarLogEmArquivo, pedirParaReligar, registrarErro } from './logfile.js';
 import { gerarDia, porEmDia } from './analytics/dia.js';
 import { membrosDoDia, registrarMembros } from './analytics/membros.js';
-import { registrarAwin } from './analytics/ganhos.js';
+import { registrarAwin, registrarShopee } from './analytics/ganhos.js';
 import { montarPainel } from './analytics/relatorio.js';
 import { destaquesDoDia, resumoSemanal } from './analytics/destaques.js';
 import { gravarSite } from './analytics/pagina.js';
@@ -485,7 +485,9 @@ async function main() {
   cron.schedule('50 21 * * *', contarMembros, opts);
   // Relatório da Awin (cliques, vendas, comissão pendente x aprovada): ao ligar, 12h30 e 21h52; só leitura, pela fila
   // de 20 chamadas/min (cada rodada busca hoje e ontem e preenche os dias que faltam).
-  const relatorioAwin = () => registrarAwin({ awin }).catch((e) => registrarErro('analytics-awin', e));
+  // A Shopee (vendas e comissão por pedido) vai junto, nos mesmos horários.
+  const relatorioAwin = () =>
+    Promise.all([registrarAwin({ awin }).catch((e) => registrarErro('analytics-awin', e)), registrarShopee({ shopee }).catch((e) => registrarErro('analytics-shopee', e))]);
   cron.schedule('30 12 * * *', relatorioAwin, opts);
   cron.schedule('52 21 * * *', relatorioAwin, opts);
   setTimeout(relatorioAwin, 2 * 60_000).unref(); // ao ligar, depois da coleta inicial começar (o PC pode dormir às 21h52)

@@ -1,0 +1,11 @@
+# Painel privado (Cloudflare Pages "achadinhos-vic-painel"), publicado pelo bot (src/analytics/publicar.js, com --cwd
+# apontando para esta pasta). Liga o banco dos cliques dos posts ao _worker.js do painel (/api/cliques, atrás da senha).
+# A senha (PAINEL_SENHA) é segredo do projeto no Cloudflare e não fica aqui.
+name = "achadinhos-vic-painel"
+pages_build_output_dir = "../../data/analytics/site"
+compatibility_date = "2026-10-01"
+
+[[d1_databases]]
+binding = "CLIQUES"
+database_name = "achadinhos-cliques"
+database_id = "1d86569b-a116-4bc9-8467-8caf75e2cfb8"

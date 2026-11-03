@@ -306,7 +306,16 @@ O bot guarda, por grupo e por fonte, o que entrou, o que saiu, o que foi barrado
 - **No celular, de qualquer lugar**: https://achadinhos-vic-painel.pages.dev — um projeto **separado** do site público, **privado** (só o seu e-mail entra). O bot publica às 8h05, 12h30, 17h30 e 21h57, e só se conseguir confirmar que o painel está protegido.
 - **No Telegram**: o resumo das 21h58 traz 3–5 linhas de destaque (e o link do painel); toda segunda às 9h chega o resumo da semana.
 
-Arquivos em `data/analytics/` (fora do git): `dias/AAAA-MM-DD.json` (180 dias), `membros.json`, `awin.json`, `site/` (o que é publicado), `relatorio.html`.
+Arquivos em `data/analytics/` (fora do git): `dias/AAAA-MM-DD.json` (180 dias), `membros.json`, `awin.json`, `shopee.json`, `site/` (o que é publicado), `relatorio.html`.
+
+### Abas, cliques e ganhos (03/11/2026)
+
+Pedido do dono: "o mais útil, sem encher de informação" (quem mais olha é a prima dele). Menu, todas as abas funcionando: **Visão geral** (status, publicadas, cliques, ganhos aprovados, gráfico, os 5 mais clicados, pontos de atenção) · **Produtos** (ranking dos mais clicados, por grupo e por loja, Telegram × WhatsApp) · **Ganhos** · **Grupos** · **Fontes** (com o mapa fonte × grupo) · **Categorias** · **Centro de operações** (fila agora, último post, envios sem confirmação) · **Regras e filtros** (só leitura) · **WhatsApp**. A busca (com lupa) vai para a aba; se nenhuma combina, procura o produto no ranking.
+
+- **Cliques por produto** (`src/rastreio.js`): o link do post passa pelo site, `https://achadinhos-vic.pages.dev/p/<canal><grupo><loja><código>` (ex.: `/p/tbm2AbCdE` → `https://meli.la/2AbCdE`). O `Vic Site/_worker.js` conta o clique no banco D1 `achadinhos-cliques` e manda para a loja na hora; só vai para meli.la, s.shopee.com.br e tidd.ly. Prévia automática de link (Telegram, WhatsApp, Google) não conta. **Amazon e link longo vão direto** (a Amazon não aceita link de afiliado escondido). O WhatsApp troca o `t` por `w` no link, para separar os cliques. O código vai no evento `publicado` (`codigo`), e o painel online lê os cliques na hora de `/api/cliques` (o porteiro do painel, atrás da senha, no mesmo banco; ligado por `cloudflare/painel/wrangler.toml`, que o bot usa ao publicar com `--cwd`). No arquivo do PC os cliques não aparecem. Desligar: `RASTREIO_CLIQUES=false` no `.env` e reiniciar.
+- **Visualizações** não existem: o Telegram não mostra para o bot, nem o WhatsApp.
+- **Ganhos**: Awin (já existia) e **Shopee** pela API (`conversionReport`, últimos 30 dias, às 12h30, 21h52 e ao ligar; `src/analytics/ganhos.js`), com pendente separado do aprovado e os produtos que mais renderam. Mercado Livre e Amazon não têm API de relatório: a aba mostra o link do painel de cada um (decisão do dono).
+- Site público: o `wrangler.toml` da raiz liga o banco ao `_worker.js`; publicar continua com `npx wrangler@4 pages deploy "Vic Site" --project-name achadinhos-vic --branch main` (da raiz).
 
 ### Ligar a publicação (uma vez, ~10 min — precisa do seu login no Cloudflare)
 

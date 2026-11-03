@@ -140,8 +140,11 @@ test('página: tokens do tema, período e abas acessíveis, dados escapados, sem
   const html = htmlDoPainel({ ...painel, notas: [], extra: '</script><script>alert(1)</script>' });
   assert.match(html, /--bg:#121111/);
   assert.match(html, /--accent:#d27d99/);
-  assert.match(html, /role="tablist"/);
   assert.match(html, /aria-pressed="false"/);
+  // Todas as abas do menu funcionam (nenhuma "sem tela") e a busca tem a lupa.
+  for (const aba of ['resumo', 'produtos', 'ganhos', 'grupos', 'fontes', 'categorias', 'operacao', 'regras', 'whatsapp']) assert.match(html, new RegExp(`data-aba="${aba}"`));
+  assert.doesNotMatch(html, /aria-disabled/);
+  assert.match(html, /<label class="busca"><svg/);
   assert.match(html, /Achadinhos da Vic<span class="estrela" aria-hidden="true">✦<\/span>/);
   assert.doesNotMatch(html, /<\/script><script>alert/, 'dados não fecham o script');
   assert.doesNotMatch(html.split('<script type="application/json"')[0], /1\.228|1\.043|41,2/);

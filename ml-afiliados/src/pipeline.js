@@ -31,6 +31,7 @@ import { preferenciaFeminina } from './genero.js';
 import { marcaDoProduto, motivoPrecoDaMarca, preferenciaDeMarca } from './marcas.js';
 import { BrowserSession, sessaoNavegador } from './browser.js';
 import { montarLegenda, tituloCupom } from './caption.js';
+import { comLinkRastreado } from './rastreio.js';
 import { Store } from './store.js';
 import { casaTermo, chunk, diaLocal, log, normalizar, randomDelay, shuffle, sleep } from './util.js';
 
@@ -564,15 +565,16 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
   store.save();
   try {
     const titulo = p.tipo === 'cupom' ? tituloCupom(p) : null; // produto não tem mais título (formato de 20/10/2026)
-    const legenda = montarLegenda(p, { titulo, mensagemAdicional: grupo.mensagemAdicional });
+    const noPost = comLinkRastreado(p, grupo.nome); // link pelo site, que conta o clique (src/rastreio.js)
+    const legenda = montarLegenda(noPost, { titulo, mensagemAdicional: grupo.mensagemAdicional });
     if (settings.simularDigitando && settings.sender !== 'console') await simularDigitando(sender, grupo.jid);
     const r = p.imagem
       ? await sender.sendImage(grupo.jid, p.imagem, legenda)
       : (await sender.sendText(grupo.jid, legenda), { comImagem: false }); // sem foto: o WhatsApp mostra a prévia do link
     const semImagem = r?.comImagem === false;
     store.setStatus(p, 'ENVIADO', { enviadoEm: new Date().toISOString(), semImagem, legenda }); // a legenda vai igual para o WhatsApp
-    evento('publicado', p, semImagem ? 'sem imagem' : null);
-    log(`📤 [${grupo.nome}]${semImagem ? ' (sem imagem)' : ''} ${p.nome.slice(0, 60)} — ${p.linkAfiliado}`);
+    evento('publicado', noPost, semImagem ? 'sem imagem' : null);
+    log(`📤 [${grupo.nome}]${semImagem ? ' (sem imagem)' : ''} ${p.nome.slice(0, 60)} — ${noPost.linkAfiliado}`);
   } catch (e) {
     const msg = String(e.message).split('\n')[0];
     if (e.incerto) {

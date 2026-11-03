@@ -96,6 +96,8 @@ const novoGrupo = () => ({
   porHora: {},
   top10: [],
   fontes: {},
+  whatsapp: 0, // espelho no WhatsApp: enviadas e que falharam
+  whatsappFalhou: 0,
 });
 const novaFonte = () => ({ naFila: 0, publicadas: 0, recusadas: 0, recusas: {}, barradas: 0, barragens: {}, duplicados: 0, incertos: 0, erros: 0 });
 
@@ -118,6 +120,11 @@ export function montarDia(dia, { eventos = [], store = null, membros = null, par
   for (const e of eventos) {
     if (!e?.t || !e.grupo || diaLocal(new Date(e.t), settings.tz) !== dia) continue;
     const G = (grupos[e.grupo] ??= novoGrupo());
+    // Espelho no WhatsApp: só a contagem do grupo (a oferta já contou na fonte quando saiu no Telegram).
+    if (e.tipo === 'whatsapp' || e.tipo === 'whatsapp_falhou') {
+      G[e.tipo === 'whatsapp' ? 'whatsapp' : 'whatsappFalhou']++;
+      continue;
+    }
     const F = (G.fontes[fonteDoEvento(e)] ??= novaFonte());
     switch (e.tipo) {
       case 'na_fila':

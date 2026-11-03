@@ -5,11 +5,14 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { DATA_DIR, loadCategorias, loadGrupos, loadShopee, settings } from '../config.js';
+import { DATA_DIR, loadCategorias, loadGrupos, loadMarcas, loadShopee, settings } from '../config.js';
+import { loadAwin } from '../awin.js';
+import { VENDAS_MINIMAS } from '../ml/vendas.js';
+import { letraDoGrupo } from '../rastreio.js';
 import { diaLocal } from '../util.js';
 import { PASTA_ANALYTICS, lerDia, lerEventos, montarDia } from './dia.js';
 import { lerMembros, variacaoMembros } from './membros.js';
-import { PAINEL_ML, lerAwin } from './ganhos.js';
+import { PAINEL_AMAZON, PAINEL_AWIN, PAINEL_ML, PAINEL_SHOPEE, dinheiroShopee, lerAwin, lerShopee } from './ganhos.js';
 import { montarAnalytics } from './produtos.js';
 
 export const NOTAS = [
@@ -71,7 +74,11 @@ export function agregar(resumos, dias) {
       const A = (grupos[nome] ??= {
         publicadas: 0, naFila: 0, recusadas: 0, barradas: 0, duplicados: 0, incertos: 0, erros: 0,
         filaVazia: 0, filaFim: null, porDia: {}, porHora: {}, vendas: {}, top10: [], fontes: {}, _desc: [], _cupom: [], _frete: [], _full: [], _preco: [],
+        whatsapp: 0, whatsappFalhou: 0, whatsappPorDia: {},
       });
+      A.whatsapp += G.whatsapp || 0;
+      A.whatsappFalhou += G.whatsappFalhou || 0;
+      A.whatsappPorDia[r.dia] = G.whatsapp || 0;
       A.publicadas += G.publicadas || 0;
       A.naFila += G.naFila || 0;
       A.recusadas += G.recusadas || 0;
@@ -107,7 +114,10 @@ export function agregar(resumos, dias) {
     A.precoMedio = media(A._preco);
     for (const k of ['_desc', '_cupom', '_frete', '_full', '_preco']) delete A[k];
     A.top10 = A.top10.sort((a, b) => (b.descontoPct || 0) - (a.descontoPct || 0)).slice(0, 10);
-    for (const d of dias) A.porDia[d] ??= 0;
+    for (const d of dias) {
+      A.porDia[d] ??= 0;
+      A.whatsappPorDia[d] ??= 0;
+    }
     // Quanto da fila do grupo veio de cada fonte, e quanto do que ela trouxe saiu.
     for (const F of Object.values(A.fontes)) {
       F.parteDaFila = A.naFila ? Math.round((F.naFila / A.naFila) * 100) : null;
@@ -153,14 +163,66 @@ function dinheiroAwin(awin, dias) {
  */
 /** Grupos e categorias de busca ligados na configuração (para o Analytics de produtos). */
 export function configDoPainel() {
-  const grupos = loadGrupos().map((g) => ({ nome: g.nome, ativo: g.ativo }));
+  const completos = loadGrupos();
+  const grupos = completos.map((g) => ({ nome: g.nome, ativo: g.ativo }));
   const ligado = new Set(grupos.filter((g) => g.ativo).map((g) => g.nome));
   const shopee = loadShopee();
   const categoriasAtivas = [
     ...loadCategorias().filter((c) => c.ativo && ligado.has(c.grupo)).map((c) => ({ nome: c.nome, loja: 'Mercado Livre' })),
     ...(shopee.ativo === false ? [] : Object.entries(shopee.grupos || {}).filter(([g, x]) => x.ativo !== false && ligado.has(g)).map(([g]) => ({ nome: `Shopee: ${g}`, loja: 'Shopee' }))),
   ];
-  return { gruposConfig: grupos, categoriasAtivas: [...new Map(categoriasAtivas.map((c) => [c.nome, c])).values()] };
+  return { gruposConfig: grupos, categoriasAtivas: [...new Map(categoriasAtivas.map((c) => [c.nome, c])).values()], regras: regrasDoPainel(completos, shopee) };
+}
+
+/** As regras que valem hoje, em poucas linhas (aba "Regras e filtros"; só leitura). */
+export function regrasDoPainel(grupos, shopee = loadShopee(), marcas = loadMarcas(), awin = loadAwin()) {
+  const listas = Object.entries(marcas)
+    .filter(([, v]) => Array.isArray(v))
+    .map(([lista, v]) => ({ lista, nicho: marcas.nichos?.[lista] || null, marcas: v.map((m) => (typeof m === 'string' ? m : m.marca)).filter(Boolean) }));
+  return {
+    grupos: grupos.map((g) => ({
+      nome: g.nome,
+      ativo: g.ativo,
+      descontoMinimo: g.filtros?.descontoMinimo ?? null,
+      precoMinimo: g.filtros?.precoMinimo ?? null,
+      precoMaximo: g.filtros?.precoMaximo ?? null,
+      notaMinima: g.filtros?.notaMinima ?? null,
+      diasSemRepetir: g.filtros?.diasSemRepetir ?? null,
+      soMarcas: !!g.soMarcas,
+      masculinoCada: Number.isInteger(g.preferirFeminino) && g.preferirFeminino >= 2 ? g.preferirFeminino : g.preferirFeminino ? 3 : null,
+      bloqueadas: (g.filtros?.palavrasBloqueadas || []).length,
+      whatsapp: !g.whatsappPausado,
+    })),
+    vendasMinimasML: VENDAS_MINIMAS,
+    shopeeUmACada: Number(shopee.umACada) || null,
+    awinCatalogo: { umACada: Number(awin.produtos?.umACada) || null, maxPorDia: Number(awin.produtos?.maxPorDia) || null },
+    marcas: listas,
+    whatsapp: { ligado: settings.whatsappEspelho, intervaloMin: settings.whatsappIntervaloMin },
+  };
+}
+
+/** Produtos publicados nos últimos `dias` com link do site (src/rastreio.js): ligam os cliques a cada produto. */
+export function produtosComLink(eventos, agora = new Date(), dias = 30) {
+  const desde = diaMenos(agora, dias - 1);
+  const porChave = {};
+  for (const e of eventos) {
+    if (e?.tipo !== 'publicado' || !e.codigo || !e.t || !e.grupo) continue;
+    const dia = diaLocal(new Date(e.t), settings.tz);
+    if (dia < desde) continue;
+    const k = `${e.grupo}|${e.codigo}`;
+    if (!porChave[k] || e.t > porChave[k].t) porChave[k] = { c: e.codigo, g: e.grupo, n: e.nome, l: e.loja || 'ml', p: e.preco ?? null, d: e.descontoPct ?? null, dia, t: e.t };
+  }
+  return Object.values(porChave).map(({ t, ...x }) => x);
+}
+
+/** Como está agora: fila de cada grupo, último post e o WhatsApp (aba "Operação"). */
+export function operacaoAgora(store, ultimaPublicacao, gruposConfig) {
+  const fila = {};
+  for (const p of store?.list((x) => x.status === 'PRONTO' || x.status === 'PENDENTE') || []) fila[p.grupo] = (fila[p.grupo] || 0) + 1;
+  return {
+    grupos: gruposConfig.map((g) => ({ nome: g.nome, ativo: g.ativo, fila: fila[g.nome] || 0, ultima: ultimaPublicacao[g.nome] || null })),
+    whatsappUltimo: store?.data?.whatsappUltimoEnvio || null,
+  };
 }
 
 /** Quando cada grupo publicou pela última vez (do histórico). */
@@ -180,6 +242,7 @@ export function montarPainel({ base = PASTA_ANALYTICS, store = lerStoreSoLeitura
     return ao;
   };
   const awin = lerAwin(base);
+  const shopee = lerShopee(base);
   const membros = lerMembros(base);
   const saida = { atualizadoEm: agora.toISOString(), hora: agora.toLocaleString('pt-BR', { timeZone: settings.tz, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }), periodos: {}, notas: NOTAS, painelML: PAINEL_ML };
   for (const p of periodos) {
@@ -187,6 +250,7 @@ export function montarPainel({ base = PASTA_ANALYTICS, store = lerStoreSoLeitura
     const ag = agregar(dias.map(resumoDe), dias);
     ag.categoriasParadas = p === 'hoje' ? [] : categoriasParadas(ag);
     ag.awin = dinheiroAwin(awin, dias);
+    ag.shopee = dinheiroShopee(shopee, dias);
     saida.periodos[p] = ag;
   }
   const ultimo = Object.keys(membros).sort().at(-1) || hoje;
@@ -196,7 +260,14 @@ export function montarPainel({ base = PASTA_ANALYTICS, store = lerStoreSoLeitura
   saida.awin30 = awin.periodo30 ? { inicio: awin.periodo30.inicio, fim: awin.periodo30.fim, total: awin.periodo30.total, lojas: awin.periodo30.lojas } : null;
   // Analytics de produtos (a tela nova): tudo calculado aqui, por período.
   const cfg = config ?? configDoPainel();
-  saida.analytics = montarAnalytics(saida, { ...cfg, ultimaPublicacao: ultimasPublicacoes((todos ??= lerEventos())), hoje, agora, tz: settings.tz });
+  const ultimaPublicacao = ultimasPublicacoes((todos ??= lerEventos()));
+  saida.analytics = montarAnalytics(saida, { ...cfg, ultimaPublicacao, hoje, agora, tz: settings.tz });
+  // Abas Produtos (cliques lidos na hora pelo painel online), Operação e Regras.
+  saida.produtos = produtosComLink(todos, agora);
+  saida.letras = Object.fromEntries((cfg.gruposConfig || []).map((g) => [letraDoGrupo(g.nome), g.nome]));
+  saida.operacao = operacaoAgora(store, ultimaPublicacao, cfg.gruposConfig || []);
+  saida.regras = cfg.regras || null;
+  saida.paineis = { ml: PAINEL_ML, amazon: PAINEL_AMAZON, shopee: PAINEL_SHOPEE, awin: PAINEL_AWIN };
   return saida;
 }
 

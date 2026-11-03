@@ -16,7 +16,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { settings } from '../config.js';
+import { ROOT, settings } from '../config.js';
 import { diaLocal, log } from '../util.js';
 import { PASTA_ANALYTICS } from './dia.js';
 import { pastaSite } from './pagina.js';
@@ -25,6 +25,7 @@ export const PROJETO = 'achadinhos-vic-painel';
 export const URL_PAINEL = `https://${PROJETO}.pages.dev`;
 const PROIBIDO = 'achadinhos-vic'; // o site público: nunca publicar o painel lá
 const TEMPO_MAXIMO = 3 * 60_000;
+export const PASTA_CLOUDFLARE = path.join(ROOT, 'cloudflare', 'painel');
 
 const arquivoEstado = (base) => path.join(base, 'publicacao.json');
 export function lerEstado(base = PASTA_ANALYTICS) {
@@ -142,7 +143,9 @@ export async function publicarPainel({ hash, base = PASTA_ANALYTICS, env = proce
   }
   const estado = lerEstado(base);
   const segredos = [env.CLOUDFLARE_API_TOKEN];
-  const deploy = (pasta) => executar(['pages', 'deploy', gravarPorteiro(pasta), '--project-name', projeto, '--branch', 'main', '--commit-dirty=true'], { env });
+  // A pasta do painel de verdade sai com a configuração de cloudflare/painel (o banco dos cliques ligado ao porteiro).
+  const comBanco = (pasta) => (path.resolve(pasta) === path.resolve(pastaSite()) ? ['--cwd', PASTA_CLOUDFLARE] : []);
+  const deploy = (pasta) => executar(['pages', 'deploy', path.resolve(gravarPorteiro(pasta)), '--project-name', projeto, '--branch', 'main', '--commit-dirty=true', ...comBanco(pasta)], { env });
   const ultimaLinha = (r) => mascarar(r.saida.split('\n').filter(Boolean).at(-1) || 'erro', segredos);
   const dia = diaLocal(agora, settings.tz);
   /** Aviso ao dono: no máximo 1 por dia por assunto (a menos que `agora` seja urgente). */
@@ -208,7 +211,12 @@ export async function publicarPainel({ hash, base = PASTA_ANALYTICS, env = proce
     gravarEstado(base, { ...estado, trava });
     return { publicado: false, motivo: 'nada mudou desde a última publicação' };
   }
-  const r = await deploy(pastaSite(base));
+  let r = await deploy(pastaSite(base));
+  if (!r.ok && comBanco(pastaSite(base)).length) {
+    // Sem o banco dos cliques (ex.: o login não pode ligar o D1), o painel sai assim mesmo, só sem os cliques.
+    log(`📊 Painel: não deu para publicar com o banco dos cliques (${ultimaLinha(r)}); publicando sem ele.`);
+    r = await executar(['pages', 'deploy', path.resolve(pastaSite(base)), '--project-name', projeto, '--branch', 'main', '--commit-dirty=true'], { env });
+  }
   if (!r.ok) {
     log(`📊 Painel: a publicação falhou (${ultimaLinha(r)}).`);
     gravarEstado(base, { ...estado, trava });

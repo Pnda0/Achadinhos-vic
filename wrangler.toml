@@ -1,0 +1,11 @@
+# Site público (Cloudflare Pages "achadinhos-vic"). Publicar, da raiz do repositório:
+#   npx wrangler@4 pages deploy "Vic Site" --project-name achadinhos-vic --branch main
+# Este arquivo liga o banco dos cliques ao "Vic Site/_worker.js" (links /p/... dos posts; ml-afiliados/src/rastreio.js).
+name = "achadinhos-vic"
+pages_build_output_dir = "Vic Site"
+compatibility_date = "2026-10-01"
+
+[[d1_databases]]
+binding = "CLIQUES"
+database_name = "achadinhos-cliques"
+database_id = "1d86569b-a116-4bc9-8467-8caf75e2cfb8"

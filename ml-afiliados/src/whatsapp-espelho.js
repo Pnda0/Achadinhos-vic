@@ -18,6 +18,7 @@ import { DATA_DIR, settings } from './config.js';
 import { evento } from './eventos.js';
 import { generoDoProduto } from './genero.js';
 import { marcaDoProduto, preferenciaDeMarca } from './marcas.js';
+import { paraWhatsApp } from './rastreio.js';
 import { casaTermo, log, normalizar, sleep } from './util.js';
 
 const ARQUIVO_GRUPOS = path.join(DATA_DIR, 'whatsapp-grupos.json');
@@ -159,8 +160,9 @@ export class EspelhoWhatsApp {
     try {
       await this.sender.typing?.(jid, 4 + Math.random() * 6).catch(() => {});
       const temFoto = /^https?:\/\//.test(p.imagem || '') || /^assets\//.test(p.imagem || '');
-      if (temFoto) await this.sender.sendImage(jid, p.imagem, p.legenda);
-      else await this.sender.sendText(jid, p.legenda);
+      const legenda = paraWhatsApp(p.legenda); // o clique no link do site conta como WhatsApp
+      if (temFoto) await this.sender.sendImage(jid, p.imagem, legenda);
+      else await this.sender.sendText(jid, legenda);
       evento('whatsapp', p);
       log(`📲 [WhatsApp ${grupo.nome}] ${String(p.nome).slice(0, 60)}`);
       return p;

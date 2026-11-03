@@ -1,7 +1,13 @@
 /**
  * Analytics de produtos — a página do painel (um arquivo só; gráficos em HTML/CSS; tema escuro com o rosa da marca).
- * Todos os números vêm de painel.analytics (src/analytics/produtos.js): a página só desenha. Os dados vão embutidos
- * (abre com dois cliques, sem servidor) e também em dados.json ao lado. Período e aba ficam na URL (?periodo=7d&aba=resumo).
+ * Todos os números vêm de painel.analytics (src/analytics/produtos.js) e do resto do painel (relatorio.js): a página
+ * só desenha. Os dados vão embutidos (abre com dois cliques, sem servidor) e também em dados.json ao lado.
+ * Os cliques dos links dos posts são lidos na hora de /api/cliques (o porteiro do painel online); no arquivo do PC
+ * eles não aparecem. Período e aba ficam na URL (?periodo=7d&aba=produtos).
+ *
+ * Abas (03/11/2026, pedido do dono: "o mais útil, sem encher de informação"; quem mais olha é a prima dele):
+ * Visão geral, Produtos (ranking de cliques), Ganhos (todas as plataformas), Grupos, Fontes (com o mapa fonte ×
+ * grupo), Categorias, Centro de operações, Regras e filtros, WhatsApp.
  */
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -23,37 +29,37 @@ a{color:var(--accent)}a:hover{color:var(--accent-hover)}
 .menu{border-right:1px solid var(--border);padding:22px 16px;display:flex;flex-direction:column;gap:14px}
 .marca-nome{font-size:19px;font-weight:700;color:var(--text)}.marca-nome .estrela{color:var(--accent);margin-left:4px}
 .marca-sub{font-size:13px;color:var(--text-3)}
-.busca input{width:100%;background:var(--surface);border:1px solid var(--border-2);border-radius:10px;color:var(--text);padding:8px 10px;font:inherit}
+.busca{position:relative;display:block}
+.busca svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text-4);pointer-events:none}
+.busca input{width:100%;background:var(--surface);border:1px solid var(--border-2);border-radius:10px;color:var(--text);padding:8px 10px 8px 32px;font:inherit}
 .busca input::placeholder{color:var(--text-4)}
 .menu h2{font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--text-4);margin:10px 8px 4px}
 .menu ul{list-style:none;margin:0;padding:0}
-.menu li>a,.menu li>span{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;color:var(--text-2);text-decoration:none;font-size:13px}
+.menu li>a{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;color:var(--text-2);text-decoration:none;font-size:13px}
 .menu li a:hover{background:var(--surface-2);color:var(--text)}
 .menu li a[aria-current="page"]{background:var(--surface-2);color:var(--text);font-weight:600}
-.menu li>span[aria-disabled="true"]{color:var(--text-4);cursor:not-allowed}
-.ponto{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none}
+.menu li a[aria-current="page"]::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none}
 .conteudo{padding:28px 24px 48px;min-width:0}
 .miolo{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
 .cab{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end;justify-content:space-between}
 h1{font-size:30px;font-weight:700;margin:0;line-height:1.2}
 .sub{margin:4px 0 0;color:var(--text-3);font-size:13px}
 .periodos{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:3px}
-.periodos button,.abas button,.acao,.link-btn{font:inherit;cursor:pointer}
+.periodos[hidden]{display:none}
+.periodos button,.acao,.link-btn,.chip{font:inherit;cursor:pointer}
 .periodos button{background:none;border:0;color:var(--text-2);padding:6px 12px;border-radius:8px;font-size:13px;font-weight:600;min-height:32px}
 .periodos button[aria-pressed="true"]{background:var(--surface-2);color:var(--text)}
-.abas{display:flex;gap:4px;border-bottom:1px solid var(--border);overflow-x:auto}
-.abas button{background:none;border:0;border-bottom:2px solid transparent;color:var(--text-3);padding:10px 12px;font-size:13px;font-weight:600;white-space:nowrap}
-.abas button[aria-selected="true"]{color:var(--text);border-bottom-color:var(--accent)}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;min-width:0}
 .card h3{font-size:16px;font-weight:600;margin:0}
 .card .card-sub{color:var(--text-3);font-size:13px;margin:2px 0 14px}
 .status{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 18px;font-size:13px;color:var(--text-2)}
-.bola{width:9px;height:9px;border-radius:50%;flex:none}
-.link-btn{background:none;border:0;color:var(--accent);padding:0;font-size:13px;font-weight:600;margin-left:auto}
+.bola{width:9px;height:9px;border-radius:50%;flex:none;display:inline-block}
+.link-btn{background:none;border:0;color:var(--accent);padding:0;font-size:13px;font-weight:600}
+.status .link-btn{margin-left:auto}
 .link-btn:hover{color:var(--accent-hover)}
-.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 .kpi-rotulo{font-size:12px;color:var(--text-4);font-weight:500}
-.kpi-valor{font-size:30px;font-weight:700;line-height:1.2;margin:6px 0 2px}
+.kpi-valor{font-size:28px;font-weight:700;line-height:1.2;margin:6px 0 2px}
 .kpi-apoio{font-size:12px;color:var(--text-3)}
 .duas{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:12px}
 .duas.iguais{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
@@ -93,13 +99,15 @@ h1{font-size:30px;font-weight:700;margin:0;line-height:1.2}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th,td{padding:9px 8px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}
 th{color:var(--text-4);font-weight:500;font-size:12px}
-th:first-child,td:first-child{text-align:left}
+th:first-child,td:first-child,th.esq{text-align:left}
 tbody th{text-align:left;font-weight:600;color:var(--text);font-size:13px}
+td.nome{text-align:left;white-space:normal;min-width:220px;color:var(--text)}
+td.pos{color:var(--text-4);width:28px}
 .spark{display:inline-flex;align-items:flex-end;gap:2px;height:22px;vertical-align:middle}
 .spark i{display:block;width:5px;background:var(--text-4);border-radius:1px;min-height:1px}
 .spark i.ult{background:var(--accent)}
 .pct{color:var(--text-4);font-size:12px;margin-left:4px}
-.warn{color:var(--warn)}.crit{color:var(--crit)}
+.warn{color:var(--warn)}.crit{color:var(--crit)}.ok{color:var(--ok)}
 .rodape{color:var(--text-4);font-size:12px;margin:10px 0 0}
 .cards4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 .gcard-topo{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
@@ -116,18 +124,30 @@ tbody th{text-align:left;font-weight:600;color:var(--text);font-size:13px}
 .cats{list-style:none;margin:0;padding:0}
 .cats li{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--border);font-size:13px}
 .cats li:first-child{border-top:0}
-.monet{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.barras{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.barras li .funil-topo{margin-bottom:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--surface);border:1px solid var(--border-2);color:var(--text-2);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:600}
+.chip[aria-pressed="true"]{border-color:var(--accent);color:var(--text);background:var(--surface-2)}
+.filtro{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;font-size:13px;color:var(--text-3)}
+.aviso-box{background:var(--info-bg);color:var(--info);border-radius:10px;padding:10px 14px;font-size:13px}
+details{border-top:1px solid var(--border);padding:8px 0}
+details:first-of-type{border-top:0}
+summary{cursor:pointer;font-weight:600;font-size:13px}
+.marcas{color:var(--text-3);font-size:13px;margin:6px 0 0}
+.regras-lista{margin:0;padding-left:18px;color:var(--text-2);font-size:13px;display:flex;flex-direction:column;gap:6px}
 .vazio{color:var(--text-3);font-size:13px;padding:6px 0}
 .notas{color:var(--text-4);font-size:12px;padding-left:18px;margin:6px 0 0}
 .esqueleto{background:var(--surface);border:1px solid var(--border);border-radius:14px;height:120px;animation:pisca 1.2s ease-in-out infinite alternate}
 @keyframes pisca{from{opacity:.55}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.esqueleto{animation:none}}
-@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.cards4,.monet{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.cards4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:860px){.app{grid-template-columns:minmax(0,1fr)}.menu{border-right:0;border-bottom:1px solid var(--border);padding:16px}.menu nav{display:flex;flex-wrap:wrap;gap:4px 16px}.menu nav>div{min-width:140px}.conteudo{padding:20px 16px 40px}.duas,.duas.iguais{grid-template-columns:minmax(0,1fr)}}
-@media (max-width:560px){.kpis,.cards4,.monet{grid-template-columns:minmax(0,1fr)}.alerta{grid-template-columns:minmax(0,1fr)}h1{font-size:24px}}
+@media (max-width:560px){.kpis,.cards4{grid-template-columns:minmax(0,1fr)}.alerta{grid-template-columns:minmax(0,1fr)}h1{font-size:24px}}
 `;
 
-// O navegador desenha tudo a partir de DADOS (texto vindo das ofertas sempre escapado). Sem barras invertidas aqui.
+// O navegador desenha tudo a partir de DADOS (texto vindo das ofertas sempre escapado). Sem barras invertidas aqui
+// e sem crase/cifrão-chave: este código vai dentro de um texto do Node.
 const JS = `
 const D = JSON.parse(document.getElementById('dados').textContent);
 const A = D.analytics || {};
@@ -139,25 +159,126 @@ const brl = (v) => (v == null ? '—' : Number(v).toLocaleString('pt-BR', { styl
 const COR_NIVEL = { critico: 'var(--crit)', alto: 'var(--crit)', atencao: 'var(--warn)', aviso: 'var(--info)', info: 'var(--info)', ok: 'var(--ok)' };
 const vazio = (t) => '<p class="vazio">' + esc(t || 'Sem dados no período.') + '</p>';
 const badge = (nivel, rotulo) => '<span class="badge b-' + esc(nivel) + '">' + esc(rotulo) + '</span>';
-const ABAS = ['resumo', 'grupos', 'fontes', 'categorias'];
+const card = (titulo, sub, corpo, id) => '<section class="card"' + (id ? ' id="' + id + '"' : '') + '><h3>' + titulo + '</h3>' + (sub ? '<p class="card-sub">' + sub + '</p>' : '') + corpo + '</section>';
+const kpi = (rot, val, apoio) => '<div class="card"><div class="kpi-rotulo">' + esc(rot) + '</div><div class="kpi-valor">' + val + '</div><div class="kpi-apoio">' + (apoio || '') + '</div></div>';
+const LOJA = { m: 'Mercado Livre', s: 'Shopee', a: 'Awin' };
+const NOME_LOJA = { ml: 'Mercado Livre', shopee: 'Shopee', awin: 'Awin', amazon: 'Amazon' };
+const TITULOS = { resumo: 'Visão geral', produtos: 'Produtos', ganhos: 'Ganhos', grupos: 'Grupos', fontes: 'Fontes', categorias: 'Categorias', operacao: 'Centro de operações', regras: 'Regras e filtros', whatsapp: 'WhatsApp' };
+const ABAS = Object.keys(TITULOS);
+const SEM_PERIODO = ['operacao', 'regras'];
 const url = new URLSearchParams(location.search);
 let periodo = A[url.get('periodo')] ? url.get('periodo') : (A['7d'] ? '7d' : Object.keys(A)[0]);
 let aba = ABAS.includes(url.get('aba')) ? url.get('aba') : 'resumo';
+let filtroProduto = url.get('busca') || '';
+let grupoProduto = '';
+let todosProdutos = false;
+
+// Cliques dos posts: lidos na hora do painel online (o arquivo do PC não tem como ler).
+const CL = { estado: location.protocol.indexOf('http') === 0 ? 'carregando' : 'off', linhas: [] };
+function lerCliques() {
+  if (CL.estado === 'off') return;
+  const dias = (D.periodos && D.periodos['30d'] && D.periodos['30d'].dias) || [];
+  fetch('api/cliques?desde=' + encodeURIComponent(dias[0] || ''), { cache: 'no-store', credentials: 'same-origin' })
+    .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+    .then((j) => { CL.linhas = j.linhas || []; CL.estado = 'ok'; })
+    .catch(() => { CL.estado = 'erro'; })
+    .then(desenhar);
+}
 
 function guardarUrl() {
   const u = new URL(location.href);
   u.searchParams.set('periodo', periodo);
   u.searchParams.set('aba', aba);
+  if (filtroProduto) u.searchParams.set('busca', filtroProduto); else u.searchParams.delete('busca');
   try { history.replaceState(null, '', u); } catch {}
 }
 
 function cabecalho(P) {
-  $('#sub').textContent = (P.inicio === P.fim ? P.inicio : P.inicio + ' a ' + P.fim) + ' · ' + P.nGrupos + ' grupos · atualizado ' + D.hora;
+  $('#titulo').textContent = TITULOS[aba];
+  document.title = TITULOS[aba] + ' · Painel da Vic';
+  $('#sub').textContent = SEM_PERIODO.includes(aba) ? 'agora · atualizado ' + D.hora : (P.inicio === P.fim ? P.inicio : P.inicio + ' a ' + P.fim) + ' · atualizado ' + D.hora;
+  $('.periodos').hidden = SEM_PERIODO.includes(aba);
   document.querySelectorAll('.periodos button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.p === periodo)));
-  document.querySelectorAll('.abas button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.aba === aba)));
   document.querySelectorAll('.menu [data-aba]').forEach((a) => (a.dataset.aba === aba ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
 }
 
+// ---------- cliques ----------
+function cliquesDoPeriodo() {
+  const dias = new Set((D.periodos && D.periodos[periodo] && D.periodos[periodo].dias) || []);
+  const info = {};
+  for (const p of D.produtos || []) info[p.g + '|' + p.c] = p;
+  const r = { total: 0, tg: 0, wa: 0, porGrupo: {}, porLoja: {}, prods: {}, postados: 0 };
+  for (const p of D.produtos || []) if (dias.has(p.dia)) r.postados++;
+  for (const [dia, caminho, qtd] of CL.linhas) {
+    if (!dias.has(dia)) continue;
+    const canal = caminho.charAt(0);
+    const grupo = (D.letras || {})[caminho.charAt(1)] || 'Outro';
+    const cod = caminho.slice(2);
+    r.total += qtd;
+    if (canal === 'w') r.wa += qtd; else r.tg += qtd;
+    r.porGrupo[grupo] = (r.porGrupo[grupo] || 0) + qtd;
+    const loja = LOJA[cod.charAt(0)] || 'Outra';
+    r.porLoja[loja] = (r.porLoja[loja] || 0) + qtd;
+    const p = info[grupo + '|' + cod];
+    if (!p) continue;
+    const x = r.prods[cod] || (r.prods[cod] = { nome: p.n, loja: NOME_LOJA[p.l] || p.l, preco: p.p, desc: p.d, dia: p.dia, grupos: [], total: 0, tg: 0, wa: 0 });
+    if (!x.grupos.includes(grupo)) x.grupos.push(grupo);
+    x.total += qtd;
+    if (canal === 'w') x.wa += qtd; else x.tg += qtd;
+  }
+  r.ranking = Object.values(r.prods).sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome));
+  return r;
+}
+
+function avisoCliques() {
+  if (CL.estado === 'off') return '<p class="aviso-box">Os cliques aparecem só no painel online (este é o arquivo do PC).</p>';
+  if (CL.estado === 'carregando') return '<p class="aviso-box">Carregando os cliques…</p>';
+  if (CL.estado === 'erro') return '<p class="aviso-box">Não consegui ler os cliques agora. Recarregue a página em alguns minutos.</p>';
+  return '';
+}
+
+function barras(mapa, cores) {
+  const itens = Object.entries(mapa).sort((a, b) => b[1] - a[1]);
+  if (!itens.length) return vazio('Nenhum clique no período.');
+  const max = Math.max(...itens.map((x) => x[1]));
+  return '<ul class="barras">' + itens.map(([k, v]) => '<li><div class="funil-topo"><span>' + esc(k) + '</span><span><b>' + n(v) + '</b></span></div><div class="trilho"><i style="width:' + Math.max(2, (v / max) * 100) + '%;background:' + ((cores && cores[k]) || 'var(--accent)') + '"></i></div></li>').join('') + '</ul>';
+}
+
+function tabelaRanking(lista, limite, comCanal) {
+  if (!lista.length) return vazio(CL.estado === 'ok' ? 'Nenhum produto clicado no período.' : '');
+  const linhas = lista.slice(0, limite).map((x, i) => '<tr><td class="pos">' + (i + 1) + '</td><td class="nome">' + esc(x.nome) + '</td><td><span class="pilula">' + esc(x.loja) + '</span></td><td>' + esc(x.grupos.join(', ')) + '</td><td>' + brl(x.preco) + (x.desc ? '<span class="pct">-' + n(x.desc) + '%</span>' : '') + '</td>' +
+    (comCanal ? '<td>' + n(x.tg) + '</td><td>' + n(x.wa) + '</td>' : '') + '<td><b>' + n(x.total) + '</b></td></tr>').join('');
+  const cab = ['#', 'Produto', 'Loja', 'Grupo', 'Preço'].concat(comCanal ? ['Telegram', 'WhatsApp'] : []).concat(['Cliques']);
+  return '<div class="rolagem"><table><thead><tr>' + cab.map((h) => '<th scope="col"' + (h === 'Produto' ? ' class="esq"' : '') + '>' + h + '</th>').join('') + '</tr></thead><tbody>' + linhas + '</tbody></table></div>';
+}
+
+function corDosGrupos(P) {
+  const c = {};
+  for (const g of P.grupos || []) c[g.nome] = g.cor;
+  return c;
+}
+
+function abaProdutos(P) {
+  const C = cliquesDoPeriodo();
+  const q = filtroProduto.toLowerCase();
+  let lista = C.ranking.filter((x) => (!grupoProduto || x.grupos.includes(grupoProduto)) && (!q || x.nome.toLowerCase().includes(q)));
+  const grupos = Object.keys(C.porGrupo).filter((g) => g !== 'Outro').sort();
+  const chips = grupos.length > 1 ? '<div class="chips" role="group" aria-label="Grupo"><button type="button" class="chip" data-grupo="" aria-pressed="' + String(!grupoProduto) + '">Todos</button>' + grupos.map((g) => '<button type="button" class="chip" data-grupo="' + esc(g) + '" aria-pressed="' + String(grupoProduto === g) + '">' + esc(g) + '</button>').join('') + '</div>' : '';
+  const filtro = q ? '<span>Buscando “' + esc(filtroProduto) + '” · <button type="button" class="link-btn" data-limpar>limpar</button></span>' : '';
+  const comClique = Object.keys(C.prods).length;
+  const kp = '<div class="kpis">' +
+    kpi('Cliques nos links', CL.estado === 'ok' ? n(C.total) : '—', CL.estado === 'ok' ? (C.postados ? 'média de ' + n(Math.round((C.total / C.postados) * 10) / 10) + ' por produto postado' : 'nenhum produto postado com link do site') : '') +
+    kpi('No Telegram', CL.estado === 'ok' ? n(C.tg) : '—', CL.estado === 'ok' && C.total ? pc(Math.round((C.tg / C.total) * 1000) / 10) + ' dos cliques' : '') +
+    kpi('No WhatsApp', CL.estado === 'ok' ? n(C.wa) : '—', CL.estado === 'ok' && C.total ? pc(Math.round((C.wa / C.total) * 1000) / 10) + ' dos cliques' : '') +
+    kpi('Produtos clicados', CL.estado === 'ok' ? n(comClique) : '—', C.postados ? 'de ' + n(C.postados) + ' postados com link do site' : '') + '</div>';
+  const limite = todosProdutos ? 500 : 20;
+  const mais = lista.length > 20 ? '<p><button type="button" class="link-btn" data-todos>' + (todosProdutos ? 'Mostrar só os 20 primeiros' : 'Ver todos os ' + n(lista.length)) + '</button></p>' : '';
+  return avisoCliques() + kp +
+    card('Mais clicados', 'quem clicou no link do post (Telegram e WhatsApp)', '<div class="filtro">' + chips + filtro + '</div>' + tabelaRanking(lista, limite, true) + mais) +
+    '<div class="duas iguais">' + card('Cliques por grupo', '', barras(C.porGrupo, corDosGrupos(P))) + card('Cliques por loja', 'Amazon fica de fora: o link dela vai direto', barras(C.porLoja)) + '</div>';
+}
+
+// ---------- visão geral ----------
 function faixaStatus(P) {
   const al = P.alertas.filter((a) => a.nivel !== 'aviso' && a.nivel !== 'info');
   if (!al.length) return '<div class="status"><span class="bola" style="background:var(--ok)"></span><span><b>Tudo certo</b> · nenhum ponto de atenção</span></div>';
@@ -167,16 +288,15 @@ function faixaStatus(P) {
     '<button type="button" class="link-btn" data-ir="atencao">Ver pontos de atenção →</button></div>';
 }
 
-function kpis(P) {
+function kpisGerais(P) {
   const k = P.kpis;
-  const card = (rot, val, apoio) => '<div class="card"><div class="kpi-rotulo">' + esc(rot) + '</div><div class="kpi-valor">' + val + '</div><div class="kpi-apoio">' + apoio + '</div></div>';
-  const faixa = k.precoMin && k.precoMax ? 'de ' + brl(k.precoMin.valor) + ' (' + esc(k.precoMin.grupo) + ') a ' + brl(k.precoMax.valor) + ' (' + esc(k.precoMax.grupo) + ')' : 'sem dados no período';
+  const m = P.monetizacao || {};
+  const C = cliquesDoPeriodo();
   return '<div class="kpis">' +
-    card('Ofertas publicadas', n(k.publicadas), k.mediaDia == null ? 'sem dados no período' : 'média de ' + n(k.mediaDia) + ' por dia' + (P.periodo === 'hoje' ? '' : ' (' + k.diasComDado + (k.diasComDado === 1 ? ' dia' : ' dias') + ' com dados)')) +
-    card('Aproveitamento da fila', pc(k.aproveitamento), k.naFila ? n(k.publicadas) + ' de ' + n(k.naFila) + ' que entraram' : 'nada entrou na fila') +
-    card('Desconto médio', pc(k.descontoMedio), k.descontoMedio == null ? 'sem dados no período' : 'ponderado pelo volume') +
-    card('Preço médio', brl(k.precoMedio), faixa) +
-    card('Cliques Awin', k.awin ? n(k.awin.cliques) : '—', k.awin ? brl(k.awin.aprovado) + ' aprovado' : 'sem leitura da Awin no período') +
+    kpi('Ofertas publicadas', n(k.publicadas), k.mediaDia == null ? 'sem dados no período' : 'média de ' + n(k.mediaDia) + ' por dia') +
+    kpi('Cliques nos links', CL.estado === 'ok' ? n(C.total) : '—', CL.estado === 'ok' ? n(Object.keys(C.prods).length) + ' produtos clicados' : CL.estado === 'off' ? 'só no painel online' : 'carregando…') +
+    kpi('Ganhos aprovados', brl(m.aprovado), m.pendente ? brl(m.pendente) + ' ainda pendente' : 'Awin e Shopee') +
+    kpi('Desconto médio', pc(k.descontoMedio), k.precoMedio == null ? '' : 'preço médio ' + brl(k.precoMedio)) +
     '</div>';
 }
 
@@ -184,7 +304,7 @@ function grafico(P) {
   const s = P.serie;
   const max = Math.max(0, ...s.totais);
   const titulo = 'Publicações por ' + (s.tipo === 'hora' ? 'hora' : 'dia');
-  if (!max) return '<section class="card"><h3>' + titulo + '</h3><p class="card-sub">sem publicações no período</p>' + vazio() + '</section>';
+  if (!max) return card(titulo, 'sem publicações no período', vazio());
   const topo = Math.max(2, Math.ceil(max / 2) * 2); // eixo com 3 marcas: 0, metade e topo
   const N = s.rotulos.length;
   const passo = N <= 14 ? 1 : Math.ceil(N / 8);
@@ -196,14 +316,14 @@ function grafico(P) {
     let seg = '';
     for (const g of s.grupos) {
       const v = s.valores[g][i];
-      if (v) seg += '<i style="height:' + (v / t) * 100 + '%;background:' + esc(P.grupos.find((x) => x.nome === g)?.cor || '#827c78') + '"></i>';
+      if (v) seg += '<i style="height:' + (v / t) * 100 + '%;background:' + esc((P.grupos.find((x) => x.nome === g) || {}).cor || '#827c78') + '"></i>';
     }
     const dica = r + ': ' + n(t) + (t === 1 ? ' publicação' : ' publicações') + (t ? ' (' + s.grupos.filter((g) => s.valores[g][i]).map((g) => g + ' ' + s.valores[g][i]).join(', ') + ')' : '');
     cols += '<div class="col" title="' + esc(dica) + '">' + (t && N <= 14 ? '<span class="tot">' + n(t) + '</span>' : '') +
       '<div class="pilha" style="height:' + (t / topo) * 100 + '%">' + seg + '</div></div>';
     rots += '<span>' + (i % passo === 0 ? esc(r) : '') + '</span>';
   });
-  const legenda = s.grupos.filter((g) => s.valores[g].some(Boolean)).map((g) => '<span><span class="quad" style="background:' + esc(P.grupos.find((x) => x.nome === g)?.cor) + '"></span>' + esc(g) + '</span>').join('');
+  const legenda = s.grupos.filter((g) => s.valores[g].some(Boolean)).map((g) => '<span><span class="quad" style="background:' + esc((P.grupos.find((x) => x.nome === g) || {}).cor) + '"></span>' + esc(g) + '</span>').join('');
   return '<section class="card" aria-label="' + titulo + '"><h3>' + titulo + '</h3><p class="card-sub">' + (s.pico ? 'pico em ' + esc(s.pico.rotulo) + ' com ' + n(s.pico.total) : '') + '</p>' +
     '<div class="grafico"><div class="eixo" aria-hidden="true"><span>' + n(topo) + '</span><span>' + n(topo / 2) + '</span><span>0</span></div><div>' +
     '<div class="plot" role="img" aria-label="' + esc(titulo + ', pico de ' + n(max)) + '"><div class="linha-grade" style="top:0"></div><div class="linha-grade" style="top:50%"></div>' +
@@ -211,24 +331,62 @@ function grafico(P) {
     '<div class="legenda">' + legenda + '</div></section>';
 }
 
-function funil(P) {
-  const f = P.funil;
-  const barra = (rot, val, extra, larg) => '<div class="funil-item"><div class="funil-topo"><span>' + rot + '</span><span><b>' + n(val) + '</b>' + (extra ? ' <span class="pct">' + extra + '</span>' : '') + '</span></div>' +
-    '<div class="trilho" role="presentation"><i style="width:' + Math.max(val ? 1.5 : 0, larg) + '%;background:var(--accent)"></i></div></div>';
-  if (!f.avaliadas && !f.publicadas) return '<section class="card"><h3>Funil de ofertas</h3><p class="card-sub">da busca até o grupo</p>' + vazio() + '</section>';
-  const base = f.avaliadas || 1;
-  const mini = (rot, val, cls) => '<div class="mini"><span>' + rot + '</span><b class="' + (cls || '') + '">' + n(val) + '</b></div>';
-  return '<section class="card"><h3>Funil de ofertas</h3><p class="card-sub">da busca até o grupo</p>' +
-    barra('Avaliadas na busca', f.avaliadas, '', 100) +
-    barra('Entraram na fila', f.naFila, pc(f.pctFila) + ' das avaliadas', (f.naFila / base) * 100) +
-    barra('Publicadas', f.publicadas, pc(f.pctPublicadas) + ' da fila', (f.publicadas / base) * 100) +
-    '<div class="minis">' + mini('Barradas ao postar', f.barradas) + mini('Repetidas (não saíram)', f.duplicados) + mini('Envio sem confirmação', f.incertos, f.incertos > 0 ? 'warn' : '') + mini('Falhas de envio', f.erros, f.erros > 0 ? 'crit' : '') + '</div></section>';
+function topClicados() {
+  const C = cliquesDoPeriodo();
+  const corpo = CL.estado !== 'ok' ? avisoCliques() : C.ranking.length
+    ? '<ul class="cats">' + C.ranking.slice(0, 5).map((x, i) => '<li><span>' + (i + 1) + '. ' + esc(x.nome) + '</span><b>' + n(x.total) + '</b></li>').join('') + '</ul><p><button type="button" class="link-btn" data-aba-ir="produtos">Ver o ranking completo →</button></p>'
+    : vazio('Nenhum clique no período ainda.');
+  return card('Mais clicados', 'os 5 primeiros do período', corpo);
 }
 
 function atencao(P) {
   const lista = P.alertas.map((a) => '<li class="alerta">' + badge(a.nivel, a.rotuloNivel) + '<div><div class="alerta-titulo">' + esc(a.titulo) + '</div><div class="alerta-detalhe">' + esc(a.detalhe) + '</div></div>' +
     '<button type="button" class="acao" data-aba-ir="' + esc(a.acao.aba) + '">' + esc(a.acao.rotulo) + '</button></li>').join('');
-  return '<section class="card" id="atencao"><h3>Pontos de atenção</h3><p class="card-sub">' + (P.alertas.length ? 'do mais grave para o mais leve' : 'nenhum no período') + '</p>' + (lista ? '<ul class="alertas">' + lista + '</ul>' : vazio('Tudo certo neste período.')) + '</section>';
+  return card('Pontos de atenção', P.alertas.length ? 'do mais grave para o mais leve' : 'nenhum no período', lista ? '<ul class="alertas">' + lista + '</ul>' : vazio('Tudo certo neste período.'), 'atencao');
+}
+
+// ---------- ganhos ----------
+function abaGanhos(P) {
+  const m = P.monetizacao || {};
+  const C = cliquesDoPeriodo();
+  const cl = (loja) => (CL.estado === 'ok' ? n(C.porLoja[loja] || 0) : '—');
+  const vendas = (m.awin ? m.awin.vendas : 0) + (m.shopee ? m.shopee.pedidos : 0);
+  const painel = (u) => (u ? '<a href="' + esc(u) + '" target="_blank" rel="noopener">abrir →</a>' : '');
+  const pn = D.paineis || {};
+  const linha = (nome, cliques, v, pend, apr, link) => '<tr><th scope="row">' + nome + '</th><td>' + cliques + '</td><td>' + v + '</td><td>' + pend + '</td><td>' + apr + '</td><td>' + link + '</td></tr>';
+  const semApi = '<span class="pct">sem API: veja no painel</span>';
+  const tabela = '<div class="rolagem"><table><thead><tr>' + ['Plataforma', 'Cliques nos posts', 'Vendas', 'Pendente', 'Aprovado', 'Painel'].map((h) => '<th scope="col">' + h + '</th>').join('') + '</tr></thead><tbody>' +
+    linha('Shopee', cl('Shopee'), m.shopee ? n(m.shopee.pedidos) : '—', m.shopee ? brl(m.shopee.pendente) : '—', m.shopee ? brl(m.shopee.aprovado) : '—', painel(pn.shopee)) +
+    linha('Awin', cl('Awin'), m.awin ? n(m.awin.vendas) : '—', m.awin ? brl(m.awin.pendente) : '—', m.awin ? brl(m.awin.aprovado) : '—', painel(pn.awin)) +
+    linha('Mercado Livre', cl('Mercado Livre'), semApi, '', '', painel(pn.ml)) +
+    linha('Amazon', '<span class="pct">link direto</span>', semApi, '', '', painel(pn.amazon)) +
+    '</tbody></table></div><p class="rodape">Pendente = a loja ainda pode cancelar (devolução, pedido não pago); só entra em “aprovado” quando a loja confirma. Shopee e Awin são atualizadas às 12h30 e 21h52.</p>';
+  const prods = m.shopee && m.shopee.produtos && m.shopee.produtos.length
+    ? '<div class="rolagem"><table><thead><tr><th scope="col" class="esq">Produto</th><th scope="col">Vendas</th><th scope="col">Comissão</th></tr></thead><tbody>' +
+      m.shopee.produtos.map((x) => '<tr><td class="nome">' + esc(x.nome) + '</td><td>' + n(x.vendas) + '</td><td>' + brl(x.comissao) + '</td></tr>').join('') + '</tbody></table></div>'
+    : vazio(m.shopee ? 'Nenhuma venda da Shopee no período.' : 'A Shopee ainda não mandou o relatório.');
+  return '<div class="kpis">' +
+    kpi('Aprovado', brl(m.aprovado), 'Awin + Shopee, já confirmado') +
+    kpi('Pendente', brl(m.pendente), 'pode mudar até a loja confirmar') +
+    kpi('Vendas', n(vendas), 'Awin + Shopee (sem as canceladas)') +
+    kpi('Cliques nos links', CL.estado === 'ok' ? n(C.total) : '—', 'todas as lojas, menos Amazon') + '</div>' +
+    card('Por plataforma', 'no período escolhido', tabela) +
+    card('O que vendeu na Shopee', 'produtos com comissão no período', prods);
+}
+
+// ---------- grupos, fontes, categorias ----------
+function funil(P) {
+  const f = P.funil;
+  const barra = (rot, val, extra, larg) => '<div class="funil-item"><div class="funil-topo"><span>' + rot + '</span><span><b>' + n(val) + '</b>' + (extra ? ' <span class="pct">' + extra + '</span>' : '') + '</span></div>' +
+    '<div class="trilho" role="presentation"><i style="width:' + Math.max(val ? 1.5 : 0, larg) + '%;background:var(--accent)"></i></div></div>';
+  if (!f.avaliadas && !f.publicadas) return card('Funil de ofertas', 'da busca até o grupo', vazio());
+  const base = f.avaliadas || 1;
+  const mini = (rot, val, cls) => '<div class="mini"><span>' + rot + '</span><b class="' + (cls || '') + '">' + n(val) + '</b></div>';
+  return card('Funil de ofertas', 'da busca até o grupo',
+    barra('Avaliadas na busca', f.avaliadas, '', 100) +
+    barra('Entraram na fila', f.naFila, pc(f.pctFila) + ' das avaliadas', (f.naFila / base) * 100) +
+    barra('Publicadas', f.publicadas, pc(f.pctPublicadas) + ' da fila', (f.publicadas / base) * 100) +
+    '<div class="minis">' + mini('Barradas ao postar', f.barradas) + mini('Repetidas (não saíram)', f.duplicados) + mini('Envio sem confirmação', f.incertos, f.incertos > 0 ? 'warn' : '') + mini('Falhas de envio', f.erros, f.erros > 0 ? 'crit' : '') + '</div>');
 }
 
 function spark(serie) {
@@ -237,28 +395,19 @@ function spark(serie) {
 }
 
 function tabela(P) {
-  if (!P.grupos.length) return '<section class="card"><h3>Comparativo por grupo</h3>' + vazio() + '</section>';
+  if (!P.grupos.length) return card('Comparativo por grupo', '', vazio());
   const linhas = P.grupos.map((g) => '<tr><th scope="row"><span class="quad" style="background:' + esc(g.cor) + '"></span>' + esc(g.nome) + '</th>' +
     '<td>' + spark(g.sparkline) + '</td><td>' + n(g.publicadas) + '<span class="pct">' + pc(g.pctTotal) + '</span></td><td>' + pc(g.aprovFila) + '</td><td>' + pc(g.desconto) + '</td><td>' + brl(g.preco) + '</td>' +
-    '<td>' + pc(g.cupom) + '</td><td>' + pc(g.frete) + '</td><td>' + pc(g.full) + '</td><td class="' + (g.filaVaziaAlta ? 'warn' : '') + '">' + n(g.filaVazia) + '</td><td class="' + (g.sobraAlta ? 'crit' : '') + '">' + n(g.sobra) + '</td>' +
-    '<td>' + badge(g.status.nivel, g.status.rotulo) + '</td></tr>').join('');
-  return '<section class="card"><h3>Comparativo por grupo</h3><p class="card-sub">' + esc(P.inicio === P.fim ? P.inicio : P.inicio + ' a ' + P.fim) + '</p><div class="rolagem"><table><thead><tr>' +
-    ['Grupo', 'Por dia', 'Publicadas', 'Aprov. fila', 'Desconto', 'Preço médio', 'Cupom', 'Frete grátis', 'FULL', 'Fila vazia', 'Sobra', 'Status'].map((h) => '<th scope="col">' + h + '</th>').join('') +
+    '<td>' + pc(g.cupom) + '</td><td>' + pc(g.frete) + '</td><td class="' + (g.filaVaziaAlta ? 'warn' : '') + '">' + n(g.filaVazia) + '</td>' +
+    '<td>' + (g.membrosReais == null ? '—' : n(g.membrosReais)) + '</td><td>' + badge(g.status.nivel, g.status.rotulo) + '</td></tr>').join('');
+  return card('Comparativo por grupo', esc(P.inicio === P.fim ? P.inicio : P.inicio + ' a ' + P.fim), '<div class="rolagem"><table><thead><tr>' +
+    ['Grupo', 'Por dia', 'Publicadas', 'Aprov. fila', 'Desconto', 'Preço médio', 'Cupom', 'Frete grátis', 'Fila vazia', 'Membros', 'Status'].map((h) => '<th scope="col">' + h + '</th>').join('') +
     '</tr></thead><tbody>' + linhas + '</tbody></table></div>' +
-    '<p class="rodape">Aprov. fila = publicadas ÷ entraram na fila. Fila vazia = horários de envio sem nenhuma oferta para postar. Sobra = ofertas que ficaram na fila no fim do último dia.</p></section>';
+    '<p class="rodape">Aprov. fila = publicadas ÷ entraram na fila. Fila vazia = horários de envio sem nenhuma oferta para postar. Membros = sem você e o bot.</p>');
 }
 
-function cards(P) {
-  return '<div class="cards4">' + P.grupos.map((g) => {
-    const dl = [['Recusadas na busca', n(g.recusadas)], ['Entraram na fila', n(g.naFila)], ['Barradas ao postar', n(g.barradas)], ['Repetidas', n(g.duplicados)], ['Envio sem confirmação', n(g.incertos)], ['Membros reais', g.membrosReais == null ? '—' : n(g.membrosReais)]];
-    return '<section class="card"><div class="gcard-topo"><div><div class="gcard-nome">' + esc(g.nome) + '</div><div class="gcard-fontes">' + n(g.fontes) + (g.fontes === 1 ? ' fonte' : ' fontes') + '</div></div>' + badge(g.status.nivel, g.status.rotulo) + '</div>' +
-      '<div class="gcard-total">' + n(g.publicadas) + '</div><dl class="lista-dl">' + dl.map(([a, b]) => '<dt>' + a + '</dt><dd>' + b + '</dd>').join('') + '</dl></section>';
-  }).join('') + '</div>';
-}
-
-function fontes(P, todas) {
-  const lista = todas ? P.fontes : P.fontes.slice(0, 10);
-  const itens = lista.map((f) => {
+function fontes(P) {
+  const itens = P.fontes.map((f) => {
     const canal = f.tipo === 'canal';
     const t = f.total || 1;
     const meio = Math.max(0, f.meio - f.fim);
@@ -268,107 +417,188 @@ function fontes(P, todas) {
       '<div class="trilho" role="presentation"><i style="width:' + (f.fim / t) * 100 + '%;background:var(--accent)"></i><i style="width:' + (meio / t) * 100 + '%;background:var(--recusa)"></i></div>' +
       (recusas ? '<div class="fonte-recusas">Recusas: ' + recusas + '</div>' : '') + '</div>';
   }).join('');
-  const mais = !todas && P.fontes.length > 10 ? '<p><button type="button" class="link-btn" data-aba-ir="fontes">Ver todas as ' + n(P.fontes.length) + ' fontes →</button></p>' : '';
-  return '<section class="card"><h3>Funil das fontes</h3><p class="card-sub">ordenado pelas que mais trazem ofertas</p>' + (itens || vazio()) + mais + '</section>';
+  return card('Funil das fontes', 'ordenado pelas que mais trazem ofertas', itens || vazio());
+}
+
+/** Mapa fonte × grupo: quantas ofertas de cada fonte saíram em cada grupo. */
+function mapaFontes(P) {
+  const G = (D.periodos && D.periodos[periodo] && D.periodos[periodo].grupos) || {};
+  const grupos = P.grupos.map((g) => g.nome).filter((g) => G[g]);
+  const linhas = {};
+  for (const g of grupos) for (const [f, F] of Object.entries(G[g].fontes || {})) if (F.publicadas) (linhas[f] = linhas[f] || {})[g] = F.publicadas;
+  const ord = Object.entries(linhas).sort((a, b) => Object.values(b[1]).reduce((s, v) => s + v, 0) - Object.values(a[1]).reduce((s, v) => s + v, 0));
+  if (!ord.length) return card('Mapa das fontes', 'de onde vem o que sai em cada grupo', vazio());
+  return card('Mapa das fontes', 'publicadas de cada fonte em cada grupo', '<div class="rolagem"><table><thead><tr><th scope="col">Fonte</th>' + grupos.map((g) => '<th scope="col">' + esc(g) + '</th>').join('') + '<th scope="col">Total</th></tr></thead><tbody>' +
+    ord.map(([f, v]) => '<tr><th scope="row">' + esc(f) + '</th>' + grupos.map((g) => '<td>' + (v[g] ? n(v[g]) : '<span class="pct">·</span>') + '</td>').join('') + '<td><b>' + n(Object.values(v).reduce((s, x) => s + x, 0)) + '</b></td></tr>').join('') + '</tbody></table></div>');
 }
 
 function categoriasSem(P) {
   const l = P.categoriasSemPublicacao.map((c) => '<li><span>' + esc(c.nome) + '</span><span class="pilula">' + esc(c.loja) + '</span></li>').join('');
-  return '<section class="card"><h3>Categorias sem publicação</h3><p class="card-sub">buscas ligadas que não publicaram no período</p>' + (l ? '<ul class="cats">' + l + '</ul>' : vazio(P.periodo === 'hoje' ? 'Veja em 7 ou 30 dias.' : 'Todas as categorias publicaram no período.')) + '</section>';
+  return card('Categorias sem publicação', 'buscas ligadas que não publicaram no período', l ? '<ul class="cats">' + l + '</ul>' : vazio(P.periodo === 'hoje' ? 'Veja em 7 ou 30 dias.' : 'Todas as categorias publicaram no período.'));
 }
 
 function categoriasTabela(P) {
-  if (!P.categorias.length) return '<section class="card"><h3>Categorias</h3>' + vazio() + '</section>';
+  if (!P.categorias.length) return card('Categorias', '', vazio());
   const linhas = P.categorias.map((c) => '<tr><th scope="row">' + esc(c.nome) + '</th><td><span class="pilula">' + esc(c.loja) + '</span></td><td>' + n(c.encontrados) + '</td><td>' + n(c.aceitos) + '</td><td class="' + (c.publicadas ? '' : 'warn') + '">' + n(c.publicadas) + '</td></tr>').join('');
-  return '<section class="card"><h3>Categorias de busca</h3><p class="card-sub">vistas na busca → aprovadas nos filtros → publicadas</p><div class="rolagem"><table><thead><tr>' +
-    ['Categoria', 'Loja', 'Vistas', 'Aprovadas', 'Publicadas'].map((h) => '<th scope="col">' + h + '</th>').join('') + '</tr></thead><tbody>' + linhas + '</tbody></table></div></section>';
+  return card('Categorias de busca', 'vistas na busca → aprovadas nos filtros → publicadas', '<div class="rolagem"><table><thead><tr>' +
+    ['Categoria', 'Loja', 'Vistas', 'Aprovadas', 'Publicadas'].map((h) => '<th scope="col">' + h + '</th>').join('') + '</tr></thead><tbody>' + linhas + '</tbody></table></div>');
 }
 
-function monetizacao(P) {
-  const m = P.monetizacao;
-  const card = (rot, val, extra) => '<div class="card"><div class="kpi-rotulo">' + rot + '</div><div class="kpi-valor" style="font-size:22px">' + val + '</div>' + (extra || '') + '</div>';
-  return '<section aria-label="Monetização"><h3 style="font-size:16px;margin:8px 0 10px">Monetização</h3><div class="monet">' +
-    card('Awin pendente', brl(m.awinPendente)) + card('Awin aprovado', brl(m.awinAprovado)) + card('Cliques nos links Awin', n(m.cliques)) +
-    card('Mercado Livre', '—', m.painelML ? '<a class="kpi-apoio" href="' + esc(m.painelML) + '" target="_blank" rel="noopener">Ver no painel do Mercado Livre →</a>' : '') + '</div></section>';
+// ---------- operação, regras, WhatsApp ----------
+function quando(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  const h = (Date.now() - d.getTime()) / 3600000;
+  const txt = d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  const ha = h < 1 ? 'há ' + Math.max(1, Math.round(h * 60)) + ' min' : h < 48 ? 'há ' + Math.round(h) + ' h' : 'há ' + Math.round(h / 24) + ' dias';
+  return txt + ' <span class="pct">' + ha + '</span>';
 }
 
+function abaOperacao() {
+  const O = D.operacao || { grupos: [] };
+  const H = A.hoje || A[periodo];
+  const hoje = {};
+  for (const g of (H && H.grupos) || []) hoje[g.nome] = g;
+  const linhas = O.grupos.map((g) => {
+    const x = hoje[g.nome] || {};
+    const parado = g.ativo && g.ultima && Date.now() - new Date(g.ultima).getTime() > 6 * 3600000;
+    const st = !g.ativo ? badge('info', 'Pausado') : parado ? badge('atencao', 'Sem postar há 6 h+') : g.fila ? badge('ok', 'Postando') : badge('atencao', 'Fila vazia');
+    return '<tr><th scope="row">' + esc(g.nome) + '</th><td>' + st + '</td><td>' + n(g.fila) + '</td><td>' + quando(g.ultima) + '</td><td>' + n(x.publicadas || 0) + '</td><td class="' + (x.incertos ? 'warn' : '') + '">' + n(x.incertos || 0) + '</td><td class="' + (x.erros ? 'crit' : '') + '">' + n(x.erros || 0) + '</td></tr>';
+  }).join('');
+  const R = D.regras || {};
+  const wa = R.whatsapp || {};
+  const tab = '<div class="rolagem"><table><thead><tr>' + ['Grupo', 'Agora', 'Na fila', 'Último post', 'Publicadas hoje', 'Sem confirmação', 'Falhas'].map((h) => '<th scope="col">' + h + '</th>').join('') + '</tr></thead><tbody>' + linhas + '</tbody></table></div>' +
+    '<p class="rodape">Posts a cada 3 min das 8h às 21h59; buscas às 7h, 12h e 17h. “Sem confirmação” = o Telegram não respondeu: pode ter saído, e o bot não repete.</p>';
+  const whats = '<dl class="lista-dl"><dt>Espelho no WhatsApp</dt><dd>' + (wa.ligado ? '<span class="ok">ligado</span>' : 'desligado') + '</dd><dt>Ritmo</dt><dd>1 mensagem a cada ' + n(wa.intervaloMin) + ' min</dd><dt>Último envio</dt><dd>' + quando(O.whatsappUltimo) + '</dd></dl>';
+  return card('Como está agora', 'atualizado ' + esc(D.hora), tab) + '<div class="duas iguais">' + card('WhatsApp', '', whats + '<p><button type="button" class="link-btn" data-aba-ir="whatsapp">Ver números do WhatsApp →</button></p>') + atencao(A[periodo] || H) + '</div>';
+}
+
+function abaRegras() {
+  const R = D.regras;
+  if (!R) return vazio('Sem as regras nesta versão do painel.');
+  const sim = (b) => (b ? 'sim' : 'não');
+  const linhas = R.grupos.map((g) => '<tr><th scope="row">' + esc(g.nome) + '</th><td>' + (g.ativo ? '<span class="ok">ligado</span>' : 'pausado') + '</td><td>' + (g.descontoMinimo == null ? '—' : n(g.descontoMinimo) + '%') + '</td><td>' + brl(g.precoMinimo) + ' a ' + brl(g.precoMaximo) + '</td><td>' + (g.notaMinima == null ? '—' : n(g.notaMinima)) + '</td><td>' + sim(g.soMarcas) + '</td><td>' + (g.masculinoCada ? '1 a cada ' + n(g.masculinoCada) : 'sem limite') + '</td><td>' + (g.diasSemRepetir == null ? '—' : n(g.diasSemRepetir) + ' dias') + '</td><td>' + sim(g.whatsapp) + '</td></tr>').join('');
+  const tab = '<div class="rolagem"><table><thead><tr>' + ['Grupo', 'Situação', 'Desconto mín.', 'Preço', 'Nota mín.', 'Só marcas', 'Masculino', 'Não repete por', 'WhatsApp'].map((h) => '<th scope="col">' + h + '</th>').join('') + '</tr></thead><tbody>' + linhas + '</tbody></table></div>';
+  const gerais = [
+    'Público principal: meninas. Produtos femininos saem primeiro, depois os neutros; masculino no máximo na proporção da coluna “Masculino”.',
+    'Marcas da lista passam na frente em todos os grupos; com “só marcas”, o grupo só posta marca da lista.',
+    'Mercado Livre na busca direta: só com mais de ' + n(R.vendasMinimasML) + ' vendas.',
+    R.shopeeUmACada ? 'Shopee: no máximo 1 a cada ' + n(R.shopeeUmACada) + ' posts (a comissão é baixa).' : '',
+    R.awinCatalogo && R.awinCatalogo.umACada ? 'Produtos das lojas da Awin: 1 a cada ' + n(R.awinCatalogo.umACada) + ' posts' + (R.awinCatalogo.maxPorDia ? ', até ' + n(R.awinCatalogo.maxPorDia) + ' por dia em cada grupo.' : '.') : '',
+    'Nada é postado duas vezes no mesmo grupo dentro do prazo de “Não repete por”.',
+    R.whatsapp ? 'WhatsApp: 1 mensagem a cada ' + n(R.whatsapp.intervaloMin) + ' min no total (mais rápido arrisca o número ser banido).' : '',
+  ].filter(Boolean);
+  const marcas = (R.marcas || []).map((l) => '<details><summary>' + esc(l.lista) + (l.nicho ? ' <span class="pct">' + esc(l.nicho) + '</span>' : '') + ' · ' + n(l.marcas.length) + ' marcas</summary><p class="marcas">' + l.marcas.map(esc).join(' · ') + '</p></details>').join('');
+  return card('Por grupo', 'as regras que valem agora', tab) +
+    card('Regras gerais', '', '<ul class="regras-lista">' + gerais.map((t) => '<li>' + esc(t) + '</li>').join('') + '</ul>') +
+    card('Marcas que saem primeiro', 'toque numa lista para ver as marcas', marcas || vazio('Nenhuma marca na lista.')) +
+    '<p class="rodape">Para mudar uma regra, peça ao Alan.</p>';
+}
+
+function abaWhatsApp(P) {
+  const W = P.whatsapp || [];
+  const C = cliquesDoPeriodo();
+  const cliquesWa = {};
+  if (CL.estado === 'ok') {
+    const dias = new Set((D.periodos && D.periodos[periodo] && D.periodos[periodo].dias) || []);
+    for (const [dia, caminho, qtd] of CL.linhas) if (dias.has(dia) && caminho.charAt(0) === 'w') { const g = (D.letras || {})[caminho.charAt(1)] || 'Outro'; cliquesWa[g] = (cliquesWa[g] || 0) + qtd; }
+  }
+  const total = W.reduce((s, g) => s + g.enviadas, 0);
+  const falhas = W.reduce((s, g) => s + g.falhas, 0);
+  const R = (D.regras && D.regras.whatsapp) || {};
+  const linhas = W.filter((g) => g.enviadas || g.falhas || cliquesWa[g.nome]).map((g) => '<tr><th scope="row">' + esc(g.nome) + '</th><td>' + spark(g.porDia) + '</td><td>' + n(g.enviadas) + '</td><td class="' + (g.falhas ? 'crit' : '') + '">' + n(g.falhas) + '</td><td>' + (CL.estado === 'ok' ? n(cliquesWa[g.nome] || 0) : '—') + '</td></tr>').join('');
+  return '<div class="kpis">' +
+    kpi('Mensagens enviadas', n(total), 'no período, todos os grupos') +
+    kpi('Falhas', n(falhas), falhas ? 'veja o log do bot' : 'nenhuma') +
+    kpi('Cliques vindos do WhatsApp', CL.estado === 'ok' ? n(C.wa) : '—', CL.estado === 'ok' && total ? n(Math.round((C.wa / total) * 10) / 10) + ' por mensagem' : '') +
+    kpi('Ritmo', R.intervaloMin ? '1 a cada ' + n(R.intervaloMin) + ' min' : '—', R.ligado ? 'espelho ligado' : 'espelho desligado') + '</div>' +
+    card('Por grupo', 'o que saiu no Telegram e foi também para o WhatsApp', linhas ? '<div class="rolagem"><table><thead><tr>' + ['Grupo', 'Por dia', 'Enviadas', 'Falhas', 'Cliques'].map((h) => '<th scope="col">' + h + '</th>').join('') + '</tr></thead><tbody>' + linhas + '</tbody></table></div>' : vazio('Nada foi para o WhatsApp no período.'));
+}
+
+// ---------- desenho ----------
 function desenhar() {
   const P = A[periodo];
   guardarUrl();
   if (!P) return ($('#conteudo').innerHTML = vazio('Ainda não há dados.'));
   cabecalho(P);
   let html = '';
-  if (aba === 'resumo') {
-    html = faixaStatus(P) + kpis(P) + '<div class="duas">' + grafico(P) + funil(P) + '</div>' + atencao(P) + tabela(P) + cards(P) +
-      '<div class="duas iguais">' + fontes(P, false) + categoriasSem(P) + '</div>' + monetizacao(P);
-  } else if (aba === 'grupos') html = tabela(P) + cards(P);
-  else if (aba === 'fontes') html = fontes(P, true);
-  else html = categoriasTabela(P) + categoriasSem(P);
+  if (aba === 'resumo') html = faixaStatus(P) + kpisGerais(P) + '<div class="duas">' + grafico(P) + topClicados() + '</div>' + atencao(P);
+  else if (aba === 'produtos') html = abaProdutos(P);
+  else if (aba === 'ganhos') html = abaGanhos(P);
+  else if (aba === 'grupos') html = tabela(P) + '<div class="duas iguais">' + funil(P) + card('Cliques por grupo', 'nos links dos posts', CL.estado === 'ok' ? barras(cliquesDoPeriodo().porGrupo, corDosGrupos(P)) : avisoCliques()) + '</div>';
+  else if (aba === 'fontes') html = mapaFontes(P) + fontes(P);
+  else if (aba === 'categorias') html = categoriasTabela(P) + categoriasSem(P);
+  else if (aba === 'operacao') html = abaOperacao();
+  else if (aba === 'regras') html = abaRegras();
+  else if (aba === 'whatsapp') html = abaWhatsApp(P);
   $('#conteudo').innerHTML = html;
+}
+
+function irPara(nova) {
+  aba = nova;
+  desenhar();
+  window.scrollTo({ top: 0 });
 }
 
 document.addEventListener('click', (e) => {
   const p = e.target.closest('.periodos button');
   if (p) { periodo = p.dataset.p; return desenhar(); }
   const t = e.target.closest('[data-aba]');
-  if (t) { e.preventDefault(); aba = t.dataset.aba; desenhar(); return window.scrollTo({ top: 0 }); }
+  if (t) { e.preventDefault(); return irPara(t.dataset.aba); }
   const ir = e.target.closest('[data-aba-ir]');
-  if (ir) { aba = ir.dataset.abaIr; desenhar(); return window.scrollTo({ top: 0 }); }
+  if (ir) return irPara(ir.dataset.abaIr);
+  const g = e.target.closest('[data-grupo]');
+  if (g) { grupoProduto = g.dataset.grupo; return desenhar(); }
+  if (e.target.closest('[data-todos]')) { todosProdutos = !todosProdutos; return desenhar(); }
+  if (e.target.closest('[data-limpar]')) { filtroProduto = ''; $('#busca').value = ''; document.querySelectorAll('.menu li').forEach((li) => { li.hidden = false; }); return desenhar(); }
   const sec = e.target.closest('[data-ir]');
   if (sec) document.getElementById(sec.dataset.ir)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-});
-document.querySelector('.abas').addEventListener('keydown', (e) => {
-  if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-  const i = ABAS.indexOf(aba) + (e.key === 'ArrowRight' ? 1 : -1);
-  aba = ABAS[(i + ABAS.length) % ABAS.length];
-  desenhar();
-  document.querySelector('.abas [data-aba="' + aba + '"]').focus();
 });
 $('#busca').addEventListener('input', (e) => {
   const q = e.target.value.trim().toLowerCase();
   document.querySelectorAll('.menu li').forEach((li) => { li.hidden = q && !li.textContent.toLowerCase().includes(q); });
 });
+// Enter: vai para a aba que combina; se nenhuma combina, procura o produto no ranking.
 $('#busca').addEventListener('keydown', (e) => {
   if (e.key !== 'Enter') return;
+  const q = e.target.value.trim();
   const alvo = [...document.querySelectorAll('.menu li:not([hidden]) [data-aba]')][0];
-  if (alvo) alvo.click();
+  if (alvo && q) return alvo.click();
+  filtroProduto = q;
+  document.querySelectorAll('.menu li').forEach((li) => { li.hidden = false; });
+  irPara('produtos');
 });
+if (filtroProduto) $('#busca').value = filtroProduto;
 desenhar();
+lerCliques();
 `;
 
 const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const NOMES = { hoje: 'Hoje', '7d': '7 dias', '30d': '30 dias' };
 
 const MENU = [
-  ['PAINEL', [['Visão geral', null], ['Centro de operações', null]]],
-  ['DESEMPENHO', [['Analytics de produtos', 'resumo'], ['Grupos', 'grupos'], ['Fontes', 'fontes'], ['Categorias', 'categorias']]],
-  ['OPERAÇÃO', [['Mapeamento de fontes', null], ['Regras e filtros', null], ['Números WhatsApp', null]]],
+  ['PAINEL', [['Visão geral', 'resumo'], ['Produtos', 'produtos'], ['Ganhos', 'ganhos']]],
+  ['DESEMPENHO', [['Grupos', 'grupos'], ['Fontes', 'fontes'], ['Categorias', 'categorias']]],
+  ['OPERAÇÃO', [['Centro de operações', 'operacao'], ['Regras e filtros', 'regras'], ['WhatsApp', 'whatsapp']]],
 ];
 
+const LUPA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
+
 function menuHtml() {
-  return MENU.map(([secao, itens]) => `<div><h2>${secao}</h2><ul>${itens
-    .map(([rot, aba]) =>
-      aba
-        ? `<li><a href="?aba=${aba}" data-aba="${aba}">${aba === 'resumo' ? '<span class="ponto" aria-hidden="true"></span>' : ''}${escHtml(rot)}</a></li>`
-        : `<li><span aria-disabled="true" title="Ainda sem tela">${escHtml(rot)}</span></li>`
-    )
-    .join('')}</ul></div>`).join('');
+  return MENU.map(([secao, itens]) => `<div><h2>${secao}</h2><ul>${itens.map(([rot, aba]) => `<li><a href="?aba=${aba}" data-aba="${aba}">${escHtml(rot)}</a></li>`).join('')}</ul></div>`).join('');
 }
 
 /** O HTML completo, com os dados embutidos. */
 export function htmlDoPainel(painel) {
   const json = JSON.stringify(painel).replace(/</g, '\\u003c');
   const periodos = Object.keys(painel.analytics || painel.periodos || {}).map((p) => `<button type="button" data-p="${escHtml(p)}" aria-pressed="false">${escHtml(NOMES[p] || p)}</button>`).join('');
-  const abas = [['resumo', 'Resumo'], ['grupos', 'Grupos'], ['fontes', 'Fontes'], ['categorias', 'Categorias']]
-    .map(([k, r]) => `<button type="button" role="tab" data-aba="${k}" aria-selected="false" aria-controls="conteudo">${r}</button>`)
-    .join('');
   return `<!doctype html>
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Analytics de produtos</title>
+<title>Painel da Vic</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <style>${CSS}</style>
@@ -377,14 +607,13 @@ export function htmlDoPainel(painel) {
 <div class="app">
 <aside class="menu">
 <div><div class="marca-nome">Achadinhos da Vic<span class="estrela" aria-hidden="true">✦</span></div><div class="marca-sub">Painel dos grupos</div></div>
-<label class="busca"><span class="sr">Buscar no menu</span><input id="busca" type="search" placeholder="Buscar ou ir para…" autocomplete="off"></label>
+<label class="busca">${LUPA}<span class="sr">Buscar aba ou produto</span><input id="busca" type="search" placeholder="Buscar aba ou produto…" autocomplete="off"></label>
 <nav aria-label="Menu do painel">${menuHtml()}</nav>
 </aside>
 <main class="conteudo">
 <div class="miolo">
-<div class="cab"><div><h1>Analytics de produtos</h1><p class="sub" id="sub">Carregando…</p></div><div class="periodos" role="group" aria-label="Período">${periodos}</div></div>
-<div class="abas" role="tablist" aria-label="Seções">${abas}</div>
-<div id="conteudo" role="tabpanel" style="display:flex;flex-direction:column;gap:12px"><div class="esqueleto"></div><div class="esqueleto"></div><div class="esqueleto"></div></div>
+<div class="cab"><div><h1 id="titulo">Visão geral</h1><p class="sub" id="sub">Carregando…</p></div><div class="periodos" role="group" aria-label="Período">${periodos}</div></div>
+<div id="conteudo" aria-live="polite" style="display:flex;flex-direction:column;gap:12px"><div class="esqueleto"></div><div class="esqueleto"></div><div class="esqueleto"></div></div>
 <footer><ul class="notas">${(painel.notasAnalytics || NOTAS_PAINEL).map((t) => `<li>${escHtml(t)}</li>`).join('')}</ul></footer>
 </div>
 </main>
@@ -397,8 +626,8 @@ export function htmlDoPainel(painel) {
 }
 
 export const NOTAS_PAINEL = [
-  'Membros reais excluem você e o bot.',
-  'Visualizações por post não aparecem: os canais são privados, e o Telegram só mostra isso em canal público.',
+  'Cliques = toques no link do post (desde 03/11/2026). Prévias automáticas de link não contam; a Amazon fica de fora porque o link dela vai direto.',
+  'Visualizações por post não aparecem: o Telegram não mostra isso para o bot, e o WhatsApp também não.',
   'Recusadas na busca = ofertas que não passaram nos filtros do grupo (nicho, marca, vendas, desconto…) e nem entraram na fila.',
   'Barradas ao postar = estavam na fila e não saíram (link, vendas, nicho ou marca conferidos de novo). As repetidas aparecem à parte.',
 ];

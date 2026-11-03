@@ -287,13 +287,36 @@ export function montarPeriodo(periodo, P, ctx) {
     fontes: funilDasFontes(P),
     categorias,
     categoriasSemPublicacao: semPublicacao.map(({ nome, loja }) => ({ nome, loja })),
-    monetizacao: {
-      awinPendente: P.awin ? P.awin.pendentes.comissao : null,
-      awinAprovado: P.awin ? P.awin.aprovadas.comissao : null,
-      cliques: P.awin ? P.awin.cliques : null,
-      mercadoLivre: null, // sem integração: a tela leva ao painel do ML
-      painelML,
-    },
+    monetizacao: monetizacao(P, painelML),
+    whatsapp: nomes.map((nome) => ({
+      nome,
+      enviadas: G(nome).whatsapp || 0,
+      falhas: G(nome).whatsappFalhou || 0,
+      porDia: dias.map((d) => G(nome).whatsappPorDia?.[d] || 0),
+    })),
+  };
+}
+
+const somaReais = (...v) => Math.round(v.reduce((s, x) => s + (x || 0), 0) * 100) / 100;
+
+/**
+ * Ganhos do período por plataforma (aba "Ganhos"). Awin e Shopee vêm das APIs; Mercado Livre e Amazon não têm API
+ * de relatório e ficam só com o link do painel de cada um. Pendente (a loja ainda pode cancelar) nunca entra no
+ * "aprovado".
+ */
+export function monetizacao(P, painelML = null) {
+  const aw = P.awin;
+  const sh = P.shopee;
+  return {
+    awin: aw ? { cliques: aw.cliques, vendas: (aw.pendentes.vendas || 0) + (aw.aprovadas.vendas || 0), pendente: aw.pendentes.comissao, aprovado: aw.aprovadas.comissao, recusado: aw.recusadas?.comissao ?? null } : null,
+    shopee: sh ? { pedidos: sh.pedidos, pendente: sh.pendente, aprovado: sh.concluido, recusado: sh.cancelado, produtos: sh.produtos } : null,
+    pendente: aw || sh ? somaReais(aw?.pendentes.comissao, sh?.pendente) : null,
+    aprovado: aw || sh ? somaReais(aw?.aprovadas.comissao, sh?.concluido) : null,
+    // compatibilidade (resumo do Telegram e o texto do npm run analytics)
+    awinPendente: aw ? aw.pendentes.comissao : null,
+    awinAprovado: aw ? aw.aprovadas.comissao : null,
+    cliques: aw ? aw.cliques : null,
+    painelML,
   };
 }
 

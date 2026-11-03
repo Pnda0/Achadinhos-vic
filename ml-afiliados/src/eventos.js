@@ -59,6 +59,8 @@ export function evento(tipo, p = {}, detalhe = null, arquivo = arquivoEventos())
         freteGratis: /gr[aá]tis/i.test(String(p.frete || '')),
         full: !!p.full,
       });
+      // Loja + código do link curto (o mesmo que aparece no link público do post): liga os cliques do site ao produto.
+      if (p.codigoClique) linha.codigo = p.codigoClique;
     }
     if (detalhe) linha.detalhe = String(detalhe).split('\n')[0].slice(0, 200);
     fs.appendFileSync(arquivo, JSON.stringify(linha) + '\n');
