@@ -26,6 +26,26 @@ test('marcas da lista (config/marcas.json): acha pelo nome do anúncio ou pelo t
   assert.equal(marcaDoProduto({ nome: 'Assista à live de hoje' }, lista), null, '"live" sozinho não é a Live!');
 });
 
+test('Lupo (03/11/2026): só as peças de treino contam como marca — cueca, meia, sutiã, modelador e a linha Loba ficam de fora', () => {
+  const lista = listaDeMarcas(loadMarcas());
+  const lupo = (nome, textoPronto) => marcaDoProduto({ nome, textoPronto }, lista) === 'Lupo';
+  // nomes reais da Shopee ("legging lupo", "top lupo", "short lupo", "lupo")
+  assert.ok(lupo('Calça Leg Legging Max Lupo Sport Tecnologia Sem Costura Seamless Dry para Treino'));
+  assert.ok(lupo('Top Fitness Feminino Lupo Top Power Poliamida Sem Costura Alta Sustentação Sem Bojo'));
+  assert.ok(lupo('Bermuda Leg Legging Max Lupo Sport Tecnologia Sem Costura Seamless Original'));
+  assert.ok(lupo('Short Attack Lupo Academia Treino Original Bermuda Fitness Sport Corrida Vôlei'));
+  assert.ok(lupo('Oferta', '🔥 Calça legging LUPO Max\n👉 https://meli.la/x'), 'pelo texto do post copiado');
+  for (const nome of [
+    'Kit 4 Cuecas Boxer Lupo Algodão Original Masculina Confortável',
+    'Kit Com 6 Pares De Meias Lupo Sport Cano Médio Esportiva Adulto Em Algodão',
+    'Sutiã Top Lupo Loba Original Poliamida Sem Costura Sem Bojo Soutien Feminino',
+    'Cinta Short Modelador Lupo Alta Compressão Modela Cintura e Levanta o Bumbum',
+    'Bermuda Modeladora Lupo Loba 05696-001 Feminina Slim Poliamida',
+    'Kit De 6 Pares Meias Lupo Kids Infantil Cano Curto Algodão',
+    'Calcinha Cintura Alta Lupo Clássica Algodão',
+  ]) assert.equal(lupo(nome), false, nome);
+});
+
 test('fila: oferta de marca sai antes da sem marca; feminino continua valendo', async () => {
   const store = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-')), 'db.json'));
   const pronto = (id, nome, desconto) => store.upsert({ id, grupo: 'Geral', nome, status: 'PRONTO', url: `https://x/${id}`, linkAfiliado: `https://meli.la/${id}`, descontoPct: desconto, vendidos: '+1000 vendidos', coletadoEm: '2026-10-15T10:00:00Z' });
