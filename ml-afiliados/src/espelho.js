@@ -95,7 +95,8 @@ export function resolverFontes(fontes, gruposWhats) {
 }
 
 export class Espelho {
-  constructor({ sender, store, affiliate, fontes, grupos, cfg = {}, resolver = resolverOferta, agora = () => Date.now(), esperar = sleep, avisos = null, amazonTag = process.env.AMAZON_PARTNER_TAG?.trim() || '', resolverAmazon = resolverLinkAmazon, awin = null, resolverLoja = resolverLinkLoja, carregarGrupos = null, shopee = null, mlApi = null }) {
+  constructor({ sender, store, affiliate, fontes, grupos, cfg = {}, resolver = resolverOferta, agora = () => Date.now(), esperar = sleep, avisos = null, amazonTag = process.env.AMAZON_PARTNER_TAG?.trim() || '', resolverAmazon = resolverLinkAmazon, awin = null, resolverLoja = resolverLinkLoja, carregarGrupos = null, shopee = null, mlApi = null, comandos = {} }) {
+    this.comandos = comandos; // { '/atualizar': async (m) => ... } — só na caixa de entrada do dono
     this.mlApi = mlApi?.configurada ? mlApi : null; // API oficial do ML (src/ml/api.js): acha a oferta do ML dos canais pelo nome
     this.cacheML = new Map();
     this.buscasML = [];
@@ -137,6 +138,13 @@ export class Espelho {
         if (!m.id || this.store.jaViu(m.id)) continue;
         this.store.marcarVisto(m.id);
         if (m.t < limiteT) continue; // antiga: só marca como vista
+        // Comando do dono na caixa de entrada (ex.: /atualizar). Grava o "visto" antes: um reinício não repete o comando.
+        const comando = this.fontes.get(m.jid)?.manual && this.comandos[String(m.texto || '').trim().split(/\s+/)[0].toLowerCase().replace(/@\w+$/, '')];
+        if (comando) {
+          this.store.save();
+          await comando(m).catch((e) => log(`  ⚠️  comando "${m.texto}": ${String(e.message).split('\n')[0]}`));
+          continue;
+        }
         resumo.novas++;
         const r = await this.processar(m);
         this.store.contarFunil?.(this.fontes.get(m.jid)?.nome || m.jid, r);

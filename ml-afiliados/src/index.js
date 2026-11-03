@@ -202,7 +202,15 @@ function iniciarCaixaDeEntrada(cfg) {
     ...(porNicho && { destinos: ativos.map((g) => ({ grupo: g.nome, palavras: g.nicho ? nichos[g.nicho]?.obrigatorias || [] : null })) }),
   }];
   sender.aoVirarAdmin = (canal) => ligarCanalNovo(canal).catch((e) => registrarErro('canal-novo', e));
-  const espelho = new Espelho({ sender, store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), carregarGrupos: loadGrupos, cfg: { ...cfg, janelaMinutos: 180 }, avisos, awin, shopee });
+  // /atualizar (ou /reiniciar) no privado: reinicia com calma e liga de novo com o que está no GitHub (03/11/2026,
+  // para quando o dono está fora de casa e não alcança o servidor). Só a conversa do dono é lida aqui.
+  const atualizar = async (m) => {
+    const novo = process.env.INVOCATION_ID ? await atualizarDoGitHub().catch(() => null) : null;
+    await sender.sendText(m.jid, `🔁 Reiniciando${novo ? ' com a versão nova do GitHub' : ''}. Em 1 ou 2 minutos chega o aviso de "bot ligado".`).catch(() => {});
+    log('🔁 Reinício pedido pelo dono no Telegram.');
+    setTimeout(() => aoPedirParada(), 2_000);
+  };
+  const espelho = new Espelho({ sender, store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), carregarGrupos: loadGrupos, cfg: { ...cfg, janelaMinutos: 180 }, avisos, awin, shopee, comandos: { '/atualizar': atualizar, '/reiniciar': atualizar } });
   ligarGruposFonte(espelho, cfg);
   agendarEspelho(espelho, 10);
   log(`📥 Caixa de entrada ligada: mande um link da Amazon, do Mercado Livre${shopee.ligada() ? ', da Shopee' : ''}${awin.ligada() ? ' ou de loja parceira da Awin' : ''} no privado do bot que ele entra na fila ${porNicho ? `do grupo do nicho (${destino})` : `do grupo "${destino}"`}.`);
