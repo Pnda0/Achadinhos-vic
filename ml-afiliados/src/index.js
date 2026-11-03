@@ -5,10 +5,11 @@
  *   CRON_LIMPEZA -> esvazia a fila à meia-noite
  *   CRON_RESUMO  -> manda o resumo do dia no WhatsApp do dono (AVISOS_DESTINO)
  */
+import { execFile } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import cron from 'node-cron';
-import { DATA_DIR, loadCategorias, loadFontes, loadGrupos, loadNichos, loadShopee, settings, vincularCanal } from './config.js';
+import { DATA_DIR, ROOT, loadCategorias, loadFontes, loadGrupos, loadNichos, loadShopee, settings, vincularCanal } from './config.js';
 import { Avisos } from './avisos.js';
 import { Awin } from './awin.js';
 import { Shopee } from './shopee.js';
@@ -369,6 +370,17 @@ async function iniciarEspelho() {
  * bot de novo na mesma janela, já com o que foi para o GitHub.
  */
 let aoPedirParada = () => {};
+
+/** Há versão nova no main do GitHub? (git fetch; true = o HEAD daqui ficou para trás). */
+function atualizarDoGitHub() {
+  const git = (...args) =>
+    new Promise((resolve, reject) => execFile('git', args, { cwd: ROOT, timeout: 60_000 }, (e, saida) => (e ? reject(e) : resolve(String(saida).trim()))));
+  return git('fetch', '--quiet', 'origin', 'main').then(async () => {
+    const [aqui, la] = [await git('rev-parse', 'HEAD'), await git('rev-parse', 'origin/main')];
+    if (aqui !== la) log(`🔄 Versão nova no GitHub (${la.slice(0, 7)}): reiniciando para atualizar.`);
+    return aqui !== la;
+  });
+}
 async function reiniciarComCalma(sair, { religar = true } = {}) {
   if (parando) return;
   parando = true;
@@ -527,6 +539,9 @@ async function main() {
     }
   };
   for (const quando of ['5 8 * * *', '30 12 * * *', '30 17 * * *', '57 21 * * *']) cron.schedule(quando, atualizarPainel, opts);
+  // No servidor (systemd), todo dia às 6h30, antes dos posts: se o main do GitHub andou, reinicia com calma — o
+  // systemd liga de novo com o git pull. Assim o que vai para o main chega sem ninguém precisar reiniciar (03/11/2026).
+  if (process.env.INVOCATION_ID) cron.schedule('30 6 * * *', () => atualizarDoGitHub().then((novo) => novo && aoPedirParada()).catch((e) => registrarErro('atualizar', e)), opts);
   // Resumo da semana, toda segunda às 9h (só para o dono).
   cron.schedule(
     '0 9 * * 1',
