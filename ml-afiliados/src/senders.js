@@ -99,12 +99,21 @@ class WWebJsSender {
       qrcode.generate(qr, { small: true });
     });
     this.client.on('disconnected', (motivo) => log(`⚠️  WhatsApp desconectou: ${motivo}`));
+    // Por código (servidor) o dono precisa de tempo para pegar o celular do chip: sai um código novo a cada 3 min.
+    const minutos = settings.whatsappNumero ? 30 : 5;
     const ready = new Promise((resolve, reject) => {
       this.client.once('ready', resolve);
       this.client.once('auth_failure', (m) => reject(new Error('Falha na autenticação do WhatsApp: ' + m)));
-      setTimeout(() => reject(new Error('WhatsApp não conectou em 5 minutos (QR code não escaneado?).')), 5 * 60_000).unref();
+      const falta = settings.whatsappNumero ? 'código não digitado' : 'QR code não escaneado';
+      setTimeout(() => reject(new Error(`WhatsApp não conectou em ${minutos} minutos (${falta}?).`)), minutos * 60_000).unref();
     });
-    await Promise.all([this.client.initialize(), ready]);
+    try {
+      await Promise.all([this.client.initialize(), ready]);
+    } catch (e) {
+      // Fecha o navegador: aberto, ele seguia mandando código novo ao dono a cada 3 min sem o bot esperar mais.
+      await this.client.destroy().catch(() => {});
+      throw e;
+    }
     log('✅ WhatsApp conectado');
     // O número do chip fica anotado: no servidor ele conecta por código (WHATSAPP_NUMERO), sem QR code (npm run migrar).
     try {

@@ -221,7 +221,7 @@ async function iniciarWhatsApp() {
     // Servidor sem tela: o código para conectar o chip chega no Telegram do dono.
     whats.aoCodigo = (codigo) =>
       avisos.avisar('whatsapp-codigo', `*Conectar o WhatsApp do bot* 📲\nNo celular do chip: WhatsApp → Aparelhos conectados → Conectar um aparelho → *Conectar com número de telefone* e digite:\n\n*${codigo}*\n\n(o código muda a cada 3 minutos)`, { sempre: true }).catch(() => {});
-    log('📲 WhatsApp: conectando o número do bot (na 1ª vez, escaneie o QR code na janela do WhatsApp Web que abrir)...');
+    log(`📲 WhatsApp: conectando o número do bot (na 1ª vez, ${settings.whatsappNumero ? 'o código para conectar chega no Telegram do dono' : 'escaneie o QR code na janela do WhatsApp Web que abrir'})...`);
     await whats.init();
     espelhoWhats = new EspelhoWhatsApp({ sender: whats, store, carregarGrupos: loadGrupos, avisos, intervaloMin: settings.whatsappIntervaloMin });
     const { ligados, problemas } = await espelhoWhats.ligarGrupos();
@@ -240,7 +240,8 @@ async function iniciarWhatsApp() {
   } catch (e) {
     registrarErro('whatsapp', e);
     log(`⚠️  WhatsApp não conectou: ${String(e.message).split('\n')[0]} — o Telegram segue normal.`);
-    await avisos.avisar('whatsapp', `*WhatsApp não conectou* ⚠️\n${String(e.message).split('\n')[0]}\nReinicie o bot e escaneie o QR code com o chip do bot (WhatsApp > Aparelhos conectados).`).catch(() => {});
+    const comoConectar = settings.whatsappNumero ? 'Para receber um código novo, reinicie o bot.' : 'Reinicie o bot e escaneie o QR code com o chip do bot (WhatsApp > Aparelhos conectados).';
+    await avisos.avisar('whatsapp', `*WhatsApp não conectou* ⚠️\n${String(e.message).split('\n')[0]}\n${comoConectar}`).catch(() => {});
   }
 }
 
