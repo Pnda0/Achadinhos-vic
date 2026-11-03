@@ -393,7 +393,7 @@ Desde 22/10/2026 (`src/awin-produtos.js`, `config/awin.json` > `produtos`): alé
 
 Para tirar o bot do PC de casa (22/10/2026: um PC com 4 GB de memória só para isso). Precisa de **2 GB ou mais** de memória (o WhatsApp Web roda num navegador e usa ~1,3 GB; o bot em si, ~90 MB), Ubuntu 22.04/24.04 ou Debian 12 de 64 bits, ~10 GB de disco.
 
-1. **No servidor (como root)** — instala Node 22, Google Chrome, swap de 2 GB, o bot em `/opt/achadinhos` (usuário `bot`) e o serviço `ml-afiliados` (liga com o servidor, religa se cair, teto de 1,5 GB):
+1. **No servidor (como root)** — instala Node 22, Google Chrome, swap de 2 GB, o bot em `/opt/achadinhos` (usuário `bot`) e o serviço `ml-afiliados` (liga com o servidor, religa se cair, teto de 3 GB de memória):
    `curl -fsSL https://raw.githubusercontent.com/Pnda0/Achadinhos-vic/main/ml-afiliados/linux/instalar.sh | bash`
 2. **No PC de casa**: `cd ml-afiliados && npm run migrar` — desliga o bot daqui **sem religar**, tira o atalho do início automático do Windows (vira `.desligado`) e gera `Downloads/achadinhos-migracao-AAAA-MM-DD.tar.gz` (~2 MB) com o `.env` (já com `WHATSAPP_NUMERO`, o chip do bot), a pasta `data/` (fila, histórico, preços, analytics, cookies do ML; sem perfil de navegador nem sessão do WhatsApp) e o login do Cloudflare do wrangler (o painel continua publicando). **Tem senhas**: pendrive ou rede local, e apague depois. (`npm run migrar -- --teste` só gera o arquivo.)
 3. **No servidor**: `bash /opt/achadinhos/ml-afiliados/linux/receber.sh <arquivo>` — põe tudo no lugar e liga o bot. Em ~1 min chega no Telegram do dono o **código para conectar o WhatsApp** (celular do chip → Aparelhos conectados → Conectar com número de telefone).
