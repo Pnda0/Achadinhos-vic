@@ -694,6 +694,7 @@ function abaRegras() {
   const cartao = (g) => '<div class="card"><div class="gcard-topo"><span class="gcard-nome">' + esc(g.nome) + '</span>' + badge('ok', 'Ligado') + '</div><ul class="regras-lista">' +
     [
       g.soMarcas ? 'Só posta marcas da lista' : 'Posta qualquer marca (as da lista saem primeiro)',
+      g.maxPorDia ? 'No máximo ' + n(g.maxPorDia) + ' posts por dia, espaçados ao longo do dia (só os melhores da fila)' : '',
       g.descontoMinimo != null ? 'Desconto de pelo menos ' + n(g.descontoMinimo) + '%' : '',
       g.precoMinimo != null ? 'Preço a partir de ' + brl(g.precoMinimo) : '',
       g.notaMinima != null ? 'Nota mínima ' + n(g.notaMinima) + ' (de 5)' : '',

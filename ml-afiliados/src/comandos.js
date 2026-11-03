@@ -33,10 +33,10 @@ const duracao = (ms) => {
 /** O texto do /status: ligado desde quando, pausa, posts de hoje, WhatsApp, fila e o último post. */
 export function textoDoStatus({ store, grupos, agora = Date.now(), ligadoDesde, whatsapp, tz = 'America/Sao_Paulo' }) {
   const hoje = diaLocal(new Date(agora), tz);
-  const nomes = grupos.filter((g) => g.ativo).map((g) => g.nome);
+  const ativos = grupos.filter((g) => g.ativo);
   const deHoje = (iso) => iso && diaLocal(new Date(iso), tz) === hoje;
   const enviados = store.list((p) => p.status === 'ENVIADO' && deHoje(p.enviadoEm));
-  const porGrupo = (lista) => nomes.map((n) => `${n} ${lista.filter((p) => p.grupo === n).length}`).join(' · ');
+  const porGrupo = (lista, comLimite = false) => ativos.map((g) => `${g.nome} ${lista.filter((p) => p.grupo === g.nome).length}${comLimite && g.maxPorDia ? ` de ${g.maxPorDia}` : ''}`).join(' · ');
   const naFila = store.list((p) => p.status === 'PRONTO' || p.status === 'PENDENTE');
   const noWhats = Object.values(store.data.whatsapp || {}).filter(deHoje).length;
   const ultimo = enviados.sort((a, b) => String(b.enviadoEm).localeCompare(String(a.enviadoEm)))[0];
@@ -44,7 +44,7 @@ export function textoDoStatus({ store, grupos, agora = Date.now(), ligadoDesde, 
     '*Status do bot* 🤖',
     `✅ Ligado desde ${new Date(ligadoDesde).toLocaleString('pt-BR', { timeZone: tz, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} (há ${duracao(agora - ligadoDesde)})`,
     ...(store.data.pausado ? [`⏸️ *Posts pausados* desde as ${hhmm(store.data.pausado, tz)} — /voltar para retomar`] : []),
-    `📤 Postados hoje: ${porGrupo(enviados)}`,
+    `📤 Postados hoje: ${porGrupo(enviados, true)}`,
     `📲 WhatsApp: ${whatsapp === 'ligado' ? `conectado — ${noWhats} mensagem(ns) hoje` : whatsapp === 'desligado' ? 'desligado no .env' : 'não conectado (/reiniciar manda um código novo)'}`,
     `📦 Na fila: ${porGrupo(naFila)}`,
     ...(ultimo ? [`🕒 Último post: ${hhmm(ultimo.enviadoEm, tz)} (${ultimo.grupo}) ${String(ultimo.nome).slice(0, 50)}`] : []),

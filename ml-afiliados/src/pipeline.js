@@ -484,7 +484,47 @@ function vendasNoEnvio(p, grupo) {
 /** De quantos em quantos posts a Shopee pode aparecer (config/shopee.json > "umACada"; 0 = sem limite). */
 export const umACadaShopee = () => Number(loadShopee().umACada) || 0;
 /** Minutos entre envios (CRON_ENVIO "*\/3 ..." = 3). */
-const minutosEntreEnvios = () => Number(String(settings.cron.envio).match(/^\*\/(\d+)/)?.[1]) || 3;
+const minutosEntreEnvios = (cron = settings.cron.envio) => Number(String(cron).match(/^\*\/(\d+)/)?.[1]) || 3;
+/** Horas do CRON_ENVIO ("*\/3 8-21 * * *" = [8, 21], das 8h às 21h59); sem faixa = o dia todo. */
+export function horasDeEnvio(cron = settings.cron.envio) {
+  const m = String(cron).trim().split(/\s+/)[1]?.match(/^(\d+)-(\d+)$/);
+  return m ? [Number(m[1]), Number(m[2])] : [0, 23];
+}
+
+/**
+ * Ritmo do grupo ("maxPorDia" em config/grupos.json). O dono, 03/11/2026: o Beleza postou 112 vezes num dia, e quem
+ * entra num grupo novo e recebe 100 mensagens por dia silencia ou sai. Com o limite, os posts ficam espaçados por
+ * igual na janela de envio (8h às 21h59 = 840 min; 40 por dia = 1 a cada 21 min) e a fila, que fica maior, solta só
+ * as melhores (a ordem de sempre: cupom do dia, copiadas, femininos, marcas, nota de qualidade).
+ */
+export function ritmoLiberado(store, grupo, agora = Date.now(), cron = settings.cron.envio) {
+  const max = Number(grupo.maxPorDia) || 0;
+  if (!max) return true;
+  const [ini, fim] = horasDeEnvio(cron);
+  const intervalo = ((fim - ini + 1) * 60) / max;
+  const hoje = diaLocal(new Date(agora), settings.tz);
+  const enviados = store.list((p) => p.grupo === grupo.nome && (p.status === 'ENVIADO' || p.status === 'INCERTO') && p.enviadoEm);
+  if (enviados.filter((p) => diaLocal(new Date(p.enviadoEm), settings.tz) === hoje).length >= max) return false;
+  const ultimo = Math.max(0, ...enviados.map((p) => Date.parse(p.enviadoEm)));
+  // Folga de meio envio: o post sai alguns segundos depois da hora do cron e, sem ela, 21 min virariam 24.
+  return agora - ultimo >= (intervalo - minutosEntreEnvios(cron) / 2) * 60_000;
+}
+
+/** Quanto tempo uma oferta copiada pode esperar na fila de um grupo com ritmo (contado a partir da hora de envio). */
+export const HORAS_COPIADA_NA_FILA = 3;
+/**
+ * Nos grupos com ritmo a fila anda devagar e as copiadas (Amazon/ML de canais e grupos) saem da mais nova para a mais
+ * velha: uma copiada que esperou mais de 3 h já pode estar com outro preço, então não sai. As da madrugada contam a
+ * partir do começo do envio (8h). As que o dono manda no privado (manual) sempre saem.
+ */
+export function copiadaVencida(p, grupo, agora = Date.now(), cron = settings.cron.envio) {
+  if (!grupo.maxPorDia || p.origem !== 'espelho' || p.manual || !p.coletadoEm) return null;
+  const [ini] = horasDeEnvio(cron);
+  const [h, m] = new Date(agora).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: settings.tz }).split(':').map(Number);
+  const inicioDoEnvio = agora - (h * 60 + m - ini * 60) * 60_000;
+  const esperando = agora - Math.max(Date.parse(p.coletadoEm), inicioDoEnvio);
+  return esperando > HORAS_COPIADA_NA_FILA * 3_600_000 ? `copiada há mais de ${HORAS_COPIADA_NA_FILA} h na fila (o preço pode ter mudado)` : null;
+}
 
 /**
  * Uma fonte (`daFonte`) pode sair agora neste grupo? Sim se nenhum dos últimos N-1 posts foi dela — ou, quando só há
@@ -521,6 +561,8 @@ export function awinLiberada(store, grupo, cfg = loadAwin().produtos || {}, minu
 
 export async function enviarProximo(sender, grupo, store = new Store()) {
   const dias = grupo.filtros?.diasSemRepetir || 5;
+  // Grupo com limite por dia (maxPorDia): ainda não é a hora do próximo post (ou o limite de hoje já saiu).
+  if (!ritmoLiberado(store, grupo)) return { esperando: true };
   // Público principal: meninas. Femininos na frente, depois os neutros; masculino no máximo 1 a cada N posts.
   // E as marcas da lista (config/marcas.json) passam na frente das sem marca (pedido do dono, 15/10/2026).
   const feminina = grupo.preferirFeminino ? preferenciaFeminina(store, grupo.nome, grupo.preferirFeminino) : {};
@@ -540,7 +582,7 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
     if (!candidato) break;
     const repetido = store.jaPublicado(candidato, dias);
     const linkRuim = !repetido && motivoLinkInvalido(candidato);
-    const vendas = !repetido && !linkRuim && (vendasNoEnvio(candidato, grupo) || marcaNoEnvio(candidato, grupo) || nichoNoEnvio(candidato, grupo) || publicoNoEnvio(candidato, grupo));
+    const vendas = !repetido && !linkRuim && (copiadaVencida(candidato, grupo) || vendasNoEnvio(candidato, grupo) || marcaNoEnvio(candidato, grupo) || nichoNoEnvio(candidato, grupo) || publicoNoEnvio(candidato, grupo));
     if (!repetido && !linkRuim && !vendas) p = candidato;
     else {
       const motivo = repetido || linkRuim || vendas;

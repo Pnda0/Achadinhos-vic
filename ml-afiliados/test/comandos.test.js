@@ -52,10 +52,10 @@ test('/status: ligado desde quando, posts e fila de hoje por grupo, WhatsApp, pa
   p('d', 'Fitness', 'PRONTO');
   p('e', 'Perfumes', 'PENDENTE');
   store.data.whatsapp = { 'Beleza:a': '2026-11-03T13:20:00-03:00', 'Fitness:c': '2026-11-02T20:10:00-03:00' };
-  const grupos = [{ nome: 'Fitness', ativo: true }, { nome: 'Beleza', ativo: true }, { nome: 'Perfumes', ativo: true }, { nome: 'Geral', ativo: false }];
+  const grupos = [{ nome: 'Fitness', ativo: true }, { nome: 'Beleza', ativo: true, maxPorDia: 40 }, { nome: 'Perfumes', ativo: true }, { nome: 'Geral', ativo: false }];
   const texto = textoDoStatus({ store, grupos, agora, ligadoDesde: agora - 2 * 3_600_000 - 5 * 60_000, whatsapp: 'ligado' });
   assert.match(texto, /Ligado desde 03\/11.*12:55.*há 2 h 5 min/);
-  assert.match(texto, /Postados hoje: Fitness 0 · Beleza 2 · Perfumes 0/);
+  assert.match(texto, /Postados hoje: Fitness 0 · Beleza 2 de 40 · Perfumes 0/);
   assert.match(texto, /WhatsApp: conectado — 1 mensagem/);
   assert.match(texto, /Na fila: Fitness 1 · Beleza 0 · Perfumes 1/);
   assert.match(texto, /Último post: 14:40 \(Beleza\) Produto b/);

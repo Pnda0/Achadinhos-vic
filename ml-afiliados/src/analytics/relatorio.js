@@ -190,6 +190,7 @@ export function regrasDoPainel(grupos, shopee = loadShopee(), marcas = loadMarca
       diasSemRepetir: g.filtros?.diasSemRepetir ?? null,
       soMarcas: !!g.soMarcas,
       masculinoCada: Number.isInteger(g.preferirFeminino) && g.preferirFeminino >= 2 ? g.preferirFeminino : g.preferirFeminino ? 3 : null,
+      maxPorDia: Number(g.maxPorDia) || null,
       bloqueadas: (g.filtros?.palavrasBloqueadas || []).length,
       whatsapp: !g.whatsappPausado,
     })),

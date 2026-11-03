@@ -133,7 +133,9 @@
       "telegram": "-1004455813335",
       "preferirFeminino": 10,
       "whatsapp": "Achadinhos Vic - Beleza",
-      "soMarcas": true
+      "soMarcas": true,
+      "maxPorDia": 40,
+      "_comentarioMax": "03/11/2026, o dono aceitou: no máximo 40 posts por dia (1 a cada 21 min das 8h às 21h59), só os melhores da fila. Antes saíam até 112 por dia; quem entra num grupo novo e recebe 100 mensagens por dia silencia ou sai. Copiadas que esperam mais de 3 h na fila não saem (o preço pode ter mudado)."
     },
     {
       "nome": "Perfumes",
