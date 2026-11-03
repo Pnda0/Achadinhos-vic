@@ -49,9 +49,9 @@ chmod +x "$PASTA/ml-afiliados/linux/"*.sh
 sudo -u bot bash -c "cd $PASTA/ml-afiliados && PUPPETEER_SKIP_DOWNLOAD=1 npm install --no-audit --no-fund --silent && git rev-parse HEAD > node_modules/.instalado-em"
 
 echo "== Serviço (liga com o servidor, religa se cair)"
+# Só fica no início automático no receber.sh: sem o .env, o bot ficaria caindo e religando a cada 10 s.
 cp "$PASTA/ml-afiliados/linux/ml-afiliados.service" /etc/systemd/system/ml-afiliados.service
 systemctl daemon-reload
-systemctl enable ml-afiliados >/dev/null
 
 cat <<FIM
 
@@ -61,7 +61,7 @@ Pronto. Falta:
   2. No .env do servidor: WHATSAPP_NUMERO=55DDDNUMERO do chip do bot (conecta por código no Telegram)
      e CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID (para o painel).
   3. DESLIGAR o bot do PC de casa (fechar a janela e tirar o atalho da pasta Inicializar).
-  4. Ligar:            systemctl start ml-afiliados
+  4. Ligar:            systemctl enable --now ml-afiliados   (o receber.sh já faz)
      Ver o que faz:    journalctl -u ml-afiliados -f
      Reiniciar:        systemctl restart ml-afiliados
 FIM

@@ -33,7 +33,7 @@ fi
 rm -rf "$TMP"
 
 chown -R bot:bot /opt/achadinhos
-systemctl start ml-afiliados
+systemctl enable --now ml-afiliados
 
 cat <<FIM
 
