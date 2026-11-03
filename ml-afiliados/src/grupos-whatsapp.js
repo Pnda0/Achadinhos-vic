@@ -52,8 +52,11 @@ export async function ligarGruposWhatsApp(whats, c, { nichos = {}, lojasParceira
     }
     if (!grupo) {
       if (!entrar) continue;
-      // Os nomes dos grupos do chip ajudam a acertar o "titulo" (o dono diz o nome de cabeça).
-      log(`⚠️  O chip do bot não está no grupo do WhatsApp "${item.titulo}" e não há convite em config/fontes.json. Grupos do chip: ${meus.map((g) => `"${g.nome}"`).join(', ') || 'nenhum'}.`);
+      // Os grupos do chip com nome parecido ajudam a acertar o "titulo" (o dono diz o nome de cabeça). Só os parecidos:
+      // o chip também está em grupos pessoais, que não têm por que ir para o log.
+      const raizes = normalizar(item.titulo).split(' ').filter((p) => p.length >= 4).map((p) => p.slice(0, 5));
+      const parecidos = meus.filter((g) => raizes.some((r) => normalizar(g.nome).includes(r))).slice(0, 8);
+      log(`⚠️  O chip do bot não está no grupo do WhatsApp "${item.titulo}" e não há convite em config/fontes.json. Grupos do chip com nome parecido: ${parecidos.map((g) => `"${g.nome}"`).join(', ') || 'nenhum'}.`);
       continue;
     }
     const f = fonteDoGrupoTelegram(c, { jid: grupo.jid, titulo: item.titulo }, { nichos, lojasParceiras });
