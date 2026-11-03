@@ -12,7 +12,7 @@ import path from 'node:path';
 import { ROOT } from './config.js';
 import { log, sleep } from './util.js';
 
-const ATUALIZACOES = ['message', 'channel_post', 'my_chat_member', 'chat_member'];
+export const ATUALIZACOES = ['message', 'channel_post', 'my_chat_member', 'chat_member'];
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 /** Converte a formatação do WhatsApp (*negrito*, ~riscado~, `código`) para o HTML do Telegram. */

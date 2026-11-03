@@ -148,7 +148,8 @@ export class EspelhoWhatsApp {
 
   /** Uma postagem (se houver). Devolve a oferta enviada, ou null. */
   async enviarUma() {
-    if (!dentroDoHorario(new Date(this.agora()))) return null;
+    // /pausar no Telegram do dono (src/comandos.js) vale para o WhatsApp também.
+    if (this.store.data.pausado || !dentroDoHorario(new Date(this.agora()))) return null;
     const alvo = this.proxima();
     if (!alvo) return null;
     const { grupo, p } = alvo;

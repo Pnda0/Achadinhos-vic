@@ -30,7 +30,8 @@
     "analytics": "node src/cli.js analytics",
     "reiniciar": "node src/reiniciar.js",
     "ml-liberar": "node src/ml/liberar.js",
-    "migrar": "node src/migrar.js"
+    "migrar": "node src/migrar.js",
+    "vigia": "node src/vigia.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

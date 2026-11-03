@@ -51,6 +51,8 @@ para "somente leitura", veja README 3.16 (IOMMU, `intel_iommu=off`).
 
 ## Investigar
 
+- **Nada postando?** Veja antes se o dono pausou pelo celular: `"pausado"` em `data/db.json` (o `/pausar` no privado do bot; `/voltar` retoma; o log mostra "⏸️ Posts pausados"). Comandos do celular: `src/comandos.js`; a vigia que reinicia bot travado e atende o `/ligar`: `src/vigia.js`, log em `journalctl -u ml-afiliados-vigia` (README 3.16, item 6).
+
 - `data/bot.log` — tudo que o bot fez (hora local). Linhas úteis: `📤 [Grupo]` postou, `📲 [WhatsApp Grupo]`, `⏭️` barrado na hora de postar, `📭 fila vazia`, `🔁 Busca de reposição`, `✅ Coleta:` com recusas por motivo, `Por categoria (vistos → aprovados)`.
 - `data/produtos.log` (JSONL) — cada produto: recusado (motivo), na_fila, publicado, barrado, whatsapp. `npm run historico -- <id ou nome>`.
 - `data/db.json` — a fila (`produtos`, status PRONTO/ENVIADO/...), `whatsapp` (o que foi pro WhatsApp), `coletaPorGrupo`. Só leia: o bot regrava o arquivo.

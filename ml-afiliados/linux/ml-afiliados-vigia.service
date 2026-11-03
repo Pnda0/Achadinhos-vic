@@ -1,0 +1,11 @@
+[Unit]
+Description=Achadinhos da Vic - vigia do bot (liga com /ligar no Telegram, reinicia se travar)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=bot
+WorkingDirectory=/opt/achadinhos/ml-afiliados
+Environment=TZ=America/Sao_Paulo
+ExecStart=/usr/bin/node src/vigia.js
+TimeoutStartSec=90

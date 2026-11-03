@@ -37,6 +37,9 @@ import { desligarEdicaoRapida } from './janela.js';
 import { EspelhoWhatsApp } from './whatsapp-espelho.js';
 import { ligarGruposWhatsApp } from './grupos-whatsapp.js';
 import { generoDoProduto } from './genero.js';
+import { AJUDA, MENU, textoDoStatus } from './comandos.js';
+
+const LIGADO_EM = Date.now();
 
 // Caiu (erro inesperado, ou sem internet por 30 min ao ligar): o 3-iniciar.bat liga de novo em 1 min (src/logfile.js).
 const religar = () => {
@@ -204,13 +207,44 @@ function iniciarCaixaDeEntrada(cfg) {
   sender.aoVirarAdmin = (canal) => ligarCanalNovo(canal).catch((e) => registrarErro('canal-novo', e));
   // /atualizar (ou /reiniciar) no privado: reinicia com calma e liga de novo com o que está no GitHub (03/11/2026,
   // para quando o dono está fora de casa e não alcança o servidor). Só a conversa do dono é lida aqui.
+  const responder = (m, texto) => sender.sendText(m.jid, texto).catch(() => {});
   const atualizar = async (m) => {
     const novo = process.env.INVOCATION_ID ? await atualizarDoGitHub().catch(() => null) : null;
-    await sender.sendText(m.jid, `🔁 Reiniciando${novo ? ' com a versão nova do GitHub' : ''}. Em 1 ou 2 minutos chega o aviso de "bot ligado".`).catch(() => {});
+    await responder(m, `🔁 Reiniciando${novo ? ' com a versão nova do GitHub' : ''}. Em 1 ou 2 minutos chega o aviso de "bot ligado".`);
     log('🔁 Reinício pedido pelo dono no Telegram.');
     setTimeout(() => aoPedirParada(), 2_000);
   };
-  const espelho = new Espelho({ sender, store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), carregarGrupos: loadGrupos, cfg: { ...cfg, janelaMinutos: 180 }, avisos, awin, shopee, comandos: { '/atualizar': atualizar, '/reiniciar': atualizar } });
+  // Os outros comandos do celular (src/comandos.js): /status, /pausar, /voltar, /ligar, /ajuda.
+  const ajuda = (m) => responder(m, AJUDA);
+  const comandos = {
+    '/atualizar': atualizar,
+    '/reiniciar': atualizar,
+    '/status': (m) =>
+      responder(m, textoDoStatus({ store, grupos: loadGrupos(), ligadoDesde: LIGADO_EM, whatsapp: espelhoWhats ? 'ligado' : settings.whatsappEspelho ? 'nao' : 'desligado', tz: settings.tz })),
+    '/pausar': async (m) => {
+      if (!store.data.pausado) {
+        store.data.pausado = new Date().toISOString();
+        store.save();
+        log('⏸️  Posts pausados pelo dono no Telegram (/voltar retoma).');
+      }
+      await responder(m, '⏸️ Posts pausados no Telegram e no WhatsApp. A busca de ofertas continua enchendo a fila.\n/voltar para retomar.');
+    },
+    '/voltar': async (m) => {
+      const estava = store.data.pausado;
+      delete store.data.pausado;
+      store.save();
+      if (estava) log('▶️  Posts retomados pelo dono no Telegram.');
+      await responder(m, estava ? '▶️ Posts de volta: o próximo sai no próximo horário de envio (a cada 3 min, das 8h às 22h).' : '▶️ Os posts não estavam pausados.');
+    },
+    '/ligar': (m) => responder(m, '✅ O bot já está ligado. /status mostra como ele está.'),
+    '/ajuda': ajuda,
+    '/start': ajuda,
+  };
+  if (sender.tipo === 'telegram') {
+    // O menu do botão "/" só na conversa do dono (os membros dos canais não veem).
+    sender.call('setMyCommands', { commands: MENU, scope: { type: 'chat', chat_id: dono } }).catch((e) => log(`⚠️  Menu de comandos do Telegram: ${String(e.message).split('\n')[0]}`));
+  }
+  const espelho = new Espelho({ sender, store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), carregarGrupos: loadGrupos, cfg: { ...cfg, janelaMinutos: 180 }, avisos, awin, shopee, comandos });
   ligarGruposFonte(espelho, cfg);
   agendarEspelho(espelho, 10);
   log(`📥 Caixa de entrada ligada: mande um link da Amazon, do Mercado Livre${shopee.ligada() ? ', da Shopee' : ''}${awin.ligada() ? ' ou de loja parceira da Awin' : ''} no privado do bot que ele entra na fila ${porNicho ? `do grupo do nicho (${destino})` : `do grupo "${destino}"`}.`);
@@ -487,7 +521,8 @@ async function main() {
 
   const opts = { timezone: settings.tz };
   cron.schedule(settings.cron.coleta, cicloColeta, opts);
-  cron.schedule(settings.cron.envio, exclusivo('envio', () => enviarParaTodos(sender, store, avisos)), opts);
+  // /pausar no Telegram (src/comandos.js): nenhum post até o /voltar; a busca segue enchendo a fila.
+  cron.schedule(settings.cron.envio, exclusivo('envio', () => (store.data.pausado ? null : enviarParaTodos(sender, store, avisos))), opts);
   cron.schedule(
     settings.cron.limpeza,
     exclusivo('limpeza', async () => {
@@ -562,6 +597,7 @@ async function main() {
   log(`⏰ Coleta: "${settings.cron.coleta}" | Envio: "${settings.cron.envio}" | Limpeza: "${settings.cron.limpeza}" | Resumo: "${settings.avisos.resumoCron}"`);
   await avisos.ligado({ grupos: loadGrupos() });
   await avisos.aoReligar({ incertos, recuperacao: store.recuperacao });
+  if (store.data.pausado) await avisos.avisar('pausado', '*Posts pausados* ⏸️\nO bot ligou, mas os posts seguem pausados (/pausar). /voltar para retomar.', { sempre: true });
   iniciarHeartbeat();
 
   iniciarCanais();

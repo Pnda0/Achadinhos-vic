@@ -53,6 +53,9 @@ echo "== Serviço (liga com o servidor, religa se cair)"
 cp "$PASTA/ml-afiliados/linux/ml-afiliados.service" /etc/systemd/system/ml-afiliados.service
 systemctl daemon-reload
 
+echo "== Vigia do bot (/ligar no Telegram, reinicia se travar)"
+bash "$PASTA/ml-afiliados/linux/ligar-vigia.sh"
+
 cat <<FIM
 
 Pronto. Falta:
