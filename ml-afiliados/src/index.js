@@ -30,8 +30,8 @@ import { membrosDoDia, registrarMembros } from './analytics/membros.js';
 import { registrarAwin, registrarShopee } from './analytics/ganhos.js';
 import { montarPainel } from './analytics/relatorio.js';
 import { destaquesDoDia, resumoSemanal } from './analytics/destaques.js';
-import { gravarSite } from './analytics/pagina.js';
-import { publicarPainel, urlPublicada } from './analytics/publicar.js';
+import { VERSAO_PAGINA, gravarSite } from './analytics/pagina.js';
+import { lerEstado as lerEstadoPainel, publicarPainel, urlPublicada } from './analytics/publicar.js';
 import { MSG_BOT_TRAVADO, MSG_OUTRA_COPIA, outrosBots, travarInstancia } from './instancia.js';
 import { desligarEdicaoRapida } from './janela.js';
 import { EspelhoWhatsApp } from './whatsapp-espelho.js';
@@ -582,6 +582,8 @@ async function main() {
     }
   };
   for (const quando of ['5 8 * * *', '30 12 * * *', '30 17 * * *', '57 21 * * *']) cron.schedule(quando, atualizarPainel, opts);
+  // Desenho novo do painel (o código mudou): publica 3 min depois de ligar, sem esperar o próximo horário.
+  if (!String(lerEstadoPainel().hash || '').startsWith(`${VERSAO_PAGINA}-`)) setTimeout(atualizarPainel, 3 * 60_000).unref();
   // No servidor (systemd), todo dia às 6h30, antes dos posts: se o main do GitHub andou, reinicia com calma — o
   // systemd liga de novo com o git pull. Assim o que vai para o main chega sem ninguém precisar reiniciar (03/11/2026).
   if (process.env.INVOCATION_ID) cron.schedule('30 6 * * *', () => atualizarDoGitHub().then((novo) => novo && aoPedirParada()).catch((e) => registrarErro('atualizar', e)), opts);

@@ -7,7 +7,9 @@
  *
  * Abas (03/11/2026, pedido do dono: "o mais útil, sem encher de informação"; quem mais olha é a prima dele):
  * Visão geral, Produtos (ranking de cliques), Ganhos (todas as plataformas), Grupos, Fontes (com o mapa fonte ×
- * grupo), Categorias, Centro de operações, Regras e filtros, WhatsApp.
+ * grupo), Categorias, Centro de operações, Regras e filtros, WhatsApp. Cada item do menu tem um ícone.
+ * Desde 03/11/2026 (o dono: "coisas mais objetivas do que tantos números"): cada aba abre com "Em poucas palavras"
+ * (frases montadas dos números) e cartões; as tabelas cheias de número ficam em "Ver os números", fechado.
  */
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -38,7 +40,8 @@ a{color:var(--accent)}a:hover{color:var(--accent-hover)}
 .menu li>a{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;color:var(--text-2);text-decoration:none;font-size:13px}
 .menu li a:hover{background:var(--surface-2);color:var(--text)}
 .menu li a[aria-current="page"]{background:var(--surface-2);color:var(--text);font-weight:600}
-.menu li a[aria-current="page"]::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none}
+.menu li>a svg{width:16px;height:16px;flex:none;color:var(--text-4)}
+.menu li a[aria-current="page"] svg,.menu li a:hover svg{color:var(--accent)}
 .conteudo{padding:28px 24px 48px;min-width:0}
 .miolo{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
 .cab{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end;justify-content:space-between}
@@ -138,12 +141,33 @@ summary{cursor:pointer;font-weight:600;font-size:13px}
 .regras-lista{margin:0;padding-left:18px;color:var(--text-2);font-size:13px;display:flex;flex-direction:column;gap:6px}
 .vazio{color:var(--text-3);font-size:13px;padding:6px 0}
 .notas{color:var(--text-4);font-size:12px;padding-left:18px;margin:6px 0 0}
+.frases{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.frases li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;align-items:start;font-size:14px;line-height:1.5;color:var(--text-2)}
+.frases li b{color:var(--text);font-weight:600}
+.f-ic{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;margin-top:-1px}
+.f-ok .f-ic{background:var(--ok-bg);color:var(--ok)}.f-atencao .f-ic{background:var(--warn-bg);color:var(--warn)}.f-info .f-ic{background:var(--info-bg);color:var(--info)}
+.frases-card h3{margin-bottom:12px}
+details.mais{border:0;padding:0}
+details.mais>summary{list-style:none;display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 18px;color:var(--text-2);font-weight:600;font-size:13px}
+details.mais>summary::-webkit-details-marker{display:none}
+details.mais>summary::before{content:"+";width:18px;height:18px;border-radius:50%;background:var(--surface-2);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex:none}
+details.mais[open]>summary::before{content:"−"}
+details.mais>summary:hover{color:var(--text)}
+details.mais[open]>summary{margin-bottom:12px}
+.mais-corpo{display:flex;flex-direction:column;gap:12px}
+.gcard-linhas{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--text-3);margin-top:10px}
+.gcard-linhas b{color:var(--text);font-weight:600}
+.gcard-alerta{margin-top:10px;font-size:12px;color:var(--warn)}
+.gcard-link{margin-top:12px;display:inline-block;font-size:13px;font-weight:600}
+.pilulas{display:flex;flex-wrap:wrap;gap:6px}
+.cartoes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.cartoes .regras-lista{margin-top:10px}
 .esqueleto{background:var(--surface);border:1px solid var(--border);border-radius:14px;height:120px;animation:pisca 1.2s ease-in-out infinite alternate}
 @keyframes pisca{from{opacity:.55}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.esqueleto{animation:none}}
 @media (max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.cards4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:860px){.app{grid-template-columns:minmax(0,1fr)}.menu{border-right:0;border-bottom:1px solid var(--border);padding:16px}.menu nav{display:flex;flex-wrap:wrap;gap:4px 16px}.menu nav>div{min-width:140px}.conteudo{padding:20px 16px 40px}.duas,.duas.iguais{grid-template-columns:minmax(0,1fr)}}
-@media (max-width:560px){.kpis,.cards4{grid-template-columns:minmax(0,1fr)}.alerta{grid-template-columns:minmax(0,1fr)}h1{font-size:24px}}
+@media (max-width:560px){.cards4{grid-template-columns:minmax(0,1fr)}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.kpis .card{padding:14px}.kpi-valor{font-size:22px}.alerta{grid-template-columns:minmax(0,1fr)}h1{font-size:24px}}
 `;
 
 // O navegador desenha tudo a partir de DADOS (texto vindo das ofertas sempre escapado). Sem barras invertidas aqui
@@ -156,11 +180,26 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const n = (v) => (v == null ? '—' : Number(v).toLocaleString('pt-BR'));
 const pc = (v) => (v == null ? '—' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%');
 const brl = (v) => (v == null ? '—' : Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
-const COR_NIVEL = { critico: 'var(--crit)', alto: 'var(--crit)', atencao: 'var(--warn)', aviso: 'var(--info)', info: 'var(--info)', ok: 'var(--ok)' };
 const vazio = (t) => '<p class="vazio">' + esc(t || 'Sem dados no período.') + '</p>';
 const badge = (nivel, rotulo) => '<span class="badge b-' + esc(nivel) + '">' + esc(rotulo) + '</span>';
 const card = (titulo, sub, corpo, id) => '<section class="card"' + (id ? ' id="' + id + '"' : '') + '><h3>' + titulo + '</h3>' + (sub ? '<p class="card-sub">' + sub + '</p>' : '') + corpo + '</section>';
 const kpi = (rot, val, apoio) => '<div class="card"><div class="kpi-rotulo">' + esc(rot) + '</div><div class="kpi-valor">' + val + '</div><div class="kpi-apoio">' + (apoio || '') + '</div></div>';
+// "Em poucas palavras": o que os números querem dizer, em frases (quem mais olha o painel é a prima do dono).
+// Cada item: [tipo, html] com tipo ok | atencao | info; o html já vem com os valores escapados.
+const SIMBOLO = { ok: '✓', atencao: '!', info: 'i' };
+function emPalavras(itens, titulo) {
+  const l = itens.filter(Boolean);
+  if (!l.length) return '';
+  return '<section class="card frases-card"><h3>' + esc(titulo || 'Em poucas palavras') + '</h3><ul class="frases">' +
+    l.map((x) => '<li class="f-' + x[0] + '"><span class="f-ic" aria-hidden="true">' + SIMBOLO[x[0]] + '</span><span>' + x[1] + '</span></li>').join('') + '</ul></section>';
+}
+// Os números completos ficam guardados num "Ver os números", fechado.
+const maisNumeros = (titulo, corpo) => (corpo ? '<details class="mais"><summary>' + esc(titulo) + '</summary><div class="mais-corpo">' + corpo + '</div></details>' : '');
+const NO_PERIODO = { hoje: 'hoje', '7d': 'nos últimos 7 dias', '30d': 'nos últimos 30 dias' };
+const noPeriodo = () => NO_PERIODO[periodo] || 'no período';
+const pct = (parte, total) => (total ? Math.round((parte / total) * 100) : 0);
+const plural = (q, um, varios) => n(q) + ' ' + (q === 1 ? um : varios);
+const curto = (s, max) => (String(s).length > (max || 60) ? String(s).slice(0, (max || 60) - 1) + '…' : String(s));
 const LOJA = { m: 'Mercado Livre', s: 'Shopee', a: 'Awin' };
 const NOME_LOJA = { ml: 'Mercado Livre', shopee: 'Shopee', awin: 'Awin', amazon: 'Amazon' };
 const TITULOS = { resumo: 'Visão geral', produtos: 'Produtos', ganhos: 'Ganhos', grupos: 'Grupos', fontes: 'Fontes', categorias: 'Categorias', operacao: 'Centro de operações', regras: 'Regras e filtros', whatsapp: 'WhatsApp' };
@@ -266,26 +305,49 @@ function abaProdutos(P) {
   const chips = grupos.length > 1 ? '<div class="chips" role="group" aria-label="Grupo"><button type="button" class="chip" data-grupo="" aria-pressed="' + String(!grupoProduto) + '">Todos</button>' + grupos.map((g) => '<button type="button" class="chip" data-grupo="' + esc(g) + '" aria-pressed="' + String(grupoProduto === g) + '">' + esc(g) + '</button>').join('') + '</div>' : '';
   const filtro = q ? '<span>Buscando “' + esc(filtroProduto) + '” · <button type="button" class="link-btn" data-limpar>limpar</button></span>' : '';
   const comClique = Object.keys(C.prods).length;
-  const kp = '<div class="kpis">' +
-    kpi('Cliques nos links', CL.estado === 'ok' ? n(C.total) : '—', CL.estado === 'ok' ? (C.postados ? 'média de ' + n(Math.round((C.total / C.postados) * 10) / 10) + ' por produto postado' : 'nenhum produto postado com link do site') : '') +
-    kpi('No Telegram', CL.estado === 'ok' ? n(C.tg) : '—', CL.estado === 'ok' && C.total ? pc(Math.round((C.tg / C.total) * 1000) / 10) + ' dos cliques' : '') +
-    kpi('No WhatsApp', CL.estado === 'ok' ? n(C.wa) : '—', CL.estado === 'ok' && C.total ? pc(Math.round((C.wa / C.total) * 1000) / 10) + ' dos cliques' : '') +
-    kpi('Produtos clicados', CL.estado === 'ok' ? n(comClique) : '—', C.postados ? 'de ' + n(C.postados) + ' postados com link do site' : '') + '</div>';
-  const limite = todosProdutos ? 500 : 20;
-  const mais = lista.length > 20 ? '<p><button type="button" class="link-btn" data-todos>' + (todosProdutos ? 'Mostrar só os 20 primeiros' : 'Ver todos os ' + n(lista.length)) + '</button></p>' : '';
-  return avisoCliques() + kp +
-    card('Mais clicados', 'quem clicou no link do post (Telegram e WhatsApp)', '<div class="filtro">' + chips + filtro + '</div>' + tabelaRanking(lista, limite, true) + mais) +
-    '<div class="duas iguais">' + card('Cliques por grupo', '', barras(C.porGrupo, corDosGrupos(P))) + card('Cliques por loja', 'Amazon fica de fora: o link dela vai direto', barras(C.porLoja)) + '</div>';
+  const maior = (mapa) => Object.entries(mapa).filter((x) => x[0] !== 'Outro' && x[0] !== 'Outra').sort((a, b) => b[1] - a[1])[0];
+  const lojaTop = maior(C.porLoja);
+  const grupoTop = maior(C.porGrupo);
+  const frases = CL.estado !== 'ok' ? [] : !C.total
+    ? [['info', 'Ainda não houve cliques nos links ' + noPeriodo() + '. Os cliques são contados desde 03/11/2026.']]
+    : [
+        C.ranking[0] && ['ok', 'O produto mais clicado foi <b>' + esc(curto(C.ranking[0].nome, 70)) + '</b>, com ' + plural(C.ranking[0].total, 'clique', 'cliques') + '.'],
+        ['info', '<b>' + plural(comClique, 'produto recebeu', 'produtos receberam') + '</b> cliques ' + noPeriodo() + ', ' + plural(C.total, 'clique', 'cliques') + ' no total.'],
+        C.wa && C.tg ? ['info', 'O Telegram trouxe <b>' + pct(C.tg, C.total) + '%</b> dos cliques e o WhatsApp <b>' + pct(C.wa, C.total) + '%</b>.'] : null,
+        lojaTop && Object.keys(C.porLoja).length > 1 ? ['info', 'A loja mais clicada foi <b>' + esc(lojaTop[0]) + '</b> (' + pct(lojaTop[1], C.total) + '% dos cliques).'] : null,
+        grupoTop && Object.keys(C.porGrupo).length > 1 ? ['info', 'O grupo com mais cliques foi <b>' + esc(grupoTop[0]) + '</b>.'] : null,
+      ];
+  const limite = todosProdutos ? 500 : 10;
+  const mais = lista.length > 10 ? '<p><button type="button" class="link-btn" data-todos>' + (todosProdutos ? 'Mostrar só os 10 primeiros' : 'Ver todos os ' + n(lista.length)) + '</button></p>' : '';
+  return avisoCliques() + emPalavras(frases) +
+    card('Mais clicados', 'os produtos em que mais gente tocou no link do post', '<div class="filtro">' + chips + filtro + '</div>' + tabelaRanking(lista, limite, false) + mais) +
+    maisNumeros('Ver os números', '<div class="kpis">' +
+      kpi('Cliques nos links', CL.estado === 'ok' ? n(C.total) : '—', CL.estado === 'ok' && C.postados ? 'média de ' + n(Math.round((C.total / C.postados) * 10) / 10) + ' por produto postado' : '') +
+      kpi('No Telegram', CL.estado === 'ok' ? n(C.tg) : '—', CL.estado === 'ok' && C.total ? pct(C.tg, C.total) + '% dos cliques' : '') +
+      kpi('No WhatsApp', CL.estado === 'ok' ? n(C.wa) : '—', CL.estado === 'ok' && C.total ? pct(C.wa, C.total) + '% dos cliques' : '') +
+      kpi('Produtos clicados', CL.estado === 'ok' ? n(comClique) : '—', C.postados ? 'de ' + n(C.postados) + ' postados com link do site' : '') + '</div>' +
+      '<div class="duas iguais">' + card('Cliques por grupo', '', barras(C.porGrupo, corDosGrupos(P))) + card('Cliques por loja', 'Amazon fica de fora: o link dela vai direto', barras(C.porLoja)) + '</div>');
 }
 
 // ---------- visão geral ----------
-function faixaStatus(P) {
-  const al = P.alertas.filter((a) => a.nivel !== 'aviso' && a.nivel !== 'info');
-  if (!al.length) return '<div class="status"><span class="bola" style="background:var(--ok)"></span><span><b>Tudo certo</b> · nenhum ponto de atenção</span></div>';
-  const grupos = new Set(al.map((a) => a.grupo).filter(Boolean));
-  const resumo = al.slice(0, 2).map((a) => esc(a.titulo)).join(' · ');
-  return '<div class="status"><span class="bola" style="background:' + COR_NIVEL[al[0].nivel] + '"></span><span><b>Atenção em ' + grupos.size + (grupos.size === 1 ? ' grupo' : ' grupos') + '</b> · ' + resumo + '</span>' +
-    '<button type="button" class="link-btn" data-ir="atencao">Ver pontos de atenção →</button></div>';
+function resumoGeral(P) {
+  const k = P.kpis;
+  const m = P.monetizacao || {};
+  const C = cliquesDoPeriodo();
+  const ativos = P.grupos.filter((g) => g.publicadas);
+  const top = ativos.slice().sort((a, b) => b.publicadas - a.publicadas)[0];
+  const graves = P.alertas.filter((a) => a.nivel !== 'aviso' && a.nivel !== 'info');
+  const f = P.funil || {};
+  return emPalavras([
+    k.publicadas
+      ? ['ok', (periodo === 'hoje' ? 'Hoje os grupos já receberam ' : 'Os grupos receberam ') + '<b>' + plural(k.publicadas, 'oferta', 'ofertas') + '</b>' + (periodo === 'hoje' ? '' : ' ' + noPeriodo() + ', cerca de ' + n(Math.round(k.mediaDia)) + ' por dia') + (k.descontoMedio ? ', com desconto médio de <b>' + n(Math.round(k.descontoMedio)) + '%</b>' : '') + '.']
+      : ['atencao', 'Nenhuma oferta foi postada ' + noPeriodo() + '.'],
+    top && ativos.length > 1 ? ['info', 'O grupo mais movimentado foi <b>' + esc(top.nome) + '</b> (' + n(Math.round(top.pctTotal)) + '% dos posts).'] : null,
+    f.avaliadas && f.publicadas ? ['info', 'De cada 100 ofertas que o bot olha, só <b>' + n(Math.max(1, Math.round((f.publicadas / f.avaliadas) * 100))) + '</b> vão para os grupos: ele deixa de fora as sem desconto de verdade, as repetidas e as fora do público.'] : null,
+    CL.estado === 'ok' && C.total ? ['ok', 'Os links tiveram <b>' + plural(C.total, 'clique', 'cliques') + '</b>; o produto mais clicado foi <b>' + esc(curto(C.ranking[0] ? C.ranking[0].nome : '', 60)) + '</b>.'] : null,
+    m.aprovado ? ['ok', '<b>' + brl(m.aprovado) + '</b> em comissões confirmadas.'] : m.pendente ? ['info', '<b>' + brl(m.pendente) + '</b> em comissões esperando a loja confirmar.'] : null,
+    ...(graves.length ? graves.slice(0, 3).map((a) => ['atencao', alertaSimples(a, P)]) : [['ok', 'Nenhum problema nos grupos ' + noPeriodo() + '.']]),
+  ], 'Resumo ' + (periodo === 'hoje' ? 'de hoje' : periodo === '7d' ? 'da semana' : 'do mês'));
 }
 
 function kpisGerais(P) {
@@ -365,16 +427,120 @@ function abaGanhos(P) {
     ? '<div class="rolagem"><table><thead><tr><th scope="col" class="esq">Produto</th><th scope="col">Vendas</th><th scope="col">Comissão</th></tr></thead><tbody>' +
       m.shopee.produtos.map((x) => '<tr><td class="nome">' + esc(x.nome) + '</td><td>' + n(x.vendas) + '</td><td>' + brl(x.comissao) + '</td></tr>').join('') + '</tbody></table></div>'
     : vazio(m.shopee ? 'Nenhuma venda da Shopee no período.' : 'A Shopee ainda não mandou o relatório.');
-  return '<div class="kpis">' +
-    kpi('Aprovado', brl(m.aprovado), 'Awin + Shopee, já confirmado') +
-    kpi('Pendente', brl(m.pendente), 'pode mudar até a loja confirmar') +
-    kpi('Vendas', n(vendas), 'Awin + Shopee (sem as canceladas)') +
-    kpi('Cliques nos links', CL.estado === 'ok' ? n(C.total) : '—', 'todas as lojas, menos Amazon') + '</div>' +
-    card('Por plataforma', 'no período escolhido', tabela) +
-    card('O que vendeu na Shopee', 'produtos com comissão no período', prods);
+  const frases = [
+    m.aprovado ? ['ok', '<b>' + brl(m.aprovado) + '</b> em comissões já confirmadas pelas lojas ' + noPeriodo() + '.'] : ['info', 'Nenhuma comissão confirmada ' + noPeriodo() + ' na Shopee e na Awin.'],
+    m.pendente ? ['info', '<b>' + brl(m.pendente) + '</b> esperando a loja confirmar (ainda pode ser cancelado, numa devolução por exemplo).'] : null,
+    vendas ? ['ok', plural(vendas, 'venda', 'vendas') + ' pela Shopee e pela Awin.'] : null,
+    ['info', 'O Mercado Livre e a Amazon não contam as vendas para o bot: veja nos painéis deles, nos botões abaixo.'],
+  ];
+  // Um cartão por plataforma: o que dá para saber e o botão para o painel da loja.
+  const plat = (nome, linhas, link) => '<div class="card"><div class="gcard-nome">' + nome + '</div><div class="gcard-linhas">' + linhas.filter(Boolean).join('') + '</div>' + (link ? '<a class="gcard-link" href="' + esc(link) + '" target="_blank" rel="noopener">Abrir o painel →</a>' : '') + '</div>';
+  const lin = (rot, val) => '<div>' + rot + ': <b>' + val + '</b></div>';
+  const cartoes = '<div class="cards4">' +
+    plat('Shopee', [lin('Aprovado', m.shopee ? brl(m.shopee.aprovado) : '—'), lin('Pendente', m.shopee ? brl(m.shopee.pendente) : '—'), lin('Vendas', m.shopee ? n(m.shopee.pedidos) : '—'), lin('Cliques', cl('Shopee'))], pn.shopee) +
+    plat('Awin', [lin('Aprovado', m.awin ? brl(m.awin.aprovado) : '—'), lin('Pendente', m.awin ? brl(m.awin.pendente) : '—'), lin('Vendas', m.awin ? n(m.awin.vendas) : '—'), lin('Cliques', cl('Awin'))], pn.awin) +
+    plat('Mercado Livre', ['<div>As vendas aparecem só no painel do ML.</div>', lin('Cliques', cl('Mercado Livre'))], pn.ml) +
+    plat('Amazon', ['<div>As vendas aparecem só no painel da Amazon. O link vai direto para a loja, então os cliques não são contados aqui.</div>'], pn.amazon) +
+    '</div>';
+  return emPalavras(frases) + cartoes +
+    card('O que vendeu na Shopee', 'produtos com comissão ' + noPeriodo(), prods) +
+    maisNumeros('Ver a tabela por plataforma', card('Por plataforma', 'no período escolhido', tabela));
 }
 
 // ---------- grupos, fontes, categorias ----------
+/** O ponto de atenção de um grupo, em palavras simples. */
+function alertaSimples(a, P) {
+  const g = (P.grupos || []).find((x) => x.nome === a.grupo) || {};
+  const nome = '<b>' + esc(a.grupo) + '</b>';
+  if (a.status === 'Falta oferta') return nome + ' ficou sem oferta para postar em ' + plural(g.filaVazia || 0, 'horário', 'horários') + ' ' + noPeriodo() + ' (quando isso acontece, o bot busca mais ofertas sozinho).';
+  if (a.status === 'Em queda') return nome + ' está postando menos que o normal.';
+  if (a.status === 'Parado') return nome + ' parou de postar.';
+  if (a.status === 'Barradas altas') return nome + ' teve muitas ofertas barradas na hora de postar.';
+  return esc(a.titulo) + '.';
+}
+
+function abaGrupos(P) {
+  const lista = P.grupos.filter((g) => g.ativo !== false);
+  const problemas = P.alertas.filter((a) => a.grupo && a.nivel !== 'aviso' && a.nivel !== 'info');
+  const top = lista.filter((g) => g.publicadas).sort((a, b) => b.publicadas - a.publicadas)[0];
+  const desc = lista.filter((g) => g.desconto != null).sort((a, b) => b.desconto - a.desconto)[0];
+  const barato = lista.filter((g) => g.preco != null).sort((a, b) => a.preco - b.preco)[0];
+  const frases = [
+    top ? ['info', '<b>' + esc(top.nome) + '</b> foi o grupo que mais postou: ' + plural(top.publicadas, 'oferta', 'ofertas') + ' ' + noPeriodo() + '.'] : null,
+    desc && lista.length > 1 ? ['info', 'Os maiores descontos estão no grupo <b>' + esc(desc.nome) + '</b> (média de ' + n(Math.round(desc.desconto)) + '%).'] : null,
+    barato && lista.length > 1 ? ['info', 'Os preços mais baixos estão no grupo <b>' + esc(barato.nome) + '</b> (média de ' + brl(barato.preco) + ').'] : null,
+    ...problemas.map((a) => ['atencao', alertaSimples(a, P)]),
+    problemas.length ? null : ['ok', 'Todos os grupos ligados estão funcionando normalmente.'],
+  ];
+  const linha = (rot, val) => '<div>' + rot + ': <b>' + val + '</b></div>';
+  const cartao = (g) => '<div class="card"><div class="gcard-topo"><span class="gcard-nome"><span class="quad" style="background:' + esc(g.cor) + '"></span>' + esc(g.nome) + '</span>' + badge(g.status.nivel, g.status.rotulo) + '</div>' +
+    '<div class="gcard-total">' + n(g.publicadas) + ' <span class="kpi-apoio">posts</span></div>' + spark(g.sparkline) +
+    '<div class="gcard-linhas">' + (g.desconto != null ? linha('Desconto médio', n(Math.round(g.desconto)) + '%') : '') + (g.preco != null ? linha('Preço médio', brl(g.preco)) : '') + (g.membrosReais != null ? linha('Membros', n(g.membrosReais)) : '') + '</div></div>';
+  const pausados = P.grupos.filter((g) => g.ativo === false).map((g) => esc(g.nome));
+  return emPalavras(frases) + '<div class="cartoes">' + lista.map(cartao).join('') + '</div>' +
+    (pausados.length ? '<p class="rodape">Pausado (não posta): ' + pausados.join(', ') + '.</p>' : '') +
+    maisNumeros('Ver os números', tabela(P) + '<div class="duas iguais">' + funil(P) + card('Cliques por grupo', 'nos links dos posts', CL.estado === 'ok' ? barras(cliquesDoPeriodo().porGrupo, corDosGrupos(P)) : avisoCliques()) + '</div>');
+}
+
+const CANAIS = 'Canais e grupos copiados';
+function tipoDaFonte(nome, tipo) {
+  if (nome === 'Caixa de entrada') return 'Enviadas pelo Alan';
+  if (tipo === 'canal' || nome.charAt(0) === '@') return CANAIS;
+  if (nome.indexOf('Shopee') === 0) return 'Shopee';
+  if (nome.indexOf('Mercado Livre') === 0) return 'Mercado Livre';
+  if (nome.indexOf('Awin') === 0) return 'Lojas parceiras (Awin)';
+  return 'Outras';
+}
+const nomeDaFonte = (nome) => String(nome).replace('Mercado Livre: ML mais vendidos: ', 'Mercado Livre · ').replace('Shopee: ', 'Shopee · ').replace('Awin: ', 'Loja ');
+
+function abaFontes(P) {
+  const G = (D.periodos && D.periodos[periodo] && D.periodos[periodo].grupos) || {};
+  const tipo = {};
+  for (const f of P.fontes || []) tipo[f.nome] = f.tipo;
+  const porFonte = {};
+  for (const g of Object.values(G)) for (const [f, F] of Object.entries(g.fontes || {})) if (F.publicadas) porFonte[f] = (porFonte[f] || 0) + F.publicadas;
+  const total = Object.values(porFonte).reduce((s, v) => s + v, 0);
+  const porTipo = {};
+  for (const [f, v] of Object.entries(porFonte)) { const t = tipoDaFonte(f, tipo[f]); porTipo[t] = (porTipo[t] || 0) + v; }
+  const tipos = Object.entries(porTipo).sort((a, b) => b[1] - a[1]);
+  const canais = Object.entries(porFonte).filter((x) => tipoDaFonte(x[0], tipo[x[0]]) === CANAIS).sort((a, b) => b[1] - a[1]);
+  const semNada = (P.fontes || []).filter((f) => !porFonte[f.nome] && f.nome !== 'Caixa de entrada');
+  const frases = !total ? [['info', 'Nenhuma oferta postada ' + noPeriodo() + '.']] : [
+    ['info', 'Quem mais trouxe ofertas: <b>' + esc(tipos[0][0]) + '</b> (' + pct(tipos[0][1], total) + '%)' + (tipos.length > 1 ? ', depois ' + tipos.slice(1).map((t) => esc(t[0]) + ' (' + pct(t[1], total) + '%)').join(', ') : '') + '.'],
+    canais[0] ? ['info', 'O canal copiado que mais rendeu foi <b>' + esc(canais[0][0]) + '</b>: ' + plural(canais[0][1], 'oferta postada', 'ofertas postadas') + ' com o link da Vic.'] : null,
+    semNada.length ? ['info', plural(semNada.length, 'fonte não trouxe', 'fontes não trouxeram') + ' nenhuma oferta ' + noPeriodo() + '.'] : ['ok', 'Todas as fontes trouxeram ofertas ' + noPeriodo() + '.'],
+  ];
+  const top = {};
+  for (const [f, v] of Object.entries(porFonte).sort((a, b) => b[1] - a[1]).slice(0, 8)) top[nomeDaFonte(f)] = v;
+  return emPalavras(frases) + '<div class="duas iguais">' + card('De onde vêm as ofertas', 'posts ' + noPeriodo() + ', por tipo de fonte', total ? barras(porTipo) : vazio()) + card('As fontes que mais trouxeram', 'as 8 primeiras', total ? barras(top) : vazio()) + '</div>' +
+    maisNumeros('Ver todas as fontes', mapaFontes(P) + fontes(P));
+}
+
+function abaCategorias(P) {
+  const cats = P.categorias || [];
+  // "ML mais vendidos: Pele" → "Pele (mais vendidos do ML)"; "Shopee: Beleza" → "Shopee · Beleza"; as buscas antigas do ML levam a loja.
+  const nome = (c) => {
+    const s = String(c.nome);
+    if (s.indexOf('ML mais vendidos: ') === 0) return s.replace('ML mais vendidos: ', '') + ' (mais vendidos do ML)';
+    return s.indexOf(c.loja) === 0 ? s.replace(': ', ' · ') : s + ' (' + c.loja + ')';
+  };
+  const comPost = cats.filter((c) => c.publicadas).sort((a, b) => b.publicadas - a.publicadas);
+  const semNada = cats.filter((c) => !c.encontrados);
+  const semPost = cats.filter((c) => c.encontrados && !c.publicadas);
+  const frases = [
+    comPost.length ? ['ok', 'As categorias que mais renderam posts foram ' + comPost.slice(0, 3).map((c) => '<b>' + esc(nome(c)) + '</b>').join(', ') + '.'] : ['info', 'Nenhuma categoria de busca publicou ' + noPeriodo() + '.'],
+    cats.length ? ['info', plural(comPost.length, 'categoria publicou', 'categorias publicaram') + ' ' + noPeriodo() + ', de ' + n(cats.length) + ' buscas ligadas.'] : null,
+    semPost.length ? ['info', plural(semPost.length, 'categoria achou', 'categorias acharam') + ' produtos, mas nenhum foi postado (não passaram nos filtros ou outras ofertas passaram na frente).'] : null,
+    semNada.length ? ['info', plural(semNada.length, 'busca não encontrou', 'buscas não encontraram') + ' nenhum produto ' + noPeriodo() + '.'] : null,
+  ];
+  const top = {};
+  for (const c of comPost.slice(0, 10)) top[nome(c)] = c.publicadas;
+  const parados = semPost.concat(semNada);
+  return emPalavras(frases) + card('As categorias que mais postaram', 'posts ' + noPeriodo(), comPost.length ? barras(top) : vazio()) +
+    maisNumeros('Ver as categorias sem posts e os números de cada uma',
+      (parados.length ? card('Sem posts ' + noPeriodo(), 'buscas ligadas que não publicaram nada', '<div class="pilulas">' + parados.map((c) => '<span class="pilula">' + esc(nome(c)) + '</span>').join('') + '</div>') : '') + categoriasTabela(P));
+}
+
 function funil(P) {
   const f = P.funil;
   const barra = (rot, val, extra, larg) => '<div class="funil-item"><div class="funil-topo"><span>' + rot + '</span><span><b>' + n(val) + '</b>' + (extra ? ' <span class="pct">' + extra + '</span>' : '') + '</span></div>' +
@@ -432,10 +598,6 @@ function mapaFontes(P) {
     ord.map(([f, v]) => '<tr><th scope="row">' + esc(f) + '</th>' + grupos.map((g) => '<td>' + (v[g] ? n(v[g]) : '<span class="pct">·</span>') + '</td>').join('') + '<td><b>' + n(Object.values(v).reduce((s, x) => s + x, 0)) + '</b></td></tr>').join('') + '</tbody></table></div>');
 }
 
-function categoriasSem(P) {
-  const l = P.categoriasSemPublicacao.map((c) => '<li><span>' + esc(c.nome) + '</span><span class="pilula">' + esc(c.loja) + '</span></li>').join('');
-  return card('Categorias sem publicação', 'buscas ligadas que não publicaram no período', l ? '<ul class="cats">' + l + '</ul>' : vazio(P.periodo === 'hoje' ? 'Veja em 7 ou 30 dias.' : 'Todas as categorias publicaram no período.'));
-}
 
 function categoriasTabela(P) {
   if (!P.categorias.length) return card('Categorias', '', vazio());
@@ -454,7 +616,46 @@ function quando(iso) {
   return txt + ' <span class="pct">' + ha + '</span>';
 }
 
+const quandoTexto = (iso) => new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', ' às');
+
 function abaOperacao() {
+  const O = D.operacao || { grupos: [] };
+  const H = A.hoje || A[periodo];
+  const hoje = {};
+  for (const g of (H && H.grupos) || []) hoje[g.nome] = g;
+  const R0 = D.regras || {};
+  const wa0 = R0.whatsapp || {};
+  // "Agora" = a hora em que o painel foi gerado (ele é publicado 4 vezes por dia), não a hora de quem olha.
+  const base = Date.parse(D.atualizadoEm) || Date.now();
+  const hm = new Date(base).toLocaleString('en-GB', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', hour12: false }).split(':').map(Number);
+  const minutosDesde8 = (hm[0] - 8) * 60 + hm[1];
+  const noHorario = minutosDesde8 >= 0 && hm[0] < 22;
+  const ativos = O.grupos.filter((g) => g.ativo);
+  const parados = noHorario && minutosDesde8 > 60 ? ativos.filter((g) => !g.ultima || base - new Date(g.ultima).getTime() > 60 * 60000) : [];
+  const vazios = ativos.filter((g) => !g.fila && !parados.includes(g));
+  const frases = [
+    !noHorario ? ['info', 'Às ' + esc(D.hora.split(', ')[1] || D.hora) + ' os grupos estavam fora do horário de posts (das 8h às 22h).'] : null,
+    ...parados.map((g) => ['atencao', '<b>' + esc(g.nome) + '</b> está sem postar desde ' + (g.ultima ? quandoTexto(g.ultima) : 'antes do período') + '.']),
+    ...(noHorario ? vazios.map((g) => ['atencao', '<b>' + esc(g.nome) + '</b> estava sem ofertas na fila (o bot busca mais sozinho).']) : []),
+    noHorario && ativos.length && !parados.length && !vazios.length ? ['ok', (ativos.length > 1 ? 'Os ' + n(ativos.length) + ' grupos estão' : 'O grupo está') + ' postando normalmente.'] : null,
+    wa0.ligado ? ['ok', 'WhatsApp ligado' + (O.whatsappUltimo ? '; última mensagem em ' + quandoTexto(O.whatsappUltimo) : '') + '.'] : ['atencao', 'O espelho do WhatsApp está desligado.'],
+    ['info', 'Os posts saem a cada 3 min, das 8h às 22h; as buscas de ofertas são às 7h, 12h e 17h.'],
+  ];
+  const cartao = (g) => {
+    const x = hoje[g.nome] || {};
+    const st = parados.includes(g) ? badge('atencao', 'Parado') : !g.fila ? badge('atencao', 'Sem fila') : badge('ok', 'Postando');
+    return '<div class="card"><div class="gcard-topo"><span class="gcard-nome">' + esc(g.nome) + '</span>' + st + '</div><div class="gcard-linhas">' +
+      '<div>Último post: <b>' + (g.ultima ? quandoTexto(g.ultima) : '—') + '</b></div><div>Na fila: <b>' + plural(g.fila, 'oferta', 'ofertas') + '</b></div><div>Posts hoje: <b>' + n(x.publicadas || 0) + '</b></div></div>' +
+      (x.erros ? '<div class="gcard-alerta">' + plural(x.erros, 'envio falhou', 'envios falharam') + ' hoje</div>' : '') + '</div>';
+  };
+  const pausados = O.grupos.filter((g) => !g.ativo).map((g) => esc(g.nome));
+  return emPalavras(frases, 'Como está agora') + '<div class="cartoes">' + ativos.map(cartao).join('') + '</div>' +
+    (pausados.length ? '<p class="rodape">Pausado (não posta): ' + pausados.join(', ') + '.</p>' : '') +
+    (P0().alertas.length ? atencao(P0()) : '') + maisNumeros('Ver a tabela completa', abaOperacaoTabela());
+}
+const P0 = () => A[periodo] || A.hoje;
+
+function abaOperacaoTabela() {
   const O = D.operacao || { grupos: [] };
   const H = A.hoje || A[periodo];
   const hoje = {};
@@ -470,7 +671,7 @@ function abaOperacao() {
   const tab = '<div class="rolagem"><table><thead><tr>' + ['Grupo', 'Agora', 'Na fila', 'Último post', 'Publicadas hoje', 'Sem confirmação', 'Falhas'].map((h) => '<th scope="col">' + h + '</th>').join('') + '</tr></thead><tbody>' + linhas + '</tbody></table></div>' +
     '<p class="rodape">Posts a cada 3 min das 8h às 21h59; buscas às 7h, 12h e 17h. “Sem confirmação” = o Telegram não respondeu: pode ter saído, e o bot não repete.</p>';
   const whats = '<dl class="lista-dl"><dt>Espelho no WhatsApp</dt><dd>' + (wa.ligado ? '<span class="ok">ligado</span>' : 'desligado') + '</dd><dt>Ritmo</dt><dd>1 mensagem a cada ' + n(wa.intervaloMin) + ' min</dd><dt>Último envio</dt><dd>' + quando(O.whatsappUltimo) + '</dd></dl>';
-  return card('Como está agora', 'atualizado ' + esc(D.hora), tab) + '<div class="duas iguais">' + card('WhatsApp', '', whats + '<p><button type="button" class="link-btn" data-aba-ir="whatsapp">Ver números do WhatsApp →</button></p>') + atencao(A[periodo] || H) + '</div>';
+  return card('Grupos', 'atualizado ' + esc(D.hora), tab) + card('WhatsApp', '', whats + '<p><button type="button" class="link-btn" data-aba-ir="whatsapp">Ver o WhatsApp →</button></p>');
 }
 
 function abaRegras() {
@@ -480,18 +681,32 @@ function abaRegras() {
   const linhas = R.grupos.map((g) => '<tr><th scope="row">' + esc(g.nome) + '</th><td>' + (g.ativo ? '<span class="ok">ligado</span>' : 'pausado') + '</td><td>' + (g.descontoMinimo == null ? '—' : n(g.descontoMinimo) + '%') + '</td><td>' + brl(g.precoMinimo) + ' a ' + brl(g.precoMaximo) + '</td><td>' + (g.notaMinima == null ? '—' : n(g.notaMinima)) + '</td><td>' + sim(g.soMarcas) + '</td><td>' + (g.masculinoCada ? '1 a cada ' + n(g.masculinoCada) : 'sem limite') + '</td><td>' + (g.diasSemRepetir == null ? '—' : n(g.diasSemRepetir) + ' dias') + '</td><td>' + sim(g.whatsapp) + '</td></tr>').join('');
   const tab = '<div class="rolagem"><table><thead><tr>' + ['Grupo', 'Situação', 'Desconto mín.', 'Preço', 'Nota mín.', 'Só marcas', 'Masculino', 'Não repete por', 'WhatsApp'].map((h) => '<th scope="col">' + h + '</th>').join('') + '</tr></thead><tbody>' + linhas + '</tbody></table></div>';
   const gerais = [
-    'Público principal: meninas. Produtos femininos saem primeiro, depois os neutros; masculino no máximo na proporção da coluna “Masculino”.',
+    'Público principal: meninas. Produtos femininos saem primeiro, depois os neutros; masculino só de vez em quando (o limite de cada grupo está acima).',
     'Marcas da lista passam na frente em todos os grupos; com “só marcas”, o grupo só posta marca da lista.',
     'Mercado Livre na busca direta: só com mais de ' + n(R.vendasMinimasML) + ' vendas.',
     R.shopeeUmACada ? 'Shopee: no máximo 1 a cada ' + n(R.shopeeUmACada) + ' posts (a comissão é baixa).' : '',
     R.awinCatalogo && R.awinCatalogo.umACada ? 'Produtos das lojas da Awin: 1 a cada ' + n(R.awinCatalogo.umACada) + ' posts' + (R.awinCatalogo.maxPorDia ? ', até ' + n(R.awinCatalogo.maxPorDia) + ' por dia em cada grupo.' : '.') : '',
-    'Nada é postado duas vezes no mesmo grupo dentro do prazo de “Não repete por”.',
+    'O mesmo produto não é postado duas vezes no mesmo grupo dentro do prazo de cada grupo.',
     R.whatsapp ? 'WhatsApp: 1 mensagem a cada ' + n(R.whatsapp.intervaloMin) + ' min no total (mais rápido arrisca o número ser banido).' : '',
   ].filter(Boolean);
   const marcas = (R.marcas || []).map((l) => '<details><summary>' + esc(l.lista) + (l.nicho ? ' <span class="pct">' + esc(l.nicho) + '</span>' : '') + ' · ' + n(l.marcas.length) + ' marcas</summary><p class="marcas">' + l.marcas.map(esc).join(' · ') + '</p></details>').join('');
-  return card('Por grupo', 'as regras que valem agora', tab) +
-    card('Regras gerais', '', '<ul class="regras-lista">' + gerais.map((t) => '<li>' + esc(t) + '</li>').join('') + '</ul>') +
+  // Cada grupo em frases, em vez da tabela.
+  const cartao = (g) => '<div class="card"><div class="gcard-topo"><span class="gcard-nome">' + esc(g.nome) + '</span>' + badge('ok', 'Ligado') + '</div><ul class="regras-lista">' +
+    [
+      g.soMarcas ? 'Só posta marcas da lista' : 'Posta qualquer marca (as da lista saem primeiro)',
+      g.descontoMinimo != null ? 'Desconto de pelo menos ' + n(g.descontoMinimo) + '%' : '',
+      g.precoMinimo != null ? 'Preço a partir de ' + brl(g.precoMinimo) : '',
+      g.notaMinima != null ? 'Nota mínima ' + n(g.notaMinima) + ' (de 5)' : '',
+      g.masculinoCada ? 'No máximo 1 produto masculino a cada ' + n(g.masculinoCada) + ' posts' : '',
+      g.diasSemRepetir != null ? 'O mesmo produto não volta antes de ' + n(g.diasSemRepetir) + ' dias' : '',
+      g.whatsapp ? 'Também vai para o WhatsApp' : 'Não vai para o WhatsApp',
+    ].filter(Boolean).map((t) => '<li>' + esc(t) + '</li>').join('') + '</ul></div>';
+  const pausados = R.grupos.filter((g) => !g.ativo).map((g) => esc(g.nome));
+  return '<div class="cartoes">' + R.grupos.filter((g) => g.ativo).map(cartao).join('') + '</div>' +
+    (pausados.length ? '<p class="rodape">Pausado (não posta): ' + pausados.join(', ') + '.</p>' : '') +
+    card('Regras de todos os grupos', '', '<ul class="regras-lista">' + gerais.map((t) => '<li>' + esc(t) + '</li>').join('') + '</ul>') +
     card('Marcas que saem primeiro', 'toque numa lista para ver as marcas', marcas || vazio('Nenhuma marca na lista.')) +
+    maisNumeros('Ver em tabela', card('Por grupo', 'as regras que valem agora', tab)) +
     '<p class="rodape">Para mudar uma regra, peça ao Alan.</p>';
 }
 
@@ -507,12 +722,22 @@ function abaWhatsApp(P) {
   const falhas = W.reduce((s, g) => s + g.falhas, 0);
   const R = (D.regras && D.regras.whatsapp) || {};
   const linhas = W.filter((g) => g.enviadas || g.falhas || cliquesWa[g.nome]).map((g) => '<tr><th scope="row">' + esc(g.nome) + '</th><td>' + spark(g.porDia) + '</td><td>' + n(g.enviadas) + '</td><td class="' + (g.falhas ? 'crit' : '') + '">' + n(g.falhas) + '</td><td>' + (CL.estado === 'ok' ? n(cliquesWa[g.nome] || 0) : '—') + '</td></tr>').join('');
-  return '<div class="kpis">' +
-    kpi('Mensagens enviadas', n(total), 'no período, todos os grupos') +
-    kpi('Falhas', n(falhas), falhas ? 'veja o log do bot' : 'nenhuma') +
-    kpi('Cliques vindos do WhatsApp', CL.estado === 'ok' ? n(C.wa) : '—', CL.estado === 'ok' && total ? n(Math.round((C.wa / total) * 10) / 10) + ' por mensagem' : '') +
-    kpi('Ritmo', R.intervaloMin ? '1 a cada ' + n(R.intervaloMin) + ' min' : '—', R.ligado ? 'espelho ligado' : 'espelho desligado') + '</div>' +
-    card('Por grupo', 'o que saiu no Telegram e foi também para o WhatsApp', linhas ? '<div class="rolagem"><table><thead><tr>' + ['Grupo', 'Por dia', 'Enviadas', 'Falhas', 'Cliques'].map((h) => '<th scope="col">' + h + '</th>').join('') + '</tr></thead><tbody>' + linhas + '</tbody></table></div>' : vazio('Nada foi para o WhatsApp no período.'));
+  const O = D.operacao || {};
+  const porMsg = total && C.wa ? Math.round((C.wa / total) * 10) / 10 : null;
+  const frases = [
+    R.ligado ? ['ok', 'O WhatsApp está ligado: manda <b>1 mensagem a cada ' + n(R.intervaloMin) + ' min</b> no total, só com as melhores ofertas que saíram no Telegram. Mais rápido arrisca o número ser bloqueado.'] : ['atencao', 'O espelho do WhatsApp está desligado.'],
+    total ? ['info', '<b>' + plural(total, 'mensagem foi', 'mensagens foram') + '</b> para os grupos do WhatsApp ' + noPeriodo() + '.'] : ['info', 'Nenhuma mensagem foi para o WhatsApp ' + noPeriodo() + '.'],
+    falhas ? ['atencao', plural(falhas, 'mensagem falhou', 'mensagens falharam') + ' ' + noPeriodo() + '.'] : null,
+    CL.estado === 'ok' && porMsg != null ? ['ok', 'Cada mensagem no WhatsApp rendeu em média <b>' + n(porMsg) + ' cliques</b>.'] : null,
+    O.whatsappUltimo ? ['info', 'Última mensagem em ' + quandoTexto(O.whatsappUltimo) + '.'] : null,
+  ];
+  return emPalavras(frases) +
+    card('Por grupo', 'o que saiu no Telegram e foi também para o WhatsApp', linhas ? '<div class="rolagem"><table><thead><tr>' + ['Grupo', 'Por dia', 'Mensagens', 'Falhas', 'Cliques'].map((h) => '<th scope="col">' + h + '</th>').join('') + '</tr></thead><tbody>' + linhas + '</tbody></table></div>' : vazio('Nada foi para o WhatsApp no período.')) +
+    maisNumeros('Ver os números', '<div class="kpis">' +
+      kpi('Mensagens enviadas', n(total), 'no período, todos os grupos') +
+      kpi('Falhas', n(falhas), falhas ? 'veja o log do bot' : 'nenhuma') +
+      kpi('Cliques vindos do WhatsApp', CL.estado === 'ok' ? n(C.wa) : '—', porMsg != null ? n(porMsg) + ' por mensagem' : '') +
+      kpi('Ritmo', R.intervaloMin ? '1 a cada ' + n(R.intervaloMin) + ' min' : '—', R.ligado ? 'espelho ligado' : 'espelho desligado') + '</div>');
 }
 
 // ---------- desenho ----------
@@ -522,12 +747,13 @@ function desenhar() {
   if (!P) return ($('#conteudo').innerHTML = vazio('Ainda não há dados.'));
   cabecalho(P);
   let html = '';
-  if (aba === 'resumo') html = faixaStatus(P) + kpisGerais(P) + '<div class="duas">' + grafico(P) + topClicados() + '</div>' + atencao(P);
+  // Cada aba começa pelo "em poucas palavras"; as tabelas cheias de número ficam em "Ver os números", fechado.
+  if (aba === 'resumo') html = resumoGeral(P) + kpisGerais(P) + '<div class="duas">' + grafico(P) + topClicados() + '</div>';
   else if (aba === 'produtos') html = abaProdutos(P);
   else if (aba === 'ganhos') html = abaGanhos(P);
-  else if (aba === 'grupos') html = tabela(P) + '<div class="duas iguais">' + funil(P) + card('Cliques por grupo', 'nos links dos posts', CL.estado === 'ok' ? barras(cliquesDoPeriodo().porGrupo, corDosGrupos(P)) : avisoCliques()) + '</div>';
-  else if (aba === 'fontes') html = mapaFontes(P) + fontes(P);
-  else if (aba === 'categorias') html = categoriasTabela(P) + categoriasSem(P);
+  else if (aba === 'grupos') html = abaGrupos(P);
+  else if (aba === 'fontes') html = abaFontes(P);
+  else if (aba === 'categorias') html = abaCategorias(P);
   else if (aba === 'operacao') html = abaOperacao();
   else if (aba === 'regras') html = abaRegras();
   else if (aba === 'whatsapp') html = abaWhatsApp(P);
@@ -584,8 +810,24 @@ const MENU = [
 
 const LUPA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
 
+// Um ícone para cada item do menu (pedido do dono, 03/11/2026). Traço simples, na cor do texto (rosa na aba aberta).
+const ICONES = {
+  resumo: '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
+  produtos: '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',
+  ganhos: '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>',
+  grupos: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  fontes: '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+  categorias: '<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>',
+  operacao: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+  regras: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
+  whatsapp: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+};
+const icone = (aba) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONES[aba] || ''}</svg>`;
+// Ícone da aba do navegador: a estrela da marca em rosa.
+const FAVICON = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#121111"/><path d="M16 4c1 6.5 5.5 11 12 12-6.5 1-11 5.5-12 12-1-6.5-5.5-11-12-12 6.5-1 11-5.5 12-12Z" fill="#d27d99"/></svg>')}`;
+
 function menuHtml() {
-  return MENU.map(([secao, itens]) => `<div><h2>${secao}</h2><ul>${itens.map(([rot, aba]) => `<li><a href="?aba=${aba}" data-aba="${aba}">${escHtml(rot)}</a></li>`).join('')}</ul></div>`).join('');
+  return MENU.map(([secao, itens]) => `<div><h2>${secao}</h2><ul>${itens.map(([rot, aba]) => `<li><a href="?aba=${aba}" data-aba="${aba}">${icone(aba)}<span>${escHtml(rot)}</span></a></li>`).join('')}</ul></div>`).join('');
 }
 
 /** O HTML completo, com os dados embutidos. */
@@ -599,6 +841,7 @@ export function htmlDoPainel(painel) {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>Painel da Vic</title>
+<link rel="icon" href="${FAVICON}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <style>${CSS}</style>
@@ -614,7 +857,7 @@ export function htmlDoPainel(painel) {
 <div class="miolo">
 <div class="cab"><div><h1 id="titulo">Visão geral</h1><p class="sub" id="sub">Carregando…</p></div><div class="periodos" role="group" aria-label="Período">${periodos}</div></div>
 <div id="conteudo" aria-live="polite" style="display:flex;flex-direction:column;gap:12px"><div class="esqueleto"></div><div class="esqueleto"></div><div class="esqueleto"></div></div>
-<footer><ul class="notas">${(painel.notasAnalytics || NOTAS_PAINEL).map((t) => `<li>${escHtml(t)}</li>`).join('')}</ul></footer>
+<footer><details class="mais"><summary>Como ler este painel</summary><ul class="notas">${(painel.notasAnalytics || NOTAS_PAINEL).map((t) => `<li>${escHtml(t)}</li>`).join('')}</ul></details></footer>
 </div>
 </main>
 </div>
@@ -648,5 +891,11 @@ export function gravarSite(painel, base = PASTA_ANALYTICS) {
   for (const [nome, conteudo] of Object.entries(arquivos)) fs.writeFileSync(path.join(pasta, nome), conteudo);
   fs.writeFileSync(path.join(base, 'relatorio.html'), arquivos['index.html']); // cópia local (4-relatorio.bat)
   const semHora = JSON.stringify({ ...painel, atualizadoEm: null, hora: null });
-  return crypto.createHash('sha256').update(semHora).digest('hex').slice(0, 16);
+  return `${VERSAO_PAGINA}-${crypto.createHash('sha256').update(semHora).digest('hex').slice(0, 16)}`;
 }
+
+/**
+ * Muda quando o desenho do painel muda (CSS e JS desta página). Vai na frente do hash da publicação: com o desenho
+ * novo, o bot publica logo depois de ligar (index.js), sem esperar o próximo horário.
+ */
+export const VERSAO_PAGINA = crypto.createHash('sha256').update(CSS).update(JS).digest('hex').slice(0, 8);
