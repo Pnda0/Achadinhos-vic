@@ -1,14 +1,15 @@
 ---
 name: operar-o-bot
-description: Como operar o bot ml-afiliados no PC de casa do dono — reiniciar com calma depois de uma mudança, investigar por que algo aconteceu (grupo vazio, post estranho, WhatsApp diferente, erro), ler logs e números, e onde fica cada configuração e segredo. Use depois de qualquer push que mude o bot, ou quando o dono perguntar "por que…", "cadê…", "tá sem…".
+description: Como operar o bot ml-afiliados (24/7 no servidor Linux de casa desde 02/11/2026, pelo ssh achadinhos) — reiniciar com calma depois de uma mudança, investigar por que algo aconteceu (grupo vazio, post estranho, WhatsApp diferente, erro), ler logs e números, e onde fica cada configuração e segredo. Use depois de qualquer push que mude o bot, ou quando o dono perguntar "por que…", "cadê…", "tá sem…".
 ---
 
 # Operar o bot (ml-afiliados)
 
-O bot roda **neste PC** (Windows do dono), na janela do `ml-afiliados/3-iniciar.bat`. Ao ligar ele faz `git pull` e
-`npm install`: o que foi para o `main` só vale depois de reiniciar.
+**Desde 02/11/2026 o bot roda 24/7 no servidor Linux de casa** (`alanserv.local`), não mais neste PC: veja a seção
+"Se o bot estiver no servidor Linux" abaixo — ela vale. Os comandos de `data/...` desta página valem lá, em
+`/opt/achadinhos/ml-afiliados/` (pelo `ssh achadinhos`); a pasta `data/` deste PC está parada desde 02/11.
 
-## Reiniciar (o dono autorizou, 16/10/2026)
+## Reiniciar no PC (só se o bot voltar para o Windows; o dono autorizou, 16/10/2026)
 
 ```bash
 cd /d/Github/Achadinhos-vic/ml-afiliados && npm run reiniciar
@@ -41,8 +42,12 @@ aparece no log como `❌ Mercado Livre (API)`. Busca por palavra, `/items` e ava
 Depois da mudança (`ml-afiliados/linux/CONECTAR-SSH.md`), o bot NÃO roda mais neste PC (o atalho de início vira
 `.desligado`). Confira antes: `ssh achadinhos "systemctl is-active ml-afiliados"`. Aí, pelo PC:
 `ssh achadinhos "sudo systemctl restart ml-afiliados"` (reinicia com calma e puxa o GitHub) e
-`ssh achadinhos "tail -50 /opt/achadinhos/ml-afiliados/data/bot.log"`. Os arquivos (`data/`, `.env`) ficam em
-`/opt/achadinhos/ml-afiliados/` no servidor. Nunca ligue o bot no PC com o serviço ativo.
+`ssh achadinhos "tail -50 /opt/achadinhos/ml-afiliados/data/bot.log"` (ou `journalctl -u ml-afiliados -n 100 -o cat`).
+Os arquivos (`data/`, `.env`) ficam em `/opt/achadinhos/ml-afiliados/` no servidor (dono `bot`; o `alan` do SSH lê
+os logs e o `db.json`, mas não o `.env` nem os cookies). Scripts que só leem: `ssh achadinhos "cd /opt/achadinhos/ml-afiliados && npm run analytics -- hoje"`.
+Para root (instalar algo, mexer em arquivo do bot) o sudo pede a senha do dono — peça a ele. Nunca ligue o bot no PC com o serviço ativo.
+O servidor: HP antigo, Ubuntu 26.04, endereço muda a cada boot (o apelido usa o nome `alanserv.local`); se o disco cair
+para "somente leitura", veja README 3.16 (IOMMU, `intel_iommu=off`).
 
 ## Investigar
 
@@ -63,5 +68,5 @@ Depois da mudança (`ml-afiliados/linux/CONECTAR-SSH.md`), o bot NÃO roda mais 
 
 ## Rotina depois de mudar o bot
 
-`npm test` → `git add <caminhos>` → commit → `git push` → `npm run reiniciar` → conferir o log → contar ao dono em
+`npm test` → `git add <caminhos>` → commit → `git push` → `ssh achadinhos "sudo systemctl restart ml-afiliados"` → conferir o log → contar ao dono em
 poucas linhas, em português, sem jargão.

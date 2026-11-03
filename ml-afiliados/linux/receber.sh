@@ -22,6 +22,9 @@ chmod 600 "$PASTA/.env"
 mkdir -p "$PASTA/data"
 cp -a "$TMP/ml-afiliados/data/." "$PASTA/data/"
 rm -f "$PASTA/data/.reiniciar"
+# O tar do Windows traz tudo aberto para escrita (777/666): só o bot escreve, e as senhas só ele lê.
+chmod -R go-w "$PASTA/data"
+chmod 600 "$PASTA/data/"cookies.txt* "$PASTA/data/ml-token-app.json" "$PASTA/data/analytics/senha-painel.txt" 2>/dev/null || true
 
 if [ -f "$TMP/wrangler/default.toml" ]; then
   mkdir -p /home/bot/.config/.wrangler/config
