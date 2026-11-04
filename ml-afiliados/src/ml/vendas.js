@@ -46,6 +46,8 @@ export function motivoVendas(p, minimo = VENDAS_MINIMAS) {
   if (!ehDoMercadoLivre(p)) return null;
   // Da API oficial (src/ml/api.js): entre os 20 mais vendidos de uma categoria grande. A API não dá o número.
   if (p.maisVendidoML) return null;
+  // Da busca por marca (buscarPorMarcaML, 04/11/2026): anúncio da loja oficial da marca no ML.
+  if (p.lojaOficialML) return null;
   const v = lerVendas(p.vendidos);
   if (!v) return p.vendidos == null || p.vendidos === '' ? 'sem dado de vendas' : 'vendas ilegíveis';
   return v.minimo > minimo ? null : `até ${minimo} vendas`;

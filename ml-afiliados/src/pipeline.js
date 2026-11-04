@@ -6,7 +6,7 @@
  */
 import { loadCategorias, loadGrupos, loadShopee, settings } from './config.js';
 import { ErroBloqueioML, scrapeCategoria } from './ml/scraper.js';
-import { buscarMaisVendidosML } from './ml/api.js';
+import { buscarMaisVendidosML, buscarPorMarcaML } from './ml/api.js';
 
 /** Quanto tempo o bot fica sem pedir páginas ao ML depois de um bloqueio (verificação de tráfego suspeito). */
 export const PAUSA_ML_HORAS = 6;
@@ -21,6 +21,9 @@ const produtosAwinPadrao = process.env.NODE_TEST_CONTEXT
   : (o) => buscarProdutosAwin({ api: new Awin(), cfg: loadAwin().produtos || {}, ...o });
 // Nem a API do ML (os testes passam a sua).
 const maisVendidosPadrao = process.env.NODE_TEST_CONTEXT ? async () => [] : buscarMaisVendidosML;
+const buscaMarcaPadrao = process.env.NODE_TEST_CONTEXT ? async () => [] : buscarPorMarcaML;
+/** Buscas por marca no ML (categorias com "buscaML") por coleta, revezando a lista: a API recusa quem pergunta demais. */
+export const BUSCAS_MARCA_POR_COLETA = 8;
 import { buscarOfertasShopee } from './shopee-busca.js';
 import { HistoricoDePrecos } from './precos.js';
 import fs from 'node:fs';
@@ -92,7 +95,7 @@ export function motivoLinkInvalido(p) {
   return /(^|\.)mercadoli[vb]re\.com(\.br)?$/.test(host) && u.searchParams.get('matt_word') ? null : 'link do ML sem afiliado';
 }
 
-export async function coletar(store = new Store(), { amazon = buscarOfertasAmazon, awin = buscarCuponsAwin, awinProdutos = produtosAwinPadrao, shopee = buscarOfertasShopee, categoriasML = null, raspar = scrapeCategoria, maisVendidosML = maisVendidosPadrao, esperar = randomDelay, grupos: gruposDados = null, apenasGrupos = null, precos = null, mlMinIntervaloH = 0, soCupons = false } = {}) {
+export async function coletar(store = new Store(), { amazon = buscarOfertasAmazon, awin = buscarCuponsAwin, awinProdutos = produtosAwinPadrao, shopee = buscarOfertasShopee, categoriasML = null, raspar = scrapeCategoria, maisVendidosML = maisVendidosPadrao, buscaMarcaML = buscaMarcaPadrao, esperar = randomDelay, grupos: gruposDados = null, apenasGrupos = null, precos = null, mlMinIntervaloH = 0, soCupons = false } = {}) {
   // `soCupons`: só os cupons da Awin (garantia de 1 cupom por dia em cada grupo), sem ML, Shopee nem Amazon.
   // Histórico de preços (src/precos.js), ao lado do db.json desta fila (nos testes, numa pasta temporária).
   const historico = precos ?? new HistoricoDePrecos({ arquivo: path.join(path.dirname(store.file), 'precos.json') });
@@ -142,7 +145,12 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
   // Mercado Livre pela API oficial (src/ml/api.js, 27/10/2026): os mais vendidos de cada categoria com
   // "maisVendidos" em config/categorias.json. Não depende da pausa das páginas de ofertas: é outro caminho, o permitido.
   let mlApiErro = null;
-  const catsApi = soCupons ? [] : ativas.filter((c) => c.maisVendidos);
+  // + as buscas por marca ("buscaML"), BUSCAS_MARCA_POR_COLETA por vez, revezando (store.data.vezBuscaML).
+  const deMarca = ativas.filter((c) => c.buscaML);
+  const inicioMarca = (store.data.vezBuscaML || 0) % Math.max(1, deMarca.length);
+  const rodadaMarca = Array.from({ length: Math.min(deMarca.length, BUSCAS_MARCA_POR_COLETA) }, (_, i) => deMarca[(inicioMarca + i) % deMarca.length]);
+  if (rodadaMarca.length && !soCupons) store.data.vezBuscaML = inicioMarca + rodadaMarca.length;
+  const catsApi = soCupons ? [] : [...ativas.filter((c) => c.maisVendidos), ...rodadaMarca];
   if (catsApi.length) log(`🔎 Mercado Livre (API oficial): mais vendidos de ${catsApi.length} categoria(s)...`);
   for (const cat of catsApi) {
     const grupo = grupos[cat.grupo];
@@ -151,7 +159,7 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
     let lista;
     try {
       // Só os que passam pelo nome (marca, nicho) custam a consulta de preço.
-      lista = await maisVendidosML(cat, { antes: (p) => !motivoPeloNome({ ...p, semMarca: cat.semMarca }, grupo.filtros) });
+      lista = await (cat.buscaML ? buscaMarcaML : maisVendidosML)(cat, { antes: (p) => !motivoPeloNome({ ...p, semMarca: cat.semMarca }, grupo.filtros) });
     } catch (e) {
       mlApiErro = String(e.message).split('\n')[0];
       log(`❌ Mercado Livre (API): ${mlApiErro}`);

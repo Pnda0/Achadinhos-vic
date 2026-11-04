@@ -186,6 +186,28 @@ export async function buscarMaisVendidosML(cat, { api = new MLApi(), antes = () 
   return out;
 }
 
+/**
+ * Busca por MARCA no catálogo do ML (`cat.buscaML` em config/categorias.json; 04/11/2026, o dono: "não é possível que
+ * não tenha nada dessas marcas no Mercado Livre"). Os mais vendidos de uma categoria grande quase nunca são das marcas
+ * da lista; aqui o bot procura a marca pelo nome. Só vale o anúncio da LOJA OFICIAL (official_store_id): é original e,
+ * como a API não diz quantas vendas, a loja oficial faz as vezes da regra de "mais de 50 vendas" (`lojaOficialML`).
+ */
+export async function buscarPorMarcaML(cat, { api = new MLApi(), antes = () => true, resultados = 8 } = {}) {
+  const busca = await api.get(`/products/search?status=active&site_id=MLB&limit=${resultados}&q=${encodeURIComponent(cat.buscaML)}`);
+  const out = [];
+  for (const r of busca?.results || []) {
+    if (!r.name || !antes({ nome: r.name, grupo: cat.grupo })) continue;
+    const anuncios = await api.get(`/products/${r.id}/items?limit=20`);
+    const anuncio = escolherAnuncio((anuncios?.results || []).filter((a) => a.official_store_id));
+    if (!anuncio) continue;
+    const info = await api.produto(r.id);
+    if (!info?.imagem) continue;
+    out.push({ ...montarProduto(info, anuncio, { produtoId: r.id }), lojaOficialML: true, grupo: cat.grupo, categoria: cat.nome });
+  }
+  api.salvarCache();
+  return out;
+}
+
 /** Mesmo preço, com o arredondamento dos canais (até R$ 1 ou 1%) — igual a precoBate() em src/espelho.js. */
 const precoIgual = (doPost, doAnuncio) => Math.abs(doPost - doAnuncio) <= Math.max(1, doAnuncio * 0.01);
 /** O canal costuma postar o preço no Pix (alguns % abaixo do anúncio): até 8% acima do post ainda é a mesma oferta. */

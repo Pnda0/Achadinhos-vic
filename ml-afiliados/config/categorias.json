@@ -273,5 +273,167 @@
     "semMarca": "naoMasculino",
     "reservaDescontoMinimo": 5,
     "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: creatina growth supplements",
+    "buscaML": "creatina growth supplements",
+    "reservaDescontoMinimo": 5,
+    "ativo": true,
+    "_comentario": "04/11/2026, o dono: 'não é possível que não tenha nada dessas marcas no Mercado Livre'. Busca pela MARCA no catálogo do ML (API oficial, buscarPorMarcaML em src/ml/api.js): só anúncio da loja oficial da marca. 8 buscas por coleta, revezando a lista (BUSCAS_MARCA_POR_COLETA em src/pipeline.js). Decathlon e Centauro não vendem no ML. Com 5% a 15% de desconto entram como reserva."
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: whey protein growth supplements",
+    "buscaML": "whey protein growth supplements",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: max titanium whey",
+    "buscaML": "max titanium whey",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: max titanium creatina",
+    "buscaML": "max titanium creatina",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: integralmedica whey",
+    "buscaML": "integralmedica whey",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: dux nutrition whey",
+    "buscaML": "dux nutrition whey",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: black skull creatina",
+    "buscaML": "black skull creatina",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: vitafor colageno",
+    "buscaML": "vitafor colageno",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: essential nutrition colageno",
+    "buscaML": "essential nutrition colageno",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: essential nutrition whey",
+    "buscaML": "essential nutrition whey",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: legging live fitness",
+    "buscaML": "legging live fitness",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: top live fitness",
+    "buscaML": "top live fitness",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: legging alto giro",
+    "buscaML": "legging alto giro",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: top alto giro",
+    "buscaML": "top alto giro",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: legging lupo",
+    "buscaML": "legging lupo",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: top lupo fitness",
+    "buscaML": "top lupo fitness",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: legging track field",
+    "buscaML": "legging track field",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: top track field",
+    "buscaML": "top track field",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: legging adidas feminina",
+    "buscaML": "legging adidas feminina",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: top nike feminino",
+    "buscaML": "top nike feminino",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: tenis nike feminino corrida",
+    "buscaML": "tenis nike feminino corrida",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: tenis adidas feminino",
+    "buscaML": "tenis adidas feminino",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: tenis new balance feminino",
+    "buscaML": "tenis new balance feminino",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
   }
 ]
