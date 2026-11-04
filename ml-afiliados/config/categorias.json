@@ -224,5 +224,54 @@
     "nome": "ML mais vendidos: Suplementos alimentares",
     "maisVendidos": "MLB264201",
     "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML mais vendidos: Leggings",
+    "maisVendidos": "MLB18093",
+    "semMarca": "naoMasculino",
+    "reservaDescontoMinimo": 5,
+    "ativo": true,
+    "_comentario": "04/11/2026, o dono (Fitness parado desde o meio-dia): 'busque os fitness femininos no Mercado Livre... não pode ficar parado'. Os mais vendidos das categorias femininas do ML (Moda Fitness e Pilates/Yoga) entram mesmo sem marca da lista ('semMarca': feminino, ou não masculino onde quase tudo é feminino), e com 5% a 15% de desconto entram como reserva: só saem quando não há outra oferta."
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML mais vendidos: Tops de Fitness",
+    "maisVendidos": "MLB4570",
+    "semMarca": "naoMasculino",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML mais vendidos: Conjuntos fitness",
+    "maisVendidos": "MLB123112",
+    "semMarca": "feminino",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML mais vendidos: Shorts fitness",
+    "maisVendidos": "MLB18395",
+    "semMarca": "feminino",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML mais vendidos: Tapetes de yoga e pilates",
+    "maisVendidos": "MLB198290",
+    "semMarca": "naoMasculino",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML mais vendidos: Bolas de pilates",
+    "maisVendidos": "MLB278255",
+    "semMarca": "naoMasculino",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
   }
 ]

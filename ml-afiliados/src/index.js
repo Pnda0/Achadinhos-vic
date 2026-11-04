@@ -19,7 +19,7 @@ import { Espelho, resolverFontes } from './espelho.js';
 import { LeitorDeCanais, fonteDoGrupoTelegram, fontesDosCanais } from './telegram-canais.js';
 import { MLAffiliate } from './ml/affiliate.js';
 import { MLApi } from './ml/api.js';
-import { PAUSA_ML_HORAS, awinLiberada, coletar, filaDeOutroDia, gerarLinks, enviarParaTodos, limpar, ritmoLiberado, shopeeLiberada } from './pipeline.js';
+import { PAUSA_ML_HORAS, awinLiberada, coletar, doCatalogoAwin, filaDeOutroDia, gerarLinks, enviarParaTodos, limpar, ritmoLiberado, shopeeLiberada } from './pipeline.js';
 import { createSender } from './senders.js';
 import { Store } from './store.js';
 import { diaLocal, log, normalizar, sleep } from './util.js';
@@ -111,8 +111,10 @@ function gruposSemFila() {
   ]);
   const ativos = loadGrupos().filter((g) => g.ativo && comBusca.has(g.nome)).map((g) => g.nome);
   // Só masculinos na fila conta como vazio: eles esperam a vez (1 a cada N) e o grupo fica parado (16/10/2026).
-  const temOferta = (p) => (p.status === 'PRONTO' || p.status === 'PENDENTE') && generoDoProduto(p) !== 'm';
-  return ativos.filter((nome) => !store.list((p) => p.grupo === nome && temOferta(p)).length);
+  // Catálogo da Awin com o limite do dia já batido também (04/11/2026: o Fitness ficou parado à tarde com a fila cheia
+  // de produto da Awin que só podia sair no dia seguinte).
+  const temOferta = (p, grupo) => (p.status === 'PRONTO' || p.status === 'PENDENTE') && generoDoProduto(p) !== 'm' && !(doCatalogoAwin(p) && !awinLiberada(store, grupo));
+  return ativos.filter((nome) => !store.list((p) => p.grupo === nome && temOferta(p, nome)).length);
 }
 async function reporSePreciso(quando) {
   // Conta por grupo: um grupo que nunca foi buscado (ex.: acabou de ganhar busca própria) é buscado na hora.

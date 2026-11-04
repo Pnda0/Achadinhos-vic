@@ -68,7 +68,9 @@ export async function buscarOfertasShopee({ grupos, api = new Shopee(), cfg = lo
         if (desta.some((x) => parecido(x.nome, it.nome))) continue;
         desta.push(it);
         const { itemId, shopId, vendas, ...resto } = it;
-        produtos.push({ ...resto, id: `SHP-${itemId}`, loja: 'shopee', grupo: g.nome, categoria: `Shopee: ${g.nome}`, busca: termo });
+        // "semMarca" do grupo (04/11/2026, Fitness): feminino sem marca da lista passa no "só marcas" (genero.js).
+        const semMarca = cfg.grupos[g.nome].semMarca;
+        produtos.push({ ...resto, id: `SHP-${itemId}`, loja: 'shopee', grupo: g.nome, categoria: `Shopee: ${g.nome}`, busca: termo, ...(semMarca && { semMarca }) });
       }
       await esperar(1000);
     }

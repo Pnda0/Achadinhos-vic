@@ -14,7 +14,7 @@ const MASCULINO =
 // Futebol (04/11/2026, o dono: "chuteira e bola de futebol? o grupo é feminino"): masculino, salvo se disser feminina.
 const MASCULINO_SE_NAO_FEMININO = /\b(camisa|camisas|bermuda|bermudas|sunga|sungas|chuteira|chuteiras|futebol|futsal)\b/;
 const FEMININO =
-  /\b(feminino|feminina|femininos|femininas|fem|femme|woman|women|for her|pour femme|mulher|mulheres|lady|girl|menina|meninas|sutia|calcinha|calcinhas|lingerie|biquini|maio|vestido|saia|blusinha|cropped|legging|top fitness|batom|maquiagem|rimel|mascara de cilios|base liquida|esmalte|chapinha|prancha|babyliss|depilador|depiladora|absorvente|yara|olympea|la vie est belle|idole|miss dior|jadore|j adore|coco mademoiselle|alien|scandal|fame|la belle|bareeq al dhahab)\b/;
+  /\b(feminino|feminina|femininos|femininas|fem|femme|woman|women|for her|pour femme|mulher|mulheres|lady|girl|menina|meninas|sutia|calcinha|calcinhas|lingerie|biquini|maio|vestido|saia|blusinha|cropped|legging|leggings|top fitness|batom|maquiagem|rimel|mascara de cilios|base liquida|esmalte|chapinha|prancha|babyliss|depilador|depiladora|absorvente|yara|olympea|la vie est belle|idole|miss dior|jadore|j adore|coco mademoiselle|alien|scandal|fame|la belle|bareeq al dhahab)\b/;
 
 export function generoDoProduto(p) {
   const t = normalizar(`${p.nome || ''} ${p.textoPronto || ''}`);
@@ -25,6 +25,17 @@ export function generoDoProduto(p) {
   return !f && MASCULINO_SE_NAO_FEMININO.test(t) ? 'm' : null;
 }
 export const generoDoPerfume = generoDoProduto;
+
+/**
+ * Mais vendido de uma categoria do ML com "semMarca" (config/categorias.json; 04/11/2026, o dono: "busque os fitness
+ * femininos no Mercado Livre... não pode ficar parado"): passa no "só marcas" sem marca da lista se for feminino
+ * ("feminino") ou pelo menos não masculino ("naoMasculino": leggings, tops, tapete de yoga). Só essas categorias; o
+ * resto segue a regra de marca.
+ */
+export function liberadoSemMarca(p) {
+  const g = generoDoProduto(p);
+  return p.semMarca === 'feminino' ? g === 'f' : p.semMarca === 'naoMasculino' ? g !== 'm' : false;
+}
 
 /** Opções para Store.proximo(): femininos > neutros > masculinos, e masculino só se não saiu nenhum nos últimos N-1 posts. */
 export function preferenciaFeminina(store, grupo, cadaN = 3) {

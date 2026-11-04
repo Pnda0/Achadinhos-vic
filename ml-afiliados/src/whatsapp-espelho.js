@@ -16,7 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DATA_DIR, settings } from './config.js';
 import { evento } from './eventos.js';
-import { generoDoProduto } from './genero.js';
+import { generoDoProduto, liberadoSemMarca } from './genero.js';
 import { marcaDoProduto, preferenciaDeMarca } from './marcas.js';
 import { paraWhatsApp } from './rastreio.js';
 import { casaTermo, log, normalizar, sleep } from './util.js';
@@ -59,7 +59,7 @@ export function ligarPorNome(gruposBot, gruposWhats) {
  * "só marcas" e palavras bloqueadas do grupo. Cupom de loja e caixa de entrada passam no "só marcas".
  */
 export function valeNoGrupo(p, g) {
-  if (g.soMarcas && p.tipo !== 'cupom' && !p.manual && !marcaDoProduto(p)) return false;
+  if (g.soMarcas && p.tipo !== 'cupom' && !p.manual && !marcaDoProduto(p) && !liberadoSemMarca(p)) return false;
   const nome = normalizar(p.nome);
   return !(g.filtros?.palavrasBloqueadas || []).some((w) => casaTermo(nome, w));
 }
