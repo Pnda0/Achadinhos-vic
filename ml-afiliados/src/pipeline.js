@@ -570,6 +570,21 @@ export function awinLiberada(store, grupo, cfg = loadAwin().produtos || {}, minu
   return fonteLiberada(store, grupo, doCatalogoAwin, Number(cfg.umACada) || 0, minutos, agora);
 }
 
+/**
+ * "prioridade" do grupo (config/grupos.json; 04/11/2026, o dono: "priorize tênis e suplementos das marcas boas"):
+ * tipos de produto que passam na frente na fila. Cada item: { termos, peso, soComMarca } — com soComMarca, só conta
+ * se o produto for de uma marca da lista. Devolve a nota extra do produto (0 se não for desses tipos).
+ */
+export function prioridadeDoGrupo(grupo) {
+  const lista = grupo?.prioridade || [];
+  if (!lista.length) return () => 0;
+  return (p) => {
+    const nome = normalizar(p.nome);
+    const item = lista.find((x) => (x.termos || []).some((t) => casaTermo(nome, t)));
+    return item && (!item.soComMarca || marcaDoProduto(p)) ? Number(item.peso) || 1 : 0;
+  };
+}
+
 export async function enviarProximo(sender, grupo, store = new Store()) {
   const dias = grupo.filtros?.diasSemRepetir || 5;
   // Grupo com limite por dia (maxPorDia): ainda não é a hora do próximo post (ou o limite de hoje já saiu).
@@ -578,13 +593,14 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
   // E as marcas da lista (config/marcas.json) passam na frente das sem marca (pedido do dono, 15/10/2026).
   const feminina = grupo.preferirFeminino ? preferenciaFeminina(store, grupo.nome, grupo.preferirFeminino) : {};
   const marca = preferenciaDeMarca();
+  const prioridade = prioridadeDoGrupo(grupo);
   // Shopee no máximo 1 a cada N posts (a comissão é baixa — pedido do dono, 26/10/2026); catálogo da Awin com calma.
   const shopeeOk = shopeeLiberada(store, grupo.nome);
   const awinOk = awinLiberada(store, grupo.nome);
   const temLimite = feminina.aceitar || !shopeeOk || !awinOk;
   const preferencia = {
     aceitar: temLimite ? (x) => (feminina.aceitar ? feminina.aceitar(x) : true) && (shopeeOk || x.loja !== 'shopee') && (awinOk || !doCatalogoAwin(x)) : undefined,
-    preferir: (x) => (feminina.preferir ? feminina.preferir(x) : 0) + marca(x),
+    preferir: (x) => (feminina.preferir ? feminina.preferir(x) : 0) + marca(x) + prioridade(x),
   };
   let p = null;
   // Cada candidato barrado sai da fila (muda de status), então o laço termina; null = fila realmente vazia.

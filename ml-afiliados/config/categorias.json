@@ -264,7 +264,8 @@
     "maisVendidos": "MLB198290",
     "semMarca": "naoMasculino",
     "reservaDescontoMinimo": 5,
-    "ativo": true
+    "ativo": false,
+    "_desligado": "04/11/2026, o dono: tem coisa demais de yoga, tire por favor."
   },
   {
     "grupo": "Fitness",
@@ -272,7 +273,8 @@
     "maisVendidos": "MLB278255",
     "semMarca": "naoMasculino",
     "reservaDescontoMinimo": 5,
-    "ativo": true
+    "ativo": false,
+    "_desligado": "04/11/2026, o dono: tem coisa demais de yoga, tire por favor."
   },
   {
     "grupo": "Fitness",

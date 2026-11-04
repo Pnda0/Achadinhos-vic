@@ -121,7 +121,20 @@
       "telegram": "-1004454980210",
       "preferirFeminino": 10,
       "whatsapp": "Achadinhos Vic - Fitness",
-      "soMarcas": true
+      "soMarcas": true,
+      "prioridade": [
+        {
+          "termos": ["tenis"],
+          "peso": 2,
+          "soComMarca": true
+        },
+        {
+          "termos": ["whey", "creatina", "colageno", "pre treino", "pre-treino", "proteina", "hipercalorico", "bcaa", "glutamina", "barra de proteina", "barra proteica", "multivitaminico", "termogenico", "suplemento"],
+          "peso": 2,
+          "soComMarca": true
+        }
+      ],
+      "_comentarioPrioridade": "04/11/2026, o dono: 'priorize tênis e suplementos das marcas boas'. Tênis e suplementos de marca da lista (config/marcas.json, Fitness) passam na frente na fila (prioridadeDoGrupo em src/pipeline.js). Sem marca, não ganham nada."
     },
     {
       "nome": "Beleza",

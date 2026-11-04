@@ -112,7 +112,7 @@ test('fitness: equipamentos e acessórios de relógio entram com títulos do tem
   for (const nome of [
     'Halter Emborrachado 5kg Par',
     'Kettlebell Emborrachado 12kg',
-    'Tapete De Yoga Antiderrapante 6mm',
+    // (Tapete de yoga era exemplo daqui até 04/11/2026, quando o dono tirou yoga e pilates do Fitness.)
     'Kit Faixa Elástica Mini Band 5 Intensidades',
     'Pulseira Para Apple Watch Silicone 45mm',
     'Película Protetora Smartwatch 44mm Kit 3',
