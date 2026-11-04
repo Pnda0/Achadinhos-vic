@@ -40,12 +40,18 @@ export async function buscarOfertasShopee({ grupos, api = new Shopee(), cfg = lo
     const inicio = (vez[g.nome] || 0) % ciclo;
     vez[g.nome] = (inicio + n) % ciclo;
     const c = (categorias[`Shopee: ${g.nome}`] = { encontrados: 0, aceitos: 0 });
-    for (let i = 0; i < n; i++) {
+    // "sempre" (04/11/2026, o dono: "não tô vendo os produtos da Kerasys"): buscas feitas em TODA coleta, antes do
+    // revezamento — na lista de ~60 marcas do Beleza uma marca só voltava a cada 2 dias. A página também reveza.
+    const sempre = (cfg.grupos[g.nome].sempre || []).filter(Boolean);
+    const voltaSempre = (vez[`${g.nome}:sempre`] = ((vez[`${g.nome}:sempre`] ?? -1) + 1) % Math.max(1, cfg.paginas ?? 3));
+    const rodada = [...sempre.map((termo) => ({ termo, pagina: voltaSempre + 1 })), ...Array.from({ length: n }, (_, i) => {
       const k = (inicio + i) % ciclo;
-      const termo = lista[k % lista.length];
+      return { termo: lista[k % lista.length], pagina: Math.floor(k / lista.length) + 1 };
+    })];
+    for (const { termo, pagina } of rodada) {
       let itens;
       try {
-        itens = await api.buscar(termo, { limite: cfg.porBusca || 20, pagina: Math.floor(k / lista.length) + 1 });
+        itens = await api.buscar(termo, { limite: cfg.porBusca || 20, pagina });
       } catch (e) {
         log(`  🛍️  Shopee "${termo}": ${String(e.message).split('\n')[0]}`);
         if (/signature|credential|10020|10031|auth/i.test(e.message)) throw e; // credencial errada: não adianta seguir
