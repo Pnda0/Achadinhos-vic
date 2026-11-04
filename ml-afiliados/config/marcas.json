@@ -17,6 +17,14 @@
         "lola"
       ]
     },
+    {
+      "marca": "Kerasys",
+      "termos": [
+        "kerasys"
+      ],
+      "peso": 2.5,
+      "_comentario": "04/11/2026, o dono: 'Kerasys tá no hype absurdo, se puder mandar mais promoções dele é melhor'. Peso 2,5 = passa na frente das outras marcas da fila (as outras valem 1,5); a Shopee busca a marca e as linhas em config/shopee.json."
+    },
     "Wella",
     {
       "marca": "L'Oréal",

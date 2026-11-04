@@ -151,7 +151,8 @@ export class Store {
   /** Última checagem antes de postar. Devolve o motivo (já saiu) ou null. */
   jaPublicado(p, dias) {
     if (this.enviadoRecentemente(p.id, p.grupo, dias)) return 'já publicado';
-    if (this.nomeRecente(p, dias)) return 'mesmo produto já publicado (outro anúncio)';
+    // Cupom não é produto: cada um é o seu id (os cupons do ML têm todos o mesmo nome, só os códigos mudam).
+    if (p.tipo !== 'cupom' && this.nomeRecente(p, dias)) return 'mesmo produto já publicado (outro anúncio)';
     return null;
   }
 

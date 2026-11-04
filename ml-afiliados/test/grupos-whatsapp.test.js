@@ -56,7 +56,8 @@ test('grupo do WhatsApp para copiar (Apromo da Luh, 29/10/2026): o chip entra um
   const comGrupo = { listGroups: async () => [{ jid: '777@g.us', nome: '38 - Apromo da Luh 👠💄' }], entrarNoGrupo: semGrupo.entrarNoGrupo };
   assert.equal((await ligarGruposWhatsApp(comGrupo, c, { ...opcoes, arquivo: path.join(dir, 'nada.json'), entrar: false }))[0].jid, '777@g.us');
 
-  // As mensagens do grupo passam pelo espelho: Amazon de beleza entra, Shopee e Sephora ficam de fora.
+  // As mensagens do grupo passam pelo espelho: Amazon de beleza entra, Shopee fica de fora e a Sephora vai procurar o
+  // produto no ML (04/11/2026; aqui sem a API do ML, então não entra).
   const agora = Date.UTC(2027, 0, 15, 12, 0);
   const t = Math.floor(agora / 1000) - 60;
   const store = new Store(path.join(dir, 'db.json'));
@@ -72,7 +73,7 @@ test('grupo do WhatsApp para copiar (Apromo da Luh, 29/10/2026): o chip entra um
   });
   const r = await espelho.tick();
   assert.equal(r.enfileiradas, 1);
-  assert.deepEqual(r.ignoradas, { 'sem link da Amazon': 2 });
+  assert.deepEqual(r.ignoradas, { 'sem link da Amazon': 1, 'ML sem a API oficial': 1 });
   const fila = store.list();
   assert.deepEqual(fila.map((p) => p.grupo), ['Beleza']);
   assert.equal(fila[0].linkAfiliado, 'https://www.amazon.com.br/dp/B0BATOM001?tag=achadin09027e-20');

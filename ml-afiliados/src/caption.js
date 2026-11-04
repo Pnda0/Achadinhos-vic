@@ -95,8 +95,11 @@ export const nomeLoja = (p) => (p.loja === 'amazon' ? 'Amazon' : p.loja === 'sho
 
 /** Título de um cupom/promoção de loja parceira (não passa pela IA: precisa dizer a loja). */
 export function tituloCupom(p) {
-  return `${p.cupom ? 'CUPOM' : 'PROMO'} ${String(p.lojaNome || 'DA LOJA').toUpperCase()} ${p.cupom ? '🎟️' : '🔥'}`;
+  return `${comCodigo(p) ? 'CUPOM' : 'PROMO'} ${String(p.lojaNome || 'DA LOJA').toUpperCase()} ${comCodigo(p) ? '🎟️' : '🔥'}`;
 }
+
+/** Tem código para usar: o `cupom` de sempre ou vários códigos já na descrição (cupons do ML, `temCodigo`). */
+const comCodigo = (p) => !!(p.cupom || p.temCodigo);
 
 const diaMes = (iso) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: settings.tz });
 
@@ -116,7 +119,7 @@ function legendaCupom(p, { titulo, mensagemAdicional }) {
     p.nome.slice(0, 140),
     p.descricao,
     [p.cupom && linhaCodigo(p.cupom), p.validade && `⏳ Vale até ${diaMes(p.validade)}`].filter(Boolean).join('\n'),
-    chamada(p, p.cupom ? 'Usar o cupom' : 'Ver promoção'),
+    chamada(p, comCodigo(p) ? 'Usar o cupom' : 'Ver promoção'),
     mensagemAdicional,
   ]
     .filter((s) => s && s.trim())

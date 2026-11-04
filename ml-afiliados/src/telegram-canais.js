@@ -23,6 +23,8 @@ export const jidDoCanal = (nome) => PREFIXO + String(nome).trim().replace(/^(htt
  * "mlPeloNome": true = a oferta do Mercado Livre também entra: o produto é achado pela API oficial com o nome e o
  * preço do post (o link meli.la só abre no site do ML, que barra o bot) — src/espelho.js, processarMLPeloNome.
  * "exigirVendas", "fotoDoCanal", "copiarTexto" e "mlPeloNome" também valem no bloco, para todos os canais.
+ * "cuponsML": true = canal só de cupons do Mercado Livre: saem só os códigos, num post do bot com o link do dono
+ * ("cuponsPorDia" por grupo, padrão 3).
  */
 export function fontesDosCanais(c, { destinoPadrao = 'Geral', nichos = {}, lojasParceiras = false, amazonTag = '' } = {}) {
   const destino = c.destino || destinoPadrao;
@@ -44,10 +46,13 @@ export function fontesDosCanais(c, { destinoPadrao = 'Geral', nichos = {}, lojas
         fotoDoCanal: !!(o.fotoDoCanal ?? c.fotoDoCanal),
         copiarTexto: !!(o.copiarTexto ?? c.copiarTexto),
         mlPeloNome: !!(o.mlPeloNome ?? c.mlPeloNome),
+        // Canal só de cupons do ML (@cupombr, 04/11/2026): src/espelho.js, processarCuponsML.
+        cuponsML: !!o.cuponsML,
+        ...(Number.isInteger(o.cuponsPorDia) && { cuponsPorDia: o.cuponsPorDia }),
         ...(Number.isInteger(o.maxPorHora) && { maxPorHora: o.maxPorHora }),
       };
     })
-    .filter((f) => (f.apenasAmazon ? amazonTag : !f.soAmazon || lojasParceiras || amazonTag)); // "só Amazon" sem etiqueta (e sem Awin) não aproveita nada
+    .filter((f) => f.cuponsML || (f.apenasAmazon ? amazonTag : !f.soAmazon || lojasParceiras || amazonTag)); // "só Amazon" sem etiqueta (e sem Awin) não aproveita nada
 }
 
 /**

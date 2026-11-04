@@ -20,7 +20,8 @@ import { motivoPeloNome, motivoRecusa } from './pipeline.js';
 import { acharPeloNome } from './ml/api.js';
 import { encontrarGrupo } from './configfile.js';
 import crypto from 'node:crypto';
-import { casaTermo, log, normalizar, sleep } from './util.js';
+import { settings } from './config.js';
+import { casaTermo, diaLocal, log, normalizar, sleep } from './util.js';
 
 const MIN = 60_000;
 const BUSCAS_ML_POR_HORA = 20; // ofertas do ML dos canais procuradas na API oficial (cada uma gasta até ~7 consultas)
@@ -92,6 +93,54 @@ export function resolverFontes(fontes, gruposWhats) {
     else problemas.push(varios ? `"${f.nome}": há ${varios.length} grupos com esse nome — escreva o nome completo` : `"${f.nome}": não achei esse grupo neste WhatsApp`);
   }
   return { ok, problemas };
+}
+
+/**
+ * Lojas sem programa de afiliado do dono que aparecem nos grupos copiados (04/11/2026, o dono: "lá tem várias coisas da
+ * Sephora na promoção... ver se no Mercado Livre tem também, se tiver mandar pelo link do ML"). Pelo endereço do link
+ * ou, com link encurtado, pelo nome da loja no texto.
+ */
+const LOJAS_SEM_PROGRAMA = [
+  ['Sephora', /sephora/],
+  ['Beleza na Web', /belezanaweb|beleza na web/],
+  ['Época Cosméticos', /epocacosmeticos|epoca cosmeticos/],
+  ['O Boticário', /boticario/],
+  ['Natura', /natura\.com|\bnatura\b/],
+  ['Eudora', /eudora/],
+  ['Magalu', /magazineluiza|magalu/],
+  ['Drogasil', /drogasil/],
+  ['Droga Raia', /drogaraia|droga raia/],
+];
+
+export function lojaSemPrograma(m) {
+  const links = [...(m.links || []), ...(String(m.texto || '').match(/https?:\/\/[^\s<>"']+/gi) || [])];
+  if (!links.length) return null;
+  const hosts = links.map((u) => {
+    try {
+      return new URL(u).hostname.toLowerCase();
+    } catch {
+      return '';
+    }
+  });
+  const texto = normalizar(m.texto || '');
+  return LOJAS_SEM_PROGRAMA.find(([, re]) => hosts.some((h) => re.test(h)) || re.test(texto))?.[0] || null;
+}
+
+/**
+ * Cupons do texto de um canal só de cupons do ML (@cupombr): cada linha "condição: CÓDIGO" ou "condição - CÓDIGO",
+ * com a condição falando de desconto (OFF, %, R$). Ex.: "15% OFF, acima de R$89, Limite de R$20 OFF: SITE031115".
+ */
+export function cuponsDoTexto(texto) {
+  const vistos = new Set();
+  const out = [];
+  for (const linha of String(texto || '').split('\n')) {
+    if (/https?:|www\./i.test(linha)) continue;
+    const m = linha.trim().match(/^[-–•\s]*(.+?)\s*(?::|\s-|\s–)\s*([A-Z0-9]{5,20})\s*$/);
+    if (!m || !/[A-Z]/.test(m[2]) || !/off|%|r\$/i.test(m[1]) || vistos.has(m[2])) continue;
+    vistos.add(m[2]);
+    out.push({ condicao: m[1].replace(/\s+/g, ' ').replace(/[,;]\s*$/, ''), codigo: m[2] });
+  }
+  return out;
 }
 
 export class Espelho {
@@ -170,6 +219,7 @@ export class Espelho {
     const f = destino.filtros || {};
     if (fonte.manual) return { diasSemRepetir: f.diasSemRepetir };
     if (fonte.copiarTexto) return { palavrasObrigatorias: f.palavrasObrigatorias, palavrasBloqueadas: f.palavrasBloqueadas, diasSemRepetir: f.diasSemRepetir, soMarcas: f.soMarcas };
+    if (fonte.semDescontoMinimo) return { ...f, descontoMinimo: 0 }; // achado de outra loja já mais barato no ML
     return f;
   }
 
@@ -273,7 +323,7 @@ export class Espelho {
    * com nome, foto e preço do catálogo, o link do dono e as regras do grupo. Sem a regra de vendas se o canal tiver
    * "exigirVendas": false (o dono liberou o ML dos canais em 27/10/2026).
    */
-  async processarMLPeloNome(m, fonte, destino) {
+  async processarMLPeloNome(m, fonte, destino, { outraLoja = null } = {}) {
     if (!this.mlApi) return 'ML sem a API oficial';
     if (this.agora() < this.mlPausadoAte) return 'ML pausado';
     const d = dadosDoTexto(m.texto);
@@ -288,7 +338,7 @@ export class Espelho {
     if (!destinos.alvos.length) return destinos.motivos[0] || 'sem destino';
     let produto;
     try {
-      produto = await this.acharML(d.nome, d.precoAtual);
+      produto = await this.acharML(d.nome, d.precoAtual, { outraLoja: !!outraLoja });
     } catch (e) {
       this.mlPausadoAte = this.agora() + 15 * MIN; // ex.: HTTP 429 (muitas buscas): não insiste
       log(`  🪞 API do ML: ${String(e.message).split('\n')[0]} — ML dos canais pausado por 15 min`);
@@ -308,7 +358,11 @@ export class Espelho {
       return meu;
     };
     // A foto do canal pode ter o preço dele escrito: só vale se o anúncio tiver o mesmo preço do post.
-    const comFoto = precoBate(d.precoAtual, produto.precoAtual) ? fonte : { ...fonte, fotoDoCanal: false };
+    let comFoto = precoBate(d.precoAtual, produto.precoAtual) && !outraLoja ? fonte : { ...fonte, fotoDoCanal: false };
+    // Achado de outra loja (Sephora...) que no ML sai pelo mesmo preço da promoção de lá ou menos: já é oferta, mesmo
+    // que o anúncio do ML não mostre desconto. Mais caro que lá, vale o desconto mínimo do grupo de sempre.
+    if (outraLoja && produto.precoAtual <= d.precoAtual * 1.01) comFoto = { ...comFoto, semDescontoMinimo: true };
+    if (outraLoja) log(`  🪞 ${outraLoja} → ML: "${d.nome.slice(0, 50)}" lá R$ ${d.precoAtual}, no ML R$ ${produto.precoAtual}`);
     try {
       return await this.enfileirarDoTexto(m, comFoto, destinos, dados, { ...produto, semRegraVendas: fonte.exigirVendas === false }, link);
     } catch (e) {
@@ -323,17 +377,83 @@ export class Espelho {
    * BUSCAS_ML_POR_HORA buscas novas: a API recusa quem pergunta demais (HTTP 429, visto em 29/10/2026) e é a mesma que
    * traz os mais vendidos nas coletas. Undefined = limite da hora.
    */
-  async acharML(nome, preco) {
-    const chave = `${normalizar(nome)}|${preco}`;
+  async acharML(nome, preco, { outraLoja = false } = {}) {
+    const chave = `${normalizar(nome)}|${preco}|${outraLoja ? 'outra' : ''}`;
     const guardado = this.cacheML.get(chave);
     if (guardado && this.agora() - guardado.em < 6 * 60 * MIN) return guardado.produto;
     this.buscasML = this.buscasML.filter((t) => this.agora() - t < 60 * MIN);
     if (this.buscasML.length >= BUSCAS_ML_POR_HORA) return undefined;
     this.buscasML.push(this.agora());
-    const produto = await acharPeloNome(this.mlApi, nome, preco);
+    const produto = await acharPeloNome(this.mlApi, nome, preco, { outraLoja });
     if (this.cacheML.size > 2000) this.cacheML.clear();
     this.cacheML.set(chave, { produto, em: this.agora() });
     return produto;
+  }
+
+  /**
+   * Cupons do Mercado Livre de um canal só de cupons ("cuponsML", @cupombr; pedido do dono, 04/11/2026). Do post saem só
+   * os códigos e as condições, num post do bot com o link de afiliado do dono para a página de cupons do ML (o resto
+   * do post — convites, tutoriais, #anúncio — fica de fora). Vai para todos os "destinos", no máximo
+   * "cuponsPorDia" por grupo (padrão 3), sem repetir o mesmo conjunto de códigos em 2 dias.
+   */
+  async processarCuponsML(m, fonte) {
+    const texto = m.textoVisivel || m.texto || '';
+    const cupons = cuponsDoTexto(texto);
+    if (!cupons.length) return 'sem código de cupom';
+    const id = `CUPML-${cupons.map((c) => c.codigo).sort().join('-')}`.slice(0, 80);
+    const extras = [
+      /s[oó] (pra|para) quem resgatou/i.test(texto) && '⚠️ Só para quem resgatou o cupom no app antes',
+      /cart[aã]o[^\n]*mercado pago/i.test(texto) && '💳 Com cartão de crédito Mercado Pago',
+    ].filter(Boolean);
+    const tipo = /full/i.test(texto.split('\n')[0]) ? ' (Entregas Full)' : /site todo/i.test(texto.split('\n')[0]) ? ' (site todo)' : '';
+    const hoje = diaLocal(new Date(this.agora()), settings.tz);
+    const motivos = [];
+    let link = null;
+    let aceitos = 0;
+    for (const d of fonte.destinos || []) {
+      const g = this.grupos.get(d.grupo);
+      if (!g || g.ativo === false) continue;
+      if (this.store.conhecido(id, g.nome) || this.store.enviadoRecentemente(id, g.nome, 2)) {
+        motivos.push('cupom repetido');
+        continue;
+      }
+      const doDia = this.store.list((p) => p.grupo === g.nome && String(p.id).startsWith('CUPML-') && p.coletadoEm && diaLocal(new Date(p.coletadoEm), settings.tz) === hoje).length;
+      if (doDia >= (fonte.cuponsPorDia ?? 3)) {
+        motivos.push('limite de cupons do ML no dia');
+        continue;
+      }
+      link ??= await this.linkCuponsML();
+      const produto = {
+        id, tipo: 'cupom', loja: 'ml', lojaNome: 'Mercado Livre', origem: 'espelho', grupo: g.nome, categoria: `Espelho: ${fonte.nome}`,
+        nome: `Cupom do Mercado Livre${tipo}`,
+        descricao: [...cupons.map((c) => `🎟️ ${c.condicao}: \`${c.codigo}\``), ...extras, '⏳ Vale por pouco tempo — os cupons esgotam rápido'].join('\n'),
+        cupom: null, temCodigo: true, imagem: null, semRegraVendas: true, url: link, linkAfiliado: link,
+      };
+      this.store.upsert(produto);
+      evento('na_fila', produto);
+      aceitos++;
+      log(`🎟️ [${g.nome}] cupom do ML de ${fonte.nome}: ${cupons.map((c) => c.codigo).join(', ')} — ${link}`);
+    }
+    return aceitos ? 'ok' : motivos[0] || 'sem destino';
+  }
+
+  /** Link de afiliado do dono para a página de cupons do ML (guardado 6 h); sem o Link Builder, o link com a etiqueta. */
+  async linkCuponsML() {
+    if (this.linkCupons && this.agora() - this.linkCupons.em < 6 * 60 * MIN) return this.linkCupons.link;
+    const pagina = 'https://www.mercadolivre.com.br/cupons';
+    let link = null;
+    try {
+      if (this.agora() - this.ultimoRefresh > 30 * MIN) {
+        await this.affiliate.refresh();
+        this.ultimoRefresh = this.agora();
+      }
+      link = [...(await this.affiliate.createLinks([pagina])).values()][0] || null;
+    } catch (e) {
+      log(`  🎟️ link de afiliado da página de cupons não saiu (${String(e.message).split('\n')[0]}) — usando o link com a etiqueta`);
+    }
+    link ||= `${pagina}?matt_word=${encodeURIComponent(this.affiliate?.tag || settings.affiliateTag || 'pndaaaa')}`;
+    this.linkCupons = { link, em: this.agora() };
+    return link;
   }
 
   /** Oferta da Amazon: troca a etiqueta e usa o texto da mensagem (sem abrir a página da Amazon). */
@@ -408,6 +528,7 @@ export class Espelho {
 
   async processar(m) {
     const fonte = this.fontes.get(m.jid);
+    if (fonte?.cuponsML) return this.processarCuponsML(m, fonte); // vai para os "destinos" dele
     let destino = this.grupos.get(fonte?.destino || this.cfg.destinoPadrao);
     if (!fonte || !destino) return 'sem destino';
 
@@ -415,6 +536,9 @@ export class Espelho {
     const links = fonte.soAmazon || fonte.semML ? [] : extrairLinksML(m.texto).filter((l) => tipoLink(l) !== 'outro');
     const linksAmazon = links.length ? [] : extrairLinksAmazon(m.texto);
     if (fonte.mlPeloNome && !linksAmazon.length && extrairLinksML([m.texto, ...(m.links || [])].join('\n')).length) return this.processarMLPeloNome(m, fonte, destino);
+    // Loja sem programa de afiliado (Sephora...): procura o mesmo produto no ML e posta com o link do dono.
+    const outraLoja = fonte.mlPeloNome && fonte.outrasLojasNoML !== false && !linksAmazon.length ? lojaSemPrograma(m) : null;
+    if (outraLoja) return this.processarMLPeloNome(m, fonte, destino, { outraLoja });
     if (fonte.apenasAmazon && !linksAmazon.length) return 'sem link da Amazon'; // canal só para Amazon: ML/Shopee/Awin ficam de fora
     if (!links.length && !linksAmazon.length) {
       const linksShopee = this.shopee ? extrairLinksShopee(m.links || [], m.texto) : [];

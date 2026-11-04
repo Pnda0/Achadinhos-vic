@@ -216,16 +216,18 @@ export function mesmoProduto(doPost, doCatalogo) {
  * 21/10/2026. Então o produto é procurado no catálogo pelo nome do post, e só vale se o nome for o mesmo
  * (mesmoProduto) e algum anúncio novo tiver o preço do post (ou até 8% acima: preço no Pix) — senão é outra oferta
  * (ou preço com cupom). O post sai com o preço do anúncio, não o do canal. Null se não achar.
+ * `outraLoja` (04/11/2026, o dono: "coisas da Sephora... ver se no Mercado Livre tem também"): o preço do post é de
+ * outra loja, então vale o anúncio do ML que custa no máximo 10% a mais — ou menos, que é melhor ainda.
  */
-export async function acharPeloNome(api, nome, preco, { resultados = 5 } = {}) {
+export async function acharPeloNome(api, nome, preco, { resultados = 5, outraLoja = false } = {}) {
   if (!nome || !(preco > 0)) return null;
   const busca = await api.get(`/products/search?status=active&site_id=MLB&limit=${resultados}&q=${encodeURIComponent(nome.slice(0, 80))}`);
   for (const r of busca?.results || []) {
     if (!r.name || !mesmoProduto(nome, r.name)) continue;
     const anuncios = await api.get(`/products/${r.id}/items?limit=20`);
     const lista = anuncios?.results || [];
-    const exatos = lista.filter((x) => precoIgual(preco, x.price));
-    const anuncio = escolherAnuncio(exatos.length ? exatos : lista.filter((x) => precoPerto(preco, x.price)));
+    const exatos = outraLoja ? [] : lista.filter((x) => precoIgual(preco, x.price));
+    const anuncio = escolherAnuncio(exatos.length ? exatos : lista.filter((x) => (outraLoja ? x.price > 0 && x.price <= preco * 1.1 : precoPerto(preco, x.price))));
     if (!anuncio) continue;
     const info = await api.produto(r.id);
     if (!info?.imagem) continue;
