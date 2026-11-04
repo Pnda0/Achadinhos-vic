@@ -70,7 +70,9 @@ test('catálogo da Awin no grupo de meninas: sem masculino, sem infantil, sem pr
   const cfg = { precoMaximo: 400 };
   const p = (nome, precoAtual = 300) => ({ nome, precoAtual });
   assert.equal(motivoForaDoPublico(p('Tênis Nike ZoomX VaporFly 4 Masculino'), meninas, cfg), 'masculino (catálogo da Awin)');
-  assert.equal(motivoForaDoPublico(p('Chuteira Futsal Kylian Mbappé Nike Mercurial Superfly 11 Club Infantil'), meninas, cfg), 'infantil (catálogo da Awin)');
+  // Chuteira já cai como masculino (futebol, desde 04/11/2026), antes mesmo do "infantil".
+  assert.equal(motivoForaDoPublico(p('Chuteira Futsal Kylian Mbappé Nike Mercurial Superfly 11 Club Infantil'), meninas, cfg), 'masculino (catálogo da Awin)');
+  assert.equal(motivoForaDoPublico(p('Tênis Nike Revolution Infantil'), meninas, cfg), 'infantil (catálogo da Awin)');
   assert.match(motivoForaDoPublico(p('Tênis Nike Zoom VaporFly Next 4 SE Feminino', 1099.99), meninas, cfg), /acima de R\$ 400/);
   assert.equal(motivoForaDoPublico(p('Tênis Nike Court Vision Alta Feminino', 341.99), meninas, cfg), null);
   assert.equal(motivoForaDoPublico(p('Mochila Nike Brasilia'), meninas, cfg), null, 'neutro passa (as femininas vêm antes)');

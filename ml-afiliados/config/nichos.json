@@ -181,8 +181,19 @@
       "cabelo",
       "shampoo",
       "condicionador",
-      "serum"
+      "serum",
+      "chuteira",
+      "futebol",
+      "futsal",
+      "society",
+      "caneleira",
+      "goleiro",
+      "basquete",
+      "camisa+time",
+      "camisa+selecao",
+      "torcedor"
     ],
+    "_comentarioFutebol": "04/11/2026, o dono: 'por que você tá mandando chuteira e bola de futebol? esqueceu que o grupo é feminino'. Nike, Adidas, Centauro e Decathlon estão na lista de marcas do Fitness e marca conta como palavra do nicho, então 'Chuteira Nike' entrava; o filtro de gênero via chuteira e bola como neutras. Agora futebol (chuteira, bola, caneleira, camisa de time...) e basquete ficam de fora do Fitness — vale também para o que já estava na fila e para o WhatsApp.",
     "titulos": {
       "alto": [
         "SHAPE EM PROMOÇÃO 🔥",
