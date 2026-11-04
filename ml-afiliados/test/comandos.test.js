@@ -38,7 +38,7 @@ test('comandos: /atualizar no privado do dono chama o comando (gravando o visto 
 });
 
 test('comandos: o menu do Telegram e a ajuda listam os mesmos comandos', () => {
-  assert.deepEqual(MENU.map((c) => c.command), ['status', 'reiniciar', 'pausar', 'voltar', 'ligar', 'ajuda']);
+  assert.deepEqual(MENU.map((c) => c.command), ['status', 'reiniciar', 'pausar', 'voltar', 'ligar', 'pedir', 'ajuda']);
   for (const c of MENU) assert.match(AJUDA, new RegExp(`/${c.command} — `));
 });
 

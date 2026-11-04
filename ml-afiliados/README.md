@@ -409,6 +409,22 @@ Voltar para o PC de casa: pare o serviço no servidor, tire o `.desligado` do at
 
 Atenção: o Mercado Livre bloqueia leitura automática das páginas de ofertas (verificação/captcha desde 21/10/2026) — no servidor também; os mais vendidos pela API oficial (3.15f), a Shopee e a Awin usam API e não mudam (`ML_CLIENT_ID`/`ML_CLIENT_SECRET` vão no `.env` do arquivo da mudança).
 
+## 3.17 Pedir mudanças ao Claude pelo Telegram (04/11/2026)
+
+O dono: "passar uma instrução pelo telegram e que você acate e use no robô e suba no git". No privado do bot:
+`/pedir põe a marca X no Perfumes com mais destaque` →
+1. o bot abre uma issue no GitHub (rótulo `pedido-telegram`, `src/pedidos.js`) e responde com o número do pedido;
+2. a issue acorda a rotina **"Pedidos do Telegram"** do Claude na nuvem (https://claude.ai/code/routines/trig_01JfUtP5WFFEYfRJjeQJWdsg), que lê o CLAUDE.md, faz a mudança, roda os testes, anota em `ml-afiliados/pedidos.md` e sobe para o `main` num commit `Pedido #N: ...` (pedido perigoso, ambíguo ou que exige login do dono vira `Pedido #N: não feito — motivo`);
+3. o bot olha o `main` a cada 5 min: achou o commit, manda a explicação no Telegram e reinicia sozinho com a versão nova. Sem resposta em 2 h, avisa.
+
+Cada pedido gasta uso do plano do Claude do dono. A mudança vai direto para o bot, sem revisão: quem tiver o Telegram do dono consegue mudar o bot.
+
+**Ligar (uma vez, só o dono — são logins dele):**
+1. **Token do GitHub**: https://github.com/settings/personal-access-tokens/new → nome `bot achadinhos`, validade 1 ano → *Repository access*: **Only select repositories** → `Achadinhos-vic` → *Permissions* → *Repository permissions* → **Issues: Read and write** → **Generate token** → copie.
+2. No privado do bot: `/github <o token>` — ele confere, guarda em `data/github-token.txt` no servidor e apaga a mensagem. (Ou `GITHUB_TOKEN=` no `.env`.)
+3. Na página da rotina (link acima) → **Adicionar gatilho** → **GitHub** → repositório `Pnda0/Achadinhos-vic` → evento **Issue aberta** (*issues: opened*). Se ela pedir para instalar o app do Claude no GitHub, instale só neste repositório: é o que deixa o Claude subir as mudanças.
+4. Teste: `/pedir escreva no pedidos.md que o teste funcionou` — em uns 10 min chega a resposta.
+
 ## 4. Uso
 
 Cada etapa também roda separada:

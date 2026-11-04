@@ -38,6 +38,7 @@ import { EspelhoWhatsApp } from './whatsapp-espelho.js';
 import { ligarGruposWhatsApp } from './grupos-whatsapp.js';
 import { generoDoProduto } from './genero.js';
 import { AJUDA, MENU, textoDoStatus } from './comandos.js';
+import { acompanharPedidos, conferirToken, criarPedido, guardarToken, tokenGitHub } from './pedidos.js';
 
 const LIGADO_EM = Date.now();
 
@@ -237,6 +238,37 @@ function iniciarCaixaDeEntrada(cfg) {
       await responder(m, estava ? '▶️ Posts de volta: o próximo sai no próximo horário de envio (a cada 3 min, das 8h às 22h).' : '▶️ Os posts não estavam pausados.');
     },
     '/ligar': (m) => responder(m, '✅ O bot já está ligado. /status mostra como ele está.'),
+    // Pedido ao Claude (src/pedidos.js): vira issue no GitHub, a rotina na nuvem faz e sobe; a resposta chega aqui.
+    '/pedir': async (m) => {
+      const texto = String(m.texto || '').replace(/^\/pedir(@\w+)?\s*/i, '').trim();
+      if (!texto) return responder(m, 'Escreva o pedido junto, ex.:\n/pedir põe a marca Kerasys no Beleza com mais destaque');
+      const token = tokenGitHub();
+      if (!token) return responder(m, '⚠️ Falta o token do GitHub. Mande /github seguido do token (o passo a passo está no README, seção 3.17).');
+      try {
+        const { numero, url } = await criarPedido(texto, { token });
+        (store.data.pedidos ??= {})[numero] = { criadoEm: new Date().toISOString(), url, texto: texto.slice(0, 300) };
+        store.save();
+        log(`📝 Pedido #${numero} enviado ao Claude: ${texto.slice(0, 80)}`);
+        await responder(m, `📝 Pedido #${numero} anotado. O Claude vai trabalhar nele (costuma levar de 5 a 20 min) e eu te aviso aqui quando terminar.\n${url}`);
+      } catch (e) {
+        await responder(m, `⚠️ Não consegui registrar o pedido: ${String(e.message).split('\n')[0]}`);
+      }
+    },
+    // /github <token>: guarda o token (data/github-token.txt) e apaga a mensagem com ele da conversa.
+    '/github': async (m) => {
+      const token = String(m.texto || '').replace(/^\/github(@\w+)?\s*/i, '').trim();
+      const [, chat, msg] = String(m.id).match(/^tg-(-?\d+)-(\d+)$/) || [];
+      if (chat && msg) await sender.call?.('deleteMessage', { chat_id: chat, message_id: Number(msg) }).catch(() => {});
+      if (!token) return responder(m, 'Mande /github seguido do token, ex.: /github github_pat_... (eu apago a mensagem).');
+      try {
+        const quem = await conferirToken(token);
+        guardarToken(token);
+        log('📝 Token do GitHub guardado (pedidos pelo Telegram).');
+        await responder(m, `✅ Token guardado (${quem}) e mensagem apagada. Agora é só mandar /pedir seguido do que quer.`);
+      } catch (e) {
+        await responder(m, `⚠️ Esse token não funcionou: ${String(e.message).split('\n')[0]}. Nada foi guardado.`);
+      }
+    },
     '/ajuda': ajuda,
     '/start': ajuda,
   };
@@ -244,6 +276,11 @@ function iniciarCaixaDeEntrada(cfg) {
     // O menu do botão "/" só na conversa do dono (os membros dos canais não veem).
     sender.call('setMyCommands', { commands: MENU, scope: { type: 'chat', chat_id: dono } }).catch((e) => log(`⚠️  Menu de comandos do Telegram: ${String(e.message).split('\n')[0]}`));
   }
+  // Pedidos ao Claude em aberto: a cada 5 min olha o main do GitHub; respondido com mudança = reinicia com calma.
+  cron.schedule('*/5 * * * *', () =>
+    acompanharPedidos({ store, avisar: (t) => sender.sendText(dono, t).catch(() => {}) })
+      .then((mudou) => mudou && setTimeout(() => aoPedirParada(), 5_000))
+      .catch((e) => log(`⚠️  pedidos: ${String(e.message).split('\n')[0]}`)), { timezone: settings.tz });
   const espelho = new Espelho({ sender, store, affiliate: new MLAffiliate(), fontes, grupos: loadGrupos(), carregarGrupos: loadGrupos, cfg: { ...cfg, janelaMinutos: 180 }, avisos, awin, shopee, comandos });
   ligarGruposFonte(espelho, cfg);
   agendarEspelho(espelho, 10);

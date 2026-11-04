@@ -12,6 +12,7 @@ export const MENU = [
   { command: 'pausar', description: 'Para de postar nos grupos até o /voltar' },
   { command: 'voltar', description: 'Volta a postar nos grupos' },
   { command: 'ligar', description: 'Liga o bot se ele estiver desligado' },
+  { command: 'pedir', description: 'Pede uma mudança no bot ao Claude (ex.: /pedir mais Kerasys)' },
   { command: 'ajuda', description: 'Lista os comandos' },
 ];
 
