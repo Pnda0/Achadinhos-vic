@@ -30,7 +30,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { VENDAS_MINIMAS, motivoVendas } from './ml/vendas.js';
 import { evento, origemDe } from './eventos.js';
-import { liberadoSemMarca, preferenciaFeminina } from './genero.js';
+import { preferenciaFeminina } from './genero.js';
 import { marcaDoProduto, motivoPrecoDaMarca, preferenciaDeMarca } from './marcas.js';
 import { BrowserSession, sessaoNavegador } from './browser.js';
 import { montarLegenda, tituloCupom } from './caption.js';
@@ -45,7 +45,7 @@ export function motivoPeloNome(p, f) {
   if (f.palavrasObrigatorias?.length && !f.palavrasObrigatorias.some((t) => casaTermo(nome, t))) return 'fora do nicho';
   if ((f.palavrasBloqueadas || []).some((w) => casaTermo(nome, w))) return 'palavra bloqueada';
   // Grupo "soMarcas" (grupos.json): só produto de uma marca de config/marcas.json. Cupom de loja passa.
-  if (f.soMarcas && p.tipo !== 'cupom' && !marcaDoProduto(p) && !liberadoSemMarca(p)) return 'sem marca da lista';
+  if (f.soMarcas && p.tipo !== 'cupom' && !marcaDoProduto(p)) return 'sem marca da lista';
   return null;
 }
 
@@ -159,7 +159,7 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
     let lista;
     try {
       // Só os que passam pelo nome (marca, nicho) custam a consulta de preço.
-      lista = await (cat.buscaML ? buscaMarcaML : maisVendidosML)(cat, { antes: (p) => !motivoPeloNome({ ...p, semMarca: cat.semMarca }, grupo.filtros) });
+      lista = await (cat.buscaML ? buscaMarcaML : maisVendidosML)(cat, { antes: (p) => !motivoPeloNome(p, grupo.filtros) });
     } catch (e) {
       mlApiErro = String(e.message).split('\n')[0];
       log(`❌ Mercado Livre (API): ${mlApiErro}`);
@@ -173,7 +173,6 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
     const reserva = cat.reservaDescontoMinimo ?? grupo.reservaDescontoMinimo;
     const filtros = reserva != null ? { ...grupo.filtros, descontoMinimo: Math.min(minimo, reserva) } : grupo.filtros;
     for (const p of lista) {
-      if (cat.semMarca) p.semMarca = cat.semMarca;
       c.encontrados++;
       encontrados++;
       const motivo = recusa(p, filtros);
@@ -471,7 +470,9 @@ function publicoNoEnvio(p, grupo) {
 /** Grupo "soMarcas": o que entrou na fila antes do filtro (ou sem marca) não sai. Cupom e caixa de entrada passam. */
 function marcaNoEnvio(p, grupo) {
   if (!grupo.soMarcas || p.manual || p.tipo === 'cupom' || origemDe(p) === 'caixa') return null;
-  return marcaDoProduto(p) || liberadoSemMarca(p) ? null : 'sem marca da lista';
+  // Nada sem marca da lista, de loja nenhuma (04/11/2026, o dono: "remove esses itens sem marca da shopee ou de qualquer
+  // outra loja, do grupo fitness... são itens horríveis"): vale também para o que entrou na fila marcado como sem marca.
+  return marcaDoProduto(p) ? null : 'sem marca da lista';
 }
 
 /**

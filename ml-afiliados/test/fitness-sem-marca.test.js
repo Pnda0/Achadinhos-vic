@@ -1,25 +1,40 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loadGrupos } from '../src/config.js';
-import { liberadoSemMarca } from '../src/genero.js';
-import { motivoPeloNome } from '../src/pipeline.js';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
-// 04/11/2026, o dono (Fitness parado desde o meio-dia): "busque os fitness femininos... não pode ficar parado".
-// À noite: "tire esses shorts, calça e legging sem marca do Mercado Livre, muito feio" — do ML, só com marca.
-test('Fitness sem marca: só da Shopee e só feminino; do Mercado Livre nunca (nem o que já estava na fila)', () => {
-  const f = loadGrupos().find((g) => g.nome === 'Fitness').filtros;
-  const shp = (nome, semMarca) => ({ nome, loja: 'shopee', ...(semMarca && { semMarca }) });
-  assert.equal(motivoPeloNome(shp('Calça Legging Feminina Cintura Alta Fitness'), f), 'sem marca da lista', 'sem a marcação: regra de marca de sempre');
-  assert.equal(motivoPeloNome(shp('Calça Legging Feminina Cintura Alta Fitness', 'feminino'), f), null);
-  assert.equal(motivoPeloNome(shp('Leggings Fitness Cintura Alta Sem Transparência', 'feminino'), f), null, 'leggings no plural é feminino');
-  assert.equal(motivoPeloNome(shp('Conjunto Academia Masculino Dry Fit', 'feminino'), f), 'sem marca da lista');
-  assert.equal(motivoPeloNome(shp('Tapete de Yoga Antiderrapante 6mm', 'naoMasculino'), f), 'palavra bloqueada', 'yoga saiu do Fitness');
-  assert.equal(motivoPeloNome(shp('Legging Feminina Futebol Society', 'feminino'), f), 'palavra bloqueada', 'futebol continua fora');
+process.env.EVENTOS_ARQUIVO = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-')), 'produtos.log');
+process.env.SIMULAR_DIGITANDO = 'false';
+const { loadGrupos, loadShopee } = await import('../src/config.js');
+const { motivoPeloNome, enviarProximo } = await import('../src/pipeline.js');
+const { valeNoGrupo } = await import('../src/whatsapp-espelho.js');
+const { Store } = await import('../src/store.js');
 
-  for (const loja of ['ml', undefined]) {
-    const ml = { nome: 'Calça Legging Feminina Cintura Alta Fitness', semMarca: 'naoMasculino', ...(loja && { loja }) };
-    assert.equal(liberadoSemMarca(ml), false, `ML (${loja})`);
-    assert.equal(motivoPeloNome(ml, f), 'sem marca da lista');
+// 04/11/2026, à tarde o Fitness passou a aceitar feminino sem marca (Shopee e ML) para não ficar parado. À noite, o dono:
+// "remove esses itens sem marca da shopee ou de qualquer outra loja, do grupo fitness por favor. são itens horríveis".
+const fitness = loadGrupos().find((g) => g.nome === 'Fitness');
+
+test('Fitness sem marca: de loja nenhuma, nem marcado como "semMarca"; com marca da lista continua', () => {
+  const f = fitness.filtros;
+  for (const loja of ['shopee', 'ml', 'amazon', 'awin', undefined]) {
+    for (const semMarca of [undefined, 'feminino', 'naoMasculino']) {
+      const p = { nome: 'Calça Legging Feminina Cintura Alta Fitness', ...(loja && { loja }), ...(semMarca && { semMarca }) };
+      assert.equal(motivoPeloNome(p, f), 'sem marca da lista', `${loja} ${semMarca}`);
+      assert.equal(valeNoGrupo(p, fitness), false, `WhatsApp: ${loja} ${semMarca}`);
+    }
   }
-  assert.equal(motivoPeloNome({ nome: 'Legging Lupo Cintura Alta Fitness', loja: 'ml' }, f), null, 'do ML com marca da lista continua');
+  assert.equal(motivoPeloNome({ nome: 'Top Fitness Feminino Lupo Top Power', loja: 'shopee' }, f), null, 'Lupo da Shopee continua');
+  assert.equal(motivoPeloNome({ nome: 'Legging Lupo Cintura Alta Fitness', loja: 'ml' }, f), null, 'Lupo do ML continua');
+  assert.equal(loadShopee().grupos.Fitness.semMarca, undefined, 'a busca da Shopee não marca mais nada como sem marca');
+});
+
+test('Fitness sem marca: o que já estava na fila marcado como sem marca não sai', async () => {
+  const s = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-fit-')), 'db.json'));
+  s.upsert({ id: 'SHP-1', grupo: 'Fitness', nome: 'Short Fitness Feminino Cintura Alta Sem Transparência', loja: 'shopee', semMarca: 'feminino', url: 'https://shopee.com.br/x', imagem: 'i', precoAtual: 30, precoOriginal: 60, descontoPct: 50, linkAfiliado: 'https://s.shopee.com.br/abc' });
+  const sender = { sendImage: async () => ({ comImagem: true }), sendText: async () => {} };
+  assert.equal(await enviarProximo(sender, { ...fitness, jid: '-1' }, s), null);
+  const p = s.list((x) => x.id === 'SHP-1')[0];
+  assert.equal(p.status, 'REJEITADO');
+  assert.equal(p.erro, 'sem marca da lista');
 });

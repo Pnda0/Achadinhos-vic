@@ -26,20 +26,6 @@ export function generoDoProduto(p) {
 }
 export const generoDoPerfume = generoDoProduto;
 
-/**
- * Mais vendido de uma categoria do ML com "semMarca" (config/categorias.json; 04/11/2026, o dono: "busque os fitness
- * femininos no Mercado Livre... não pode ficar parado"): passa no "só marcas" sem marca da lista se for feminino
- * ("feminino") ou pelo menos não masculino ("naoMasculino": leggings, tops, tapete de yoga). Só essas categorias; o
- * resto segue a regra de marca.
- */
-export function liberadoSemMarca(p) {
-  // Mercado Livre nunca (04/11/2026, noite, o dono: "tire esses shorts, calça e legging sem marca do Mercado Livre,
-  // muito feio"): vale também para o que já tinha entrado na fila marcado como sem marca.
-  if (!p.loja || p.loja === 'ml' || p.loja === 'mercadolivre') return false;
-  const g = generoDoProduto(p);
-  return p.semMarca === 'feminino' ? g === 'f' : p.semMarca === 'naoMasculino' ? g !== 'm' : false;
-}
-
 /** Opções para Store.proximo(): femininos > neutros > masculinos, e masculino só se não saiu nenhum nos últimos N-1 posts. */
 export function preferenciaFeminina(store, grupo, cadaN = 3) {
   const n = Number.isInteger(cadaN) && cadaN >= 2 ? cadaN : 3;
