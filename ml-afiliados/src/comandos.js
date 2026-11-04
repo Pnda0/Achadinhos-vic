@@ -13,6 +13,7 @@ export const MENU = [
   { command: 'voltar', description: 'Volta a postar nos grupos' },
   { command: 'ligar', description: 'Liga o bot se ele estiver desligado' },
   { command: 'pedir', description: 'Pede uma mudança no bot ao Claude (ex.: /pedir mais Kerasys)' },
+  { command: 'env', description: 'Muda uma chave do .env do servidor (/env NOME=valor)' },
   { command: 'ajuda', description: 'Lista os comandos' },
 ];
 

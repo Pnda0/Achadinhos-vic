@@ -39,6 +39,7 @@ import { ligarGruposWhatsApp } from './grupos-whatsapp.js';
 import { generoDoProduto } from './genero.js';
 import { AJUDA, MENU, textoDoStatus } from './comandos.js';
 import { acompanharPedidos, conferirToken, criarPedido, guardarToken, tokenGitHub } from './pedidos.js';
+import { finalDoValor, gravarNoEnv, lerAtribuicao, nomesDoEnv } from './env-arquivo.js';
 
 const LIGADO_EM = Date.now();
 
@@ -253,6 +254,19 @@ function iniciarCaixaDeEntrada(cfg) {
       } catch (e) {
         await responder(m, `⚠️ Não consegui registrar o pedido: ${String(e.message).split('\n')[0]}`);
       }
+    },
+    // /env NOME=valor: muda o .env do servidor de onde o dono estiver (src/env-arquivo.js), apaga a mensagem e reinicia.
+    '/env': async (m) => {
+      const resto = String(m.texto || '').replace(/^\/env(@\w+)?\s*/i, '').split('\n')[0].trim();
+      if (!resto) return responder(m, `*Chaves do .env no servidor* (só os nomes):\n${nomesDoEnv().join(', ') || '(vazio)'}\n\nPara mudar: /env NOME=valor (eu apago a mensagem e reinicio).`);
+      const [, chat, msg] = String(m.id).match(/^tg-(-?\d+)-(\d+)$/) || [];
+      if (chat && msg) await sender.call?.('deleteMessage', { chat_id: chat, message_id: Number(msg) }).catch(() => {});
+      const a = lerAtribuicao(resto);
+      if (!a) return responder(m, '⚠️ Não entendi. Use assim: /env AWIN_API_TOKEN=o-token-novo');
+      const r = gravarNoEnv(a.nome, a.valor);
+      log(`🔑 .env: ${a.nome} ${r === 'novo' ? 'acrescentado' : 'trocado'} pelo dono no Telegram.`);
+      await responder(m, `✅ ${a.nome} ${r === 'novo' ? 'acrescentado' : 'trocado'} no .env do servidor (termina em ${finalDoValor(a.valor)}). Mensagem apagada. Reiniciando para valer — em 1 ou 2 minutos chega o "bot ligado".`);
+      setTimeout(() => aoPedirParada(), 2_000);
     },
     // /github <token>: guarda o token (data/github-token.txt) e apaga a mensagem com ele da conversa.
     '/github': async (m) => {
