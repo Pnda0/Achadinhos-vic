@@ -191,8 +191,15 @@
       "basquete",
       "camisa+time",
       "camisa+selecao",
-      "torcedor"
+      "torcedor",
+      "natacao",
+      "nabaiji",
+      "nadadeira",
+      "snorkel",
+      "mergulho",
+      "pe de pato"
     ],
+    "_comentarioNatacao": "04/11/2026, o dono: 'tire do fitness por favor: Óculos de Natação Profissional Decathlon Nabaiji'. Natação e mergulho (óculos, touca, nadadeira, snorkel; Nabaiji é a linha de natação da Decathlon) ficam de fora do Fitness.",
     "_comentarioFutebol": "04/11/2026, o dono: 'por que você tá mandando chuteira e bola de futebol? esqueceu que o grupo é feminino'. Nike, Adidas, Centauro e Decathlon estão na lista de marcas do Fitness e marca conta como palavra do nicho, então 'Chuteira Nike' entrava; o filtro de gênero via chuteira e bola como neutras. Agora futebol (chuteira, bola, caneleira, camisa de time...) e basquete ficam de fora do Fitness — vale também para o que já estava na fila e para o WhatsApp.",
     "titulos": {
       "alto": [
