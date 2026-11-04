@@ -14,6 +14,7 @@ export const MENU = [
   { command: 'ligar', description: 'Liga o bot se ele estiver desligado' },
   { command: 'pedir', description: 'Pede uma mudança no bot ao Claude (ex.: /pedir mais Kerasys)' },
   { command: 'env', description: 'Muda uma chave do .env do servidor (/env NOME=valor)' },
+  { command: 'fila', description: 'Por que um grupo não está postando (/fila Fitness)' },
   { command: 'ajuda', description: 'Lista os comandos' },
 ];
 
@@ -50,5 +51,61 @@ export function textoDoStatus({ store, grupos, agora = Date.now(), ligadoDesde, 
     `📲 WhatsApp: ${whatsapp === 'ligado' ? `conectado — ${noWhats} mensagem(ns) hoje` : whatsapp === 'desligado' ? 'desligado no .env' : 'não conectado (/reiniciar manda um código novo)'}`,
     `📦 Na fila: ${porGrupo(naFila)}`,
     ...(ultimo ? [`🕒 Último post: ${hhmm(ultimo.enviadoEm, tz)} (${ultimo.grupo}) ${String(ultimo.nome).slice(0, 50)}`] : []),
+  ].join('\n');
+}
+
+const NOME_LOJA = { ml: 'ML', shopee: 'Shopee', amazon: 'Amazon', awin: 'Awin' };
+const topo = (contagem, n = 3) => Object.entries(contagem).sort((a, b) => b[1] - a[1]).slice(0, n).map(([k, v]) => `${k} ${v}`).join(' · ');
+
+/**
+ * /fila <grupo> (04/11/2026, o dono: "preciso entender por que o Fitness não tá saindo nada desde meio-dia"): o que tem
+ * na fila, o que está segurando o próximo post agora e o que foi recusado/barrado desde o último post (ou 6 h).
+ * `agoraPode` = { ritmo, shopee, awin, masculino } do momento (calculado em index.js com as regras do pipeline).
+ * `genero(p)` = 'f' | 'm' | null.
+ */
+export function textoDaFila({ store, grupo, eventos = [], agora = Date.now(), tz = 'America/Sao_Paulo', agoraPode = {}, genero = () => null }) {
+  const nome = grupo.nome;
+  const fila = store.list((p) => p.grupo === nome && (p.status === 'PRONTO' || p.status === 'PENDENTE'));
+  const enviados = store.list((p) => p.grupo === nome && (p.status === 'ENVIADO' || p.status === 'INCERTO') && p.enviadoEm).sort((a, b) => String(b.enviadoEm).localeCompare(String(a.enviadoEm)));
+  const ultimo = enviados[0];
+  const desde = Math.max(ultimo ? Date.parse(ultimo.enviadoEm) : 0, agora - 6 * 3_600_000);
+  const porLoja = {};
+  const porGenero = { femininos: 0, neutros: 0, masculinos: 0 };
+  for (const p of fila) {
+    const loja = p.tipo === 'cupom' ? 'cupom' : String(p.id).startsWith('AWF-') ? 'Awin (catálogo)' : NOME_LOJA[p.loja] || p.loja || 'ML';
+    porLoja[loja] = (porLoja[loja] || 0) + 1;
+    porGenero[{ f: 'femininos', m: 'masculinos' }[genero(p)] || 'neutros']++;
+  }
+  const recusas = {};
+  const barradas = {};
+  let entraram = 0;
+  for (const e of eventos) {
+    if (e?.grupo !== nome || !e.t || Date.parse(e.t) < desde) continue;
+    if (e.tipo === 'na_fila') entraram++;
+    else if (e.tipo === 'recusado' || e.tipo === 'sem_link') recusas[e.detalhe || e.tipo] = (recusas[e.detalhe || e.tipo] || 0) + 1;
+    else if (e.tipo === 'barrado' || e.tipo === 'link_invalido' || e.tipo === 'duplicado') barradas[e.detalhe || e.tipo] = (barradas[e.detalhe || e.tipo] || 0) + 1;
+  }
+  const segurando = [
+    !grupo.ativo && 'o grupo está pausado em config/grupos.json',
+    store.data.pausado && 'os posts estão pausados (/voltar)',
+    agoraPode.ritmo === false && `limite do dia (${grupo.maxPorDia} posts) ou ainda não é a hora do próximo`,
+    agoraPode.shopee === false && 'Shopee esperando a vez (1 a cada N posts)',
+    agoraPode.awin === false && 'catálogo da Awin no limite do dia',
+    agoraPode.masculino === false && 'masculino esperando a vez (1 a cada N posts)',
+  ].filter(Boolean);
+  const total = Object.values(recusas).reduce((s, n) => s + n, 0);
+  let conclusao;
+  if (!fila.length) conclusao = total ? `👉 *A fila está vazia*: as buscas acharam ${total} ofertas, mas nenhuma passou nas regras do grupo (motivos acima).` : '👉 *A fila está vazia* e as buscas não trouxeram nada novo para este grupo.';
+  else if (segurando.length) conclusao = `👉 *Tem ${fila.length} na fila, mas está esperando*: ${segurando.join('; ')}.`;
+  else conclusao = `👉 Tem ${fila.length} na fila e nada segurando: sai no próximo horário de envio.`;
+  const desdeTxt = new Date(desde).toLocaleTimeString('pt-BR', { timeZone: tz, hour: '2-digit', minute: '2-digit' });
+  return [
+    `*Fila do ${nome}* 🔎`,
+    `📦 Na fila: ${fila.length}${fila.length ? ` (${topo(porLoja, 5)}) — ${porGenero.femininos} femininos, ${porGenero.neutros} neutros, ${porGenero.masculinos} masculinos` : ''}`,
+    ultimo ? `🕒 Último post: ${hhmm(ultimo.enviadoEm, tz)} (há ${duracao(agora - Date.parse(ultimo.enviadoEm))}) ${String(ultimo.nome).slice(0, 45)}` : '🕒 Nenhum post registrado',
+    `📥 Desde ${desdeTxt}: ${entraram} entraram na fila, ${total} recusadas${total ? ` (${topo(recusas)})` : ''}`,
+    ...(Object.keys(barradas).length ? [`🚫 Barradas na hora de postar: ${topo(barradas)}`] : []),
+    '',
+    conclusao,
   ].join('\n');
 }

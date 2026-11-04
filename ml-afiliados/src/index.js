@@ -19,13 +19,13 @@ import { Espelho, resolverFontes } from './espelho.js';
 import { LeitorDeCanais, fonteDoGrupoTelegram, fontesDosCanais } from './telegram-canais.js';
 import { MLAffiliate } from './ml/affiliate.js';
 import { MLApi } from './ml/api.js';
-import { PAUSA_ML_HORAS, coletar, filaDeOutroDia, gerarLinks, enviarParaTodos, limpar } from './pipeline.js';
+import { PAUSA_ML_HORAS, awinLiberada, coletar, filaDeOutroDia, gerarLinks, enviarParaTodos, limpar, ritmoLiberado, shopeeLiberada } from './pipeline.js';
 import { createSender } from './senders.js';
 import { Store } from './store.js';
-import { diaLocal, log, sleep } from './util.js';
+import { diaLocal, log, normalizar, sleep } from './util.js';
 
 import { instalarLogEmArquivo, pedirParaReligar, registrarErro } from './logfile.js';
-import { gerarDia, porEmDia } from './analytics/dia.js';
+import { gerarDia, lerEventos, porEmDia } from './analytics/dia.js';
 import { membrosDoDia, registrarMembros } from './analytics/membros.js';
 import { registrarAwin, registrarShopee } from './analytics/ganhos.js';
 import { montarPainel } from './analytics/relatorio.js';
@@ -36,8 +36,8 @@ import { MSG_BOT_TRAVADO, MSG_OUTRA_COPIA, outrosBots, travarInstancia } from '.
 import { desligarEdicaoRapida } from './janela.js';
 import { EspelhoWhatsApp } from './whatsapp-espelho.js';
 import { ligarGruposWhatsApp } from './grupos-whatsapp.js';
-import { generoDoProduto } from './genero.js';
-import { AJUDA, MENU, textoDoStatus } from './comandos.js';
+import { generoDoProduto, preferenciaFeminina } from './genero.js';
+import { AJUDA, MENU, textoDaFila, textoDoStatus } from './comandos.js';
 import { acompanharPedidos, conferirToken, criarPedido, guardarToken, tokenGitHub } from './pedidos.js';
 import { finalDoValor, gravarNoEnv, lerAtribuicao, nomesDoEnv } from './env-arquivo.js';
 
@@ -253,6 +253,23 @@ function iniciarCaixaDeEntrada(cfg) {
         await responder(m, `📝 Pedido #${numero} anotado. O Claude vai trabalhar nele (costuma levar de 5 a 20 min) e eu te aviso aqui quando terminar.\n${url}`);
       } catch (e) {
         await responder(m, `⚠️ Não consegui registrar o pedido: ${String(e.message).split('\n')[0]}`);
+      }
+    },
+    // /fila <grupo>: por que o grupo não está postando (src/comandos.js, textoDaFila). Sem grupo: todos os ligados.
+    '/fila': async (m) => {
+      const pedido = normalizar(String(m.texto || '').replace(/^\/fila(@\w+)?\s*/i, '').split('\n')[0]);
+      const grupos = loadGrupos().filter((g) => (pedido ? normalizar(g.nome).includes(pedido) : g.ativo));
+      if (!grupos.length) return responder(m, `Não achei esse grupo. Use: /fila ${loadGrupos().filter((g) => g.ativo).map((g) => g.nome).join(' | ')}`);
+      const eventos = lerEventos();
+      for (const g of grupos) {
+        const fem = g.preferirFeminino ? preferenciaFeminina(store, g.nome, g.preferirFeminino) : {};
+        const agoraPode = {
+          ritmo: ritmoLiberado(store, g),
+          shopee: shopeeLiberada(store, g.nome),
+          awin: awinLiberada(store, g.nome),
+          masculino: fem.aceitar ? fem.aceitar({ nome: 'produto masculino' }) : true,
+        };
+        await responder(m, textoDaFila({ store, grupo: g, eventos, agoraPode, genero: generoDoProduto, tz: settings.tz }));
       }
     },
     // /env NOME=valor: muda o .env do servidor de onde o dono estiver (src/env-arquivo.js), apaga a mensagem e reinicia.

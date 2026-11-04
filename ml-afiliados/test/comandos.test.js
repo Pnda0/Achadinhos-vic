@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { Espelho } from '../src/espelho.js';
-import { AJUDA, MENU, textoDoStatus } from '../src/comandos.js';
+import { AJUDA, MENU, textoDaFila, textoDoStatus } from '../src/comandos.js';
 import { EspelhoWhatsApp } from '../src/whatsapp-espelho.js';
 import { Store } from '../src/store.js';
 
@@ -38,7 +38,7 @@ test('comandos: /atualizar no privado do dono chama o comando (gravando o visto 
 });
 
 test('comandos: o menu do Telegram e a ajuda listam os mesmos comandos', () => {
-  assert.deepEqual(MENU.map((c) => c.command), ['status', 'reiniciar', 'pausar', 'voltar', 'ligar', 'pedir', 'env', 'ajuda']);
+  assert.deepEqual(MENU.map((c) => c.command), ['status', 'reiniciar', 'pausar', 'voltar', 'ligar', 'pedir', 'env', 'fila', 'ajuda']);
   for (const c of MENU) assert.match(AJUDA, new RegExp(`/${c.command} — `));
 });
 
@@ -63,6 +63,27 @@ test('/status: ligado desde quando, posts e fila de hoje por grupo, WhatsApp, pa
 
   store.data.pausado = '2026-11-03T14:50:00-03:00';
   assert.match(textoDoStatus({ store, grupos, agora, ligadoDesde: agora, whatsapp: 'nao' }), /Posts pausados\* desde as 14:50[\s\S]*não conectado \(\/reiniciar/);
+});
+
+test('/fila: o que tem na fila, o que segura o post e por que as ofertas foram recusadas desde o último post', () => {
+  const agora = new Date('2026-11-04T15:00:00-03:00').getTime();
+  const store = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-fila-')), 'db.json'));
+  const p = (id, status, extra = {}) => (store.data.produtos[`Fitness:${id}`] = { id, grupo: 'Fitness', nome: `Produto ${id}`, status, loja: 'ml', ...extra });
+  p('ult', 'ENVIADO', { enviadoEm: '2026-11-04T12:02:00-03:00', nome: 'Legging Lupo' });
+  p('AWF-1', 'PRONTO', { loja: 'awin', nome: 'Tênis Nike Masculino' });
+  p('SHP-2', 'PRONTO', { loja: 'shopee', nome: 'Top Live Feminino' });
+  const ev = (tipo, detalhe, t = '2026-11-04T13:00:00-03:00') => ({ t, tipo, grupo: 'Fitness', detalhe });
+  const eventos = [ev('recusado', 'sem marca da lista'), ev('recusado', 'sem marca da lista'), ev('recusado', 'palavra bloqueada'), ev('na_fila'), ev('barrado', 'masculino'), ev('recusado', 'antigo', '2026-11-04T11:00:00-03:00'), { ...ev('recusado', 'outro grupo'), grupo: 'Beleza' }];
+  const genero = (x) => (/masculino/i.test(x.nome) ? 'm' : /feminino/i.test(x.nome) ? 'f' : null);
+  const texto = textoDaFila({ store, grupo: { nome: 'Fitness', ativo: true }, eventos, agora, genero, agoraPode: { ritmo: true, shopee: false, awin: true, masculino: false } });
+  assert.match(texto, /Na fila: 2 \(Awin \(catálogo\) 1 · Shopee 1\) — 1 femininos, 0 neutros, 1 masculinos/);
+  assert.match(texto, /Último post: 12:02 \(há 2 h 58 min\) Legging Lupo/);
+  assert.match(texto, /Desde 12:02: 1 entraram na fila, 3 recusadas \(sem marca da lista 2 · palavra bloqueada 1\)/);
+  assert.match(texto, /Barradas na hora de postar: masculino 1/);
+  assert.match(texto, /Tem 2 na fila, mas está esperando\*: Shopee esperando a vez .*; masculino esperando a vez/);
+
+  for (const x of Object.values(store.data.produtos)) if (x.status === 'PRONTO') x.status = 'REJEITADO';
+  assert.match(textoDaFila({ store, grupo: { nome: 'Fitness', ativo: true }, eventos, agora, genero }), /A fila está vazia\*: as buscas acharam 3 ofertas, mas nenhuma passou/);
 });
 
 test('/pausar vale para o WhatsApp também: nada é espelhado até o /voltar', async () => {
