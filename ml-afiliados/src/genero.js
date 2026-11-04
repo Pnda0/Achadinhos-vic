@@ -33,6 +33,9 @@ export const generoDoPerfume = generoDoProduto;
  * resto segue a regra de marca.
  */
 export function liberadoSemMarca(p) {
+  // Mercado Livre nunca (04/11/2026, noite, o dono: "tire esses shorts, calça e legging sem marca do Mercado Livre,
+  // muito feio"): vale também para o que já tinha entrado na fila marcado como sem marca.
+  if (!p.loja || p.loja === 'ml' || p.loja === 'mercadolivre') return false;
   const g = generoDoProduto(p);
   return p.semMarca === 'feminino' ? g === 'f' : p.semMarca === 'naoMasculino' ? g !== 'm' : false;
 }

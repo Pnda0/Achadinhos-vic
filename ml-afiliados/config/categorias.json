@@ -229,16 +229,14 @@
     "grupo": "Fitness",
     "nome": "ML mais vendidos: Leggings",
     "maisVendidos": "MLB18093",
-    "semMarca": "naoMasculino",
     "reservaDescontoMinimo": 5,
     "ativo": true,
-    "_comentario": "04/11/2026, o dono (Fitness parado desde o meio-dia): 'busque os fitness femininos no Mercado Livre... não pode ficar parado'. Os mais vendidos das categorias femininas do ML (Moda Fitness e Pilates/Yoga) entram mesmo sem marca da lista ('semMarca': feminino, ou não masculino onde quase tudo é feminino), e com 5% a 15% de desconto entram como reserva: só saem quando não há outra oferta."
+    "_comentario": "04/11/2026, o dono (Fitness parado desde o meio-dia): 'busque os fitness femininos no Mercado Livre... não pode ficar parado'. Os mais vendidos das categorias femininas do ML (Moda Fitness e Pilates/Yoga) entram mesmo sem marca da lista ('semMarca': feminino, ou não masculino onde quase tudo é feminino), e com 5% a 15% de desconto entram como reserva: só saem quando não há outra oferta. ATUALIZAÇÃO (04/11/2026, noite), o dono: 'tire esses shorts, calça e legging sem marca do Mercado Livre, muito feio'. O semMarca saiu: dessas categorias só entram as de marca da lista."
   },
   {
     "grupo": "Fitness",
     "nome": "ML mais vendidos: Tops de Fitness",
     "maisVendidos": "MLB4570",
-    "semMarca": "naoMasculino",
     "reservaDescontoMinimo": 5,
     "ativo": true
   },
@@ -246,7 +244,6 @@
     "grupo": "Fitness",
     "nome": "ML mais vendidos: Conjuntos fitness",
     "maisVendidos": "MLB123112",
-    "semMarca": "feminino",
     "reservaDescontoMinimo": 5,
     "ativo": true
   },
@@ -254,7 +251,6 @@
     "grupo": "Fitness",
     "nome": "ML mais vendidos: Shorts fitness",
     "maisVendidos": "MLB18395",
-    "semMarca": "feminino",
     "reservaDescontoMinimo": 5,
     "ativo": true
   },
@@ -262,7 +258,6 @@
     "grupo": "Fitness",
     "nome": "ML mais vendidos: Tapetes de yoga e pilates",
     "maisVendidos": "MLB198290",
-    "semMarca": "naoMasculino",
     "reservaDescontoMinimo": 5,
     "ativo": false,
     "_desligado": "04/11/2026, o dono: tem coisa demais de yoga, tire por favor."
@@ -271,7 +266,6 @@
     "grupo": "Fitness",
     "nome": "ML mais vendidos: Bolas de pilates",
     "maisVendidos": "MLB278255",
-    "semMarca": "naoMasculino",
     "reservaDescontoMinimo": 5,
     "ativo": false,
     "_desligado": "04/11/2026, o dono: tem coisa demais de yoga, tire por favor."
