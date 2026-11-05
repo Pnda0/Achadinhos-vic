@@ -248,7 +248,8 @@ export class Store {
     if (cupom) prontos = prontos.filter((p) => !p.prioridade).length ? prontos.filter((p) => !p.prioridade) : prontos;
     // Nota da oferta (src/ranking.js, 05/11/2026): a de maior nota sai; empate (até 2 pontos na soma) é sorteado.
     if (nota) {
-      const comNota = prontos.map((p) => [p, nota(p, { ultimo }).bruta]).sort((a, b) => b[1] - a[1]);
+      const recentes = enviados.slice(-3);
+      const comNota = prontos.map((p) => [p, nota(p, { ultimo, recentes }).bruta]).sort((a, b) => b[1] - a[1]);
       const empatadas = comNota.filter(([, n]) => n >= comNota[0][1] - 2);
       return empatadas[Math.floor(Math.random() * empatadas.length)][0];
     }

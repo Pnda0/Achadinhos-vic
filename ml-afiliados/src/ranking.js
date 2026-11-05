@@ -14,6 +14,8 @@
  *   Menor preço 30 d .     5
  *   Novidade ......... -5 a 5  chegou há menos de 1 h = 5, há menos de 3 h = 2, mais de 1 dia = -5
  *   Mesma loja do último post: -8 (para revezar ML, Amazon, Shopee sem travar a melhor oferta)
+ *   Mesma marca de um dos 3 últimos posts: -15 (05/11/2026, o dono: "só tem coisa da Nike aí" — a fila tinha 40 Nike do
+ *   catálogo da Awin com notas parecidas; sem isso saíam marcas iguais seguidas)
  *
  * A soma vai de uns -50 a 135 pontos; a nota mostrada é ela em 0 a 100. A fila sai pela soma (`bruta`).
  */
@@ -36,7 +38,7 @@ function secundarias(cfg = loadMarcas()) {
 export function notaDaOferta({ prioridade = () => 0, genero = generoDoProduto, cfg } = {}) {
   const lista = cfg ? listaDeMarcas(cfg) : listaDeMarcas();
   const extras = secundarias(cfg);
-  return (p, { ultimo, agora = Date.now() } = {}) => {
+  return (p, { ultimo, recentes = ultimo ? [ultimo] : [], agora = Date.now() } = {}) => {
     const partes = {};
     const marca = lista.length ? marcaDoProduto(p, lista) : null;
     partes.marca = marca ? (extras.has(marca.toLowerCase()) ? 15 : 35) : 0;
@@ -51,6 +53,7 @@ export function notaDaOferta({ prioridade = () => 0, genero = generoDoProduto, c
     const idadeH = p.coletadoEm ? (agora - Date.parse(p.coletadoEm)) / 3_600_000 : 2;
     partes.novidade = idadeH < 1 ? 5 : idadeH < 3 ? 2 : idadeH > 24 ? -5 : 0;
     partes.loja = ultimo && (ultimo.loja || 'ml') === (p.loja || 'ml') ? -8 : 0;
+    partes.repetida = marca && recentes.some((r) => marcaDoProduto(r, lista) === marca) ? -15 : 0;
     const bruta = Object.values(partes).reduce((s, v) => s + v, 0);
     return { nota: Math.round(Math.max(0, Math.min(MAXIMO, bruta)) * 100 / MAXIMO), bruta, partes, marca };
   };

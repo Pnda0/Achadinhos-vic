@@ -7,7 +7,7 @@ import { loadGrupos } from '../src/config.js';
 import { prioridadeDoGrupo } from '../src/pipeline.js';
 import { notaDaOferta } from '../src/ranking.js';
 import { Store } from '../src/store.js';
-import { itensDaFila } from '../src/comandos.js';
+import { itensDaFila, textoDaFila } from '../src/comandos.js';
 
 // 05/11/2026, o dono: "quero que você ranqueie as promoções... as marcas que te falei são prioridade, desconto é bom também".
 const fitness = loadGrupos().find((g) => g.nome === 'Fitness');
@@ -43,4 +43,19 @@ test('fila: sai a de maior nota (a copiada mais nova não fura mais a fila) e o 
   assert.equal(store.proximo('Fitness', { nota }).id, 'B');
   const linhas = itensDaFila(store.list(), 40, (p) => nota(p).nota);
   assert.match(linhas[0], /^\d+ · Whey Protein Concentrado/);
+});
+
+// 05/11/2026, o dono: "só tem coisa da Nike aí, e o que chega no grupo não é isso que chega".
+test('nota: marca de um dos 3 últimos posts perde 15; /fila separa o que sai agora do que está preso (Awin no limite)', () => {
+  const p = o('Tênis Nike Revolution 8 Feminino');
+  assert.equal(nota(p, { recentes: [{ nome: 'Top Nike Swoosh Feminino' }] }).bruta, nota(p).bruta - 15);
+  const store = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-rank2-')), 'db.json'));
+  const add = (p) => (store.data.produtos[`Fitness:${p.id}`] = { ...p, status: 'PRONTO', linkAfiliado: 'https://x' });
+  for (let i = 0; i < 4; i++) add(o(`Tênis Nike Downshifter ${i} Feminino`, { id: `AWF-${i}`, loja: 'awin' }));
+  add(o('Whey Protein Concentrado 900g Growth Supplements', { id: 'MLB9', descontoPct: 10 }));
+  const texto = textoDaFila({ store, grupo: { nome: 'Fitness', ativo: true }, agoraPode: { awin: false }, nota });
+  const [, proximos, esperando] = texto.split(/\*Próximos a sair\*|\*Esperando a vez\*/);
+  assert.match(proximos, /Whey Protein/);
+  assert.doesNotMatch(proximos, /Nike/);
+  assert.match(esperando, /\(4\): 4 — catálogo da Awin no limite do dia/);
 });

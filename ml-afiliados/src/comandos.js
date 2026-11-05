@@ -108,6 +108,19 @@ export function textoDaFila({ store, grupo, eventos = [], agora = Date.now(), tz
   else if (tudo.length) conclusao = `👉 *Tem ${fila.length} na fila, mas nada sai agora*: ${tudo.join('; ')}.`;
   else if (!livres) conclusao = `👉 *Tem ${fila.length} na fila, mas todas estão esperando*: ${porque.join('; ')}.`;
   else conclusao = `👉 *Vai postar*: ${livres} de ${fila.length} podem sair no próximo horário de envio${porque.length ? ` (as outras ${fila.length - livres} esperam: ${porque.join('; ')})` : ''}.`;
+  const recentes = enviados.slice(0, 3);
+  const comNota = nota && ((p) => nota(p, { ultimo, recentes, agora }));
+  const listaDaFila = () => {
+    const podem = fila.filter((p) => !presos(p).length);
+    const esperam = fila.filter((p) => presos(p).length);
+    const linhas = ['', comNota ? '*Próximos a sair* (nota de 0 a 100, na ordem):' : '*Itens na fila:*', ...(podem.length ? itensDaFila(podem, 25, comNota) : ['(nenhum pode sair agora)'])];
+    if (esperam.length) {
+      const motivos = {};
+      for (const p of esperam) for (const m of presos(p)) motivos[m] = (motivos[m] || 0) + 1;
+      linhas.push('', `*Esperando a vez* (${esperam.length}): ${Object.entries(motivos).map(([m, n]) => `${n} — ${m}`).join('; ')}`, ...itensDaFila(esperam, 5, comNota));
+    }
+    return linhas;
+  };
   const desdeTxt = new Date(desde).toLocaleTimeString('pt-BR', { timeZone: tz, hour: '2-digit', minute: '2-digit' });
   return [
     `*Fila do ${nome}* 🔎`,
@@ -119,7 +132,9 @@ export function textoDaFila({ store, grupo, eventos = [], agora = Date.now(), tz
     conclusao,
     // O dono, 05/11/2026: "quando eu der um /fila, me exibe os itens, só o nome mesmo pra eu dar uma olhada".
     // Com a nota da oferta (src/ranking.js), na ordem em que vão sair: "78 · Whey Growth...".
-    ...(fila.length ? ['', nota ? '*Itens na fila* (nota de 0 a 100, na ordem em que saem):' : '*Itens na fila:*', ...itensDaFila(fila, 40, nota && ((p) => nota(p, { ultimo, agora })))] : []),
+    // 05/11/2026, o dono: "o que chega no grupo não é isso" — a lista mostrava no topo 40 Nike do catálogo da Awin, que
+    // estavam presas no limite do dia. Agora a lista é só do que pode sair; as presas vêm depois, contadas por motivo.
+    ...(fila.length ? listaDaFila() : []),
   ].join('\n');
 }
 
