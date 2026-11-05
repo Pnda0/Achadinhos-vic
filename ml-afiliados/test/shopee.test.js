@@ -156,3 +156,14 @@ test('fila: o mesmo produto escrito de outro jeito não sai de novo (nem fica du
   assert.match(s.jaPublicado(p('3', 'Perfume Arabe Al Wataniah Feminino Sabah Al Ward'), 5), /mesmo produto/);
   assert.equal(s.jaPublicado(p('4', 'Perfume Al Wataniah Durrat Al Aroos'), 5), null);
 });
+
+// 05/11/2026, o dono: "Natura Ilia 50 ml Deo Parfum — esse produto apareceu 2x". O outro anúncio dizia "50ml" e o bot
+// achava que eram tamanhos diferentes.
+test('parecido: "50 ml" e "50ml" são o mesmo tamanho; tamanhos diferentes continuam diferentes', async () => {
+  const { parecido } = await import('../src/store.js');
+  for (const b of ['Ilía Deo Parfum Feminino 50ml Natura', 'Natura Ilía Deo Parfum 50ml', 'Deo Parfum Ilía Natura Feminino - 50ml']) {
+    assert.equal(parecido('Natura Ilia 50 ml Deo Parfum', b), true, b);
+  }
+  assert.equal(parecido('Perfume Sabah Al Ward 100ml', 'Perfume Sabah Al Ward 30 ml'), false);
+  assert.equal(parecido('Natura Ilia 50 ml Deo Parfum', 'Natura Ilia 100 ml Deo Parfum'), false);
+});

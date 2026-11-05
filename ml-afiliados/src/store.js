@@ -34,11 +34,15 @@ const PALAVRAS_GENERICAS = new Set(
   'perfume perfumes arabe feminino feminina masculino masculina unissex unisex eau de du da do das dos e ou o a em com para por parfum toilette cologne edp edt colonia deo spray original originais importado importada envio agora imediato pronta entrega lancamento novo nova kit fragrancia fixacao alta longa duracao promocao oferta frete gratis'.split(' ')
 );
 const TAMANHO = /^\d+([.,]\d+)?(ml|l|g|kg|mg|un|und|unid|pcs|caps|capsulas)?$/;
+// "50 ml" e "50ml" são o mesmo tamanho (05/11/2026: "Natura Ilia 50 ml Deo Parfum" saiu 2x no Perfumes porque o outro
+// anúncio dizia "50ml" e o bot achou que eram tamanhos diferentes). Número sem unidade vale como o mesmo número com unidade.
+const UNIDADE_SEPARADA = /\b(\d+(?:[.,]\d+)?) (ml|l|g|kg|mg|un|und|unid|pcs|caps|capsulas)\b/g;
+const numeroDoTamanho = (t) => t.match(/^\d+(?:[.,]\d+)?/)[0].replace(',', '.');
 function palavrasDoProduto(nome) {
   const palavras = new Set();
   const tamanhos = new Set();
-  for (const t of normalizar(nome).split(' ')) {
-    if (TAMANHO.test(t)) tamanhos.add(t);
+  for (const t of normalizar(nome).replace(UNIDADE_SEPARADA, '$1$2').split(' ')) {
+    if (TAMANHO.test(t)) tamanhos.add(numeroDoTamanho(t));
     else if (t && !PALAVRAS_GENERICAS.has(t)) palavras.add(t);
   }
   return { palavras, tamanhos };
