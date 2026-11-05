@@ -72,3 +72,12 @@ test('nota: marca de um dos 3 últimos posts perde 15; /fila separa o que sai ag
   assert.doesNotMatch(proximos, /Nike/);
   assert.match(esperando, /\(4\): 4 — catálogo da Awin no limite do dia/);
 });
+
+// 05/11/2026, o dono: "queria essa no grupo fit também" (Dr. Peanut da Amazon). O que ele manda no privado sai primeiro.
+test('nota: oferta mandada pelo dono no privado passa na frente de tudo', () => {
+  const store = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-rank3-')), 'db.json'));
+  const add = (p) => (store.data.produtos[`Fitness:${p.id}`] = { ...p, status: 'PRONTO', linkAfiliado: 'https://x' });
+  add(o('Tênis Asics Gel Nimbus Feminino', { id: 'A', descontoPct: 50, prioridade: undefined }));
+  add(o('Dr. Peanut Pasta de Amendoim 600g Avelã', { id: 'AMZ-B0BVZY7BM6', loja: 'amazon', descontoPct: 38, manual: true, vendidos: null }));
+  assert.equal(store.proximo('Fitness', { nota }).id, 'AMZ-B0BVZY7BM6');
+});

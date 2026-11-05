@@ -16,6 +16,7 @@
  *   Menor preço 30 d .     5
  *   Novidade ......... -5 a 5  chegou há menos de 1 h = 5, há menos de 3 h = 2, mais de 1 dia = -5
  *   Mesma loja do último post: -8 (para revezar ML, Amazon, Shopee sem travar a melhor oferta)
+ *   Mandada pelo dono no privado do bot: +100 (ele escolheu: sai na frente de tudo; 05/11/2026)
  *   Mesma marca de um dos 3 últimos posts: -15 (05/11/2026, o dono: "só tem coisa da Nike aí" — a fila tinha 40 Nike do
  *   catálogo da Awin com notas parecidas; sem isso saíam marcas iguais seguidas)
  *
@@ -75,6 +76,7 @@ export function notaDaOferta({ prioridade = () => 0, genero = generoDoProduto, c
     partes.novidade = idadeH < 1 ? 5 : idadeH < 3 ? 2 : idadeH > 24 ? -5 : 0;
     partes.loja = ultimo && (ultimo.loja || 'ml') === (p.loja || 'ml') ? -8 : 0;
     partes.repetida = marca && recentes.some((r) => marcaDoProduto(r, lista) === marca) ? -15 : 0;
+    if (p.manual) partes.doDono = 100;
     const bruta = Object.values(partes).reduce((s, v) => s + v, 0);
     return { nota: Math.round(Math.max(0, Math.min(MAXIMO, bruta)) * 100 / MAXIMO), bruta, partes, marca };
   };
