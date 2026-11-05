@@ -449,3 +449,25 @@ test('caixa de entrada com o grupo padrão pausado: a oferta vai para o grupo cu
   const b = preparar('cx2', 'Air Fryer Mondial 4L');
   assert.deepEqual((await b.espelho.tick()).ignoradas, { 'fora do nicho dos grupos': 1 });
 });
+
+// 05/11/2026: o dono mandou só o link da Amazon (sem texto) e recebeu "fora do nicho" — sem o nome não dá para saber o que é.
+test('caixa de entrada: link da Amazon sozinho pede o nome e o preço', async () => {
+  const agora = { t: 1_800_000_000_000 };
+  const respostas = [];
+  const store = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-amz-')), 'db.json'));
+  const espelho = new Espelho({
+    sender: {
+      lerMensagens: async () => [{ id: 'tg-555-9', jid: '555', t: seg(agora, 1), texto: 'https://www.amazon.com.br/dp/B09M2B14V7?tag=sentinelapr03-20', foto: null }],
+      sendText: async (jid, texto) => respostas.push(texto),
+    },
+    store,
+    affiliate: { refresh: async () => {}, createLinks: async () => new Map() },
+    fontes: [{ nome: 'Caixa de entrada', jid: '555', destino: 'Fitness', manual: true }],
+    grupos: [{ nome: 'Fitness', jid: '-1001', filtros: {} }],
+    cfg: { pausaEntreConsultasSeg: 0 },
+    agora: () => agora.t, esperar: async () => {},
+    amazonTag: 'achadin09027e-20',
+  });
+  await espelho.tick();
+  assert.match(respostas[0], /mande junto o nome do produto e o preço/);
+});

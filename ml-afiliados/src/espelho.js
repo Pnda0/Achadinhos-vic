@@ -460,6 +460,10 @@ export class Espelho {
   async processarAmazon(m, link, fonte, destino) {
     if (!this.amazonTag) return 'Amazon sem etiqueta (AMAZON_PARTNER_TAG)';
     const d = dadosDoTexto(m.texto);
+    // Só o link, sem texto (05/11/2026: o dono mandou um link solto e recebeu "fora do nicho"): o bot não abre a página
+    // da Amazon (proibido pelo Associados), então sem o nome não tem como saber o que é.
+    const jaVisto = (a) => a && Object.keys(this.store.data.produtos || {}).some((k) => k.endsWith(`:AMZ-${a}`));
+    if (!d.nome && fonte.manual && !jaVisto(asinDeUrl(link))) return 'só veio o link: a Amazon não deixa o bot abrir a página, mande junto o nome do produto e o preço (ou encaminhe o post inteiro)';
     const nome = d.nome || 'Oferta na Amazon';
     const destinos = this.alvosDe(nome, fonte, destino);
     if (!destinos.alvos.length) return destinos.motivos[0] || 'sem destino';
