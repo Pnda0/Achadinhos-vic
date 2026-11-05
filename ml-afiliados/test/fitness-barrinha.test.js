@@ -31,7 +31,7 @@ test('Fitness: barrinha da Black Skull fica de fora; o resto da Black Skull cont
 // 05/11/2026, o dono: "o Sentinela Promo só manda coisa boa... o que importa lá são os whey, as barrinhas" e
 // "Supercoffee 3.0 Caffeine Army – Baunilha 380g, tem?". Marcas de suplemento que faltavam.
 test('Fitness: suplementos das marcas que faltavam (Dark Lab, Caffeine Army...) entram; FTW de placa de vídeo não', () => {
-  for (const nome of ['Supercoffee 3.0 Caffeine Army – Baunilha 380g', 'Creatina 100% Pura 1kg Dark Lab', 'Whey Protein Gold Standard Optimum Nutrition 907g', 'Creatina Monohidratada FTW 300g', 'Whey Protein Concentrado Dymatize Elite 900g', 'Pré-Treino Soldiers Nutrition 300g']) {
+  for (const nome of ['Supercoffee 3.0 Caffeine Army – Baunilha 380g', 'Creatina 100% Pura 1kg Dark Lab', 'Whey Protein Gold Standard Optimum Nutrition 907g', 'Creatina Monohidratada FTW 300g', 'Whey Protein Isolado MuscleTech 900g', 'Pré-Treino Soldiers Nutrition 300g']) {
     assert.equal(motivoPeloNome({ nome }, f), null, nome);
   }
   assert.ok(motivoPeloNome({ nome: 'Placa de Vídeo EVGA GeForce RTX 3080 FTW3 Ultra' }, f));

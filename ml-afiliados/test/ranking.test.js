@@ -15,12 +15,25 @@ const nota = notaDaOferta({ prioridade: prioridadeDoGrupo(fitness) });
 const agora = Date.now();
 const o = (nome, extra = {}) => ({ id: nome, grupo: 'Fitness', nome, loja: 'ml', descontoPct: 30, nota: 4.7, vendidos: '+1000 vendidos', coletadoEm: new Date(agora - 2 * 3_600_000).toISOString(), ...extra });
 
-test('nota da oferta: marca que o dono pediu vence marca posta pelo Claude, mesmo com desconto menor', () => {
+// 05/11/2026, o dono mandou as marcas do Fitness em ordem: "a prioridade podia ser nessas marcas grandes... se não houver
+// vai descendo pela marca menos conhecida... coloque o desconto na avaliação".
+test('nota da oferta: marca do topo da lista do dono vence marca do fim, mesmo com desconto um pouco menor', () => {
   const growth = nota(o('Creatina Monohidratada 300g Growth Supplements', { descontoPct: 25 })).nota;
-  const newMillen = nota(o('Creatina 100% Monohidratada 300g - New Millen', { descontoPct: 50 })).nota;
+  const newMillen = nota(o('Creatina 100% Monohidratada 300g - New Millen', { descontoPct: 35 })).nota;
   assert.ok(growth > newMillen, `${growth} > ${newMillen}`);
-  assert.equal(nota(o('Creatina 300g - New Millen')).partes.marca, 15);
-  assert.equal(nota(o('Whey Protein Max Titanium 900g')).partes.marca, 35);
+  assert.equal(nota(o('Whey Protein Growth Supplements 900g')).partes.marca, 40);
+  assert.equal(nota(o('Smartwatch Fitbit Charge 6')).partes.marca, 15);
+  const max = nota(o('Whey Protein Max Titanium 900g')).partes.marca;
+  const lupo = nota(o('Legging Lupo Feminina')).partes.marca;
+  const asics = nota(o('Tênis Asics Feminino')).partes.marca;
+  assert.ok(max > lupo && lupo > asics, `${max} > ${lupo} > ${asics}`);
+  // Desconto continua contando: New Millen com desconto bem maior passa a Growth com pouco desconto.
+  assert.ok(nota(o('Creatina 300g - New Millen', { descontoPct: 60 })).nota > nota(o('Creatina Growth Supplements 300g', { descontoPct: 10 })).nota);
+});
+
+test('Track&Field, Alto Giro, Adaptogen, Universal Nutrition e Dymatize saíram da lista (05/11/2026)', async () => {
+  const { marcaDoProduto } = await import('../src/marcas.js');
+  for (const nome of ['Legging Track & Field Feminina', 'Top Alto Giro Feminino', 'Whey Dymatize Elite 900g', 'Whey Universal Nutrition 900g', 'Adaptogen Whey 900g']) assert.equal(marcaDoProduto({ nome }), null, nome);
 });
 
 test('nota da oferta: entre marcas do dono, desconto maior e feminino na frente; mesma loja do último perde pontos', () => {

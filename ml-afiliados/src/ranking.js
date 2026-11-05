@@ -4,7 +4,9 @@
  * preferências (feminino, marca, tipo) e, entre as empatadas, as copiadas mais novas passavam na frente de tudo; agora
  * cada oferta ganha uma nota só, com critérios claros, e o /fila mostra a fila nessa ordem.
  *
- *   Marca ............ até 35  marca que o dono pediu = 35; marca que o Claude pôs na lista por conta = 15; sem marca = 0
+ *   Marca ............ até 40  com "ordem" (Fitness, a lista do dono em ordem de prioridade): a 1ª = 40, a última = 15,
+ *                      em degraus iguais; sem ordem: marca que o dono pediu = 35, posta pelo Claude por conta = 15;
+ *                      sem marca = 0 (config/marcas.json > "nivel")
  *   Desconto ......... até 30  0,5 ponto por % de desconto (até 60%); mais que isso costuma ser "de" inflado
  *   Público .......... feminino 25, neutro 0, masculino -40 (o público é de meninas, 15/10/2026: masculino só quando
  *                      não há outra; o limite de 1 masculino a cada N continua à parte)
@@ -24,11 +26,29 @@ import { generoDoProduto } from './genero.js';
 import { listaDeMarcas, marcaDoProduto } from './marcas.js';
 import { lerVendas } from './ml/vendas.js';
 
-const MAXIMO = 35 + 30 + 25 + 20 + 10 + 5 + 5 + 5; // a melhor oferta possível
+const MAXIMO = 40 + 30 + 25 + 20 + 10 + 5 + 5 + 5; // a melhor oferta possível
 
 /** Marcas que o Claude acrescentou por conta própria (config/marcas.json > "nivel" > "secundarias"). */
 function secundarias(cfg = loadMarcas()) {
   return new Set((cfg?.nivel?.secundarias || []).map((m) => String(m).toLowerCase()));
+}
+
+/** Posição da marca na "ordem" do dono (config/marcas.json > nivel.ordem): { i, n, grande } ou null. */
+export function posicaoDaMarca(marca, cfg = loadMarcas()) {
+  if (!marca) return null;
+  for (const [nicho, lista] of Object.entries(cfg?.nivel?.ordem || {})) {
+    const i = lista.findIndex((m) => String(m).toLowerCase() === String(marca).toLowerCase());
+    if (i >= 0) return { i, n: lista.length, grande: i < (Number(cfg.nivel.grandes?.[nicho]) || 0) };
+  }
+  return null;
+}
+
+/** Pontos da marca: pela ordem do dono (40 a 15) ou, sem ordem, 35 / 15 (secundária) / 0. */
+export function pontosDaMarca(marca, cfg = loadMarcas(), extras = secundarias(cfg)) {
+  if (!marca) return 0;
+  const pos = posicaoDaMarca(marca, cfg);
+  if (pos) return Math.round((40 - (25 * pos.i) / Math.max(1, pos.n - 1)) * 10) / 10;
+  return extras.has(marca.toLowerCase()) ? 15 : 35;
 }
 
 /**
@@ -36,12 +56,13 @@ function secundarias(cfg = loadMarcas()) {
  * for), `genero(p)` = 'f' | 'm' | null. Devolve (p, { ultimo, agora }) => { nota, partes }.
  */
 export function notaDaOferta({ prioridade = () => 0, genero = generoDoProduto, cfg } = {}) {
-  const lista = cfg ? listaDeMarcas(cfg) : listaDeMarcas();
-  const extras = secundarias(cfg);
+  const conf = cfg || loadMarcas();
+  const lista = listaDeMarcas(conf);
+  const extras = secundarias(conf);
   return (p, { ultimo, recentes = ultimo ? [ultimo] : [], agora = Date.now() } = {}) => {
     const partes = {};
     const marca = lista.length ? marcaDoProduto(p, lista) : null;
-    partes.marca = marca ? (extras.has(marca.toLowerCase()) ? 15 : 35) : 0;
+    partes.marca = pontosDaMarca(marca, conf, extras);
     partes.desconto = Math.min(60, Math.max(0, Number(p.descontoPct) || 0)) * 0.5;
     partes.publico = { f: 25, m: -40 }[genero(p)] ?? 0;
     partes.tipo = Math.min(20, 10 * (Number(prioridade(p)) || 0));

@@ -4,7 +4,7 @@
  *   gerarLinks()   -> "GERA LINKS DE AFILIADOS" (lotes de 20 com pausa entre eles)
  *   enviarProximo()-> "ENVIAR PRODUTOS PARA O GRUPO" (título + legenda + imagem + digitando...)
  */
-import { loadCategorias, loadGrupos, loadShopee, settings } from './config.js';
+import { loadCategorias, loadGrupos, loadMarcas, loadShopee, settings } from './config.js';
 import { ErroBloqueioML, scrapeCategoria } from './ml/scraper.js';
 import { buscarMaisVendidosML, buscarPorMarcaML } from './ml/api.js';
 
@@ -24,6 +24,9 @@ const maisVendidosPadrao = process.env.NODE_TEST_CONTEXT ? async () => [] : busc
 const buscaMarcaPadrao = process.env.NODE_TEST_CONTEXT ? async () => [] : buscarPorMarcaML;
 /** Buscas por marca no ML (categorias com "buscaML") por coleta, revezando a lista: a API recusa quem pergunta demais. */
 export const BUSCAS_MARCA_POR_COLETA = 8;
+/** Quantas dessas vão para as marcas grandes, e quantas ofertas novas delas bastam para não descer às menores. */
+export const BUSCAS_GRANDES_POR_COLETA = 5;
+export const NOVOS_PARA_NAO_DESCER = 4;
 import { buscarOfertasShopee } from './shopee-busca.js';
 import { HistoricoDePrecos } from './precos.js';
 import fs from 'node:fs';
@@ -32,7 +35,7 @@ import { VENDAS_MINIMAS, motivoVendas } from './ml/vendas.js';
 import { evento, origemDe } from './eventos.js';
 import { preferenciaFeminina } from './genero.js';
 import { marcaDoProduto, motivoPrecoDaMarca } from './marcas.js';
-import { notaDaOferta } from './ranking.js';
+import { notaDaOferta, posicaoDaMarca } from './ranking.js';
 import { BrowserSession, sessaoNavegador } from './browser.js';
 import { montarLegenda, tituloCupom } from './caption.js';
 import { comLinkRastreado } from './rastreio.js';
@@ -147,15 +150,32 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
   // "maisVendidos" em config/categorias.json. Não depende da pausa das páginas de ofertas: é outro caminho, o permitido.
   let mlApiErro = null;
   // + as buscas por marca ("buscaML"), BUSCAS_MARCA_POR_COLETA por vez, revezando (store.data.vezBuscaML).
+  // 05/11/2026, o dono: "primeiro vê se tem deles [as marcas grandes], procure eles, se não houver vai descendo pela marca
+  // menos conhecida". As buscas das marcas grandes (config/marcas.json > nivel.grandes) vêm primeiro em toda coleta,
+  // revezando; as das menores, na ordem do dono, só entram nas vagas que sobram e só se as grandes trouxerem pouco de novo.
   const deMarca = ativas.filter((c) => c.buscaML);
-  const inicioMarca = (store.data.vezBuscaML || 0) % Math.max(1, deMarca.length);
-  const rodadaMarca = Array.from({ length: Math.min(deMarca.length, BUSCAS_MARCA_POR_COLETA) }, (_, i) => deMarca[(inicioMarca + i) % deMarca.length]);
-  if (rodadaMarca.length && !soCupons) store.data.vezBuscaML = inicioMarca + rodadaMarca.length;
-  const catsApi = soCupons ? [] : [...ativas.filter((c) => c.maisVendidos), ...rodadaMarca];
+  const cfgMarcas = loadMarcas();
+  const posicao = (c) => posicaoDaMarca(marcaDoProduto({ nome: c.buscaML }), cfgMarcas);
+  const grandes = deMarca.filter((c) => posicao(c)?.grande);
+  const menores = deMarca.filter((c) => !posicao(c)?.grande).map((c, k) => [c, posicao(c)?.i ?? 999, k]).sort((a, b) => a[1] - b[1] || a[2] - b[2]).map(([c]) => c);
+  const girar = (lista, vez, n) => Array.from({ length: Math.min(lista.length, n) }, (_, i) => lista[((vez || 0) + i) % lista.length]);
+  const rodadaGrandes = girar(grandes, store.data.vezBuscaML, Math.min(BUSCAS_GRANDES_POR_COLETA, BUSCAS_MARCA_POR_COLETA));
+  const rodadaMenores = girar(menores, store.data.vezBuscaMLMenores, BUSCAS_MARCA_POR_COLETA - rodadaGrandes.length);
+  if (rodadaGrandes.length && !soCupons) store.data.vezBuscaML = ((store.data.vezBuscaML || 0) + rodadaGrandes.length) % grandes.length;
+  const ehMenor = new Set(rodadaMenores);
+  let novosDasGrandes = 0;
+  let menoresFeitas = 0;
+  const catsApi = soCupons ? [] : [...ativas.filter((c) => c.maisVendidos), ...rodadaGrandes, ...rodadaMenores];
   if (catsApi.length) log(`🔎 Mercado Livre (API oficial): mais vendidos de ${catsApi.length} categoria(s)...`);
   for (const cat of catsApi) {
     const grupo = grupos[cat.grupo];
     if (!grupo) continue;
+    // Marcas menores: só se as grandes trouxeram pouco de novo nesta coleta.
+    if (ehMenor.has(cat)) {
+      if (novosDasGrandes >= NOVOS_PARA_NAO_DESCER) continue;
+      menoresFeitas++;
+    }
+    const novosAntes = novos;
     const c = (porCategoria[cat.nome] ??= { encontrados: 0, aceitos: 0 });
     let lista;
     try {
@@ -189,8 +209,11 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
         evento('na_fila', p, p.reserva ? `reserva (desconto abaixo de ${minimo}%)` : null);
       }
     }
+    if (cat.buscaML && !ehMenor.has(cat)) novosDasGrandes += novos - novosAntes;
     store.save();
   }
+  if (menoresFeitas && menores.length) store.data.vezBuscaMLMenores = ((store.data.vezBuscaMLMenores || 0) + menoresFeitas) % menores.length;
+  if (rodadaMenores.length && !menoresFeitas) log(`  🔝 Marcas grandes trouxeram ${novosDasGrandes} ofertas novas: as menores ficam para a próxima.`);
 
   const paginas = new Map(); // a mesma página de ofertas serve a mais de um grupo: baixa uma vez só
   for (const cat of categorias) {

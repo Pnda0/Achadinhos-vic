@@ -357,20 +357,6 @@
   },
   {
     "grupo": "Fitness",
-    "nome": "ML marca: legging alto giro",
-    "buscaML": "legging alto giro",
-    "reservaDescontoMinimo": 5,
-    "ativo": true
-  },
-  {
-    "grupo": "Fitness",
-    "nome": "ML marca: top alto giro",
-    "buscaML": "top alto giro",
-    "reservaDescontoMinimo": 5,
-    "ativo": true
-  },
-  {
-    "grupo": "Fitness",
     "nome": "ML marca: legging lupo",
     "buscaML": "legging lupo",
     "reservaDescontoMinimo": 5,
@@ -380,20 +366,6 @@
     "grupo": "Fitness",
     "nome": "ML marca: top lupo fitness",
     "buscaML": "top lupo fitness",
-    "reservaDescontoMinimo": 5,
-    "ativo": true
-  },
-  {
-    "grupo": "Fitness",
-    "nome": "ML marca: legging track field",
-    "buscaML": "legging track field",
-    "reservaDescontoMinimo": 5,
-    "ativo": true
-  },
-  {
-    "grupo": "Fitness",
-    "nome": "ML marca: top track field",
-    "buscaML": "top track field",
     "reservaDescontoMinimo": 5,
     "ativo": true
   },
@@ -501,6 +473,97 @@
     "grupo": "Fitness",
     "nome": "ML marca: under armour feminino",
     "buscaML": "under armour feminino",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: yopro",
+    "buscaML": "yopro",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: creatina dark lab",
+    "buscaML": "creatina dark lab",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: pre treino caffeine army",
+    "buscaML": "pre treino caffeine army",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: whey optimum nutrition",
+    "buscaML": "whey optimum nutrition",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: whey atlhetica nutrition",
+    "buscaML": "whey atlhetica nutrition",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: whey soldiers nutrition",
+    "buscaML": "whey soldiers nutrition",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: creatina new millen",
+    "buscaML": "creatina new millen",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: creatina muscletech",
+    "buscaML": "creatina muscletech",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: whey sanavita",
+    "buscaML": "whey sanavita",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: colageno puravida",
+    "buscaML": "colageno puravida",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: whey nutrify",
+    "buscaML": "whey nutrify",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: pasta de amendoim dr peanut",
+    "buscaML": "pasta de amendoim dr peanut",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: whey nutrata",
+    "buscaML": "whey nutrata",
     "reservaDescontoMinimo": 5,
     "ativo": true
   }

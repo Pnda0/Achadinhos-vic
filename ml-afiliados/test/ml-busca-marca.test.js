@@ -71,7 +71,8 @@ test("carro e moto bloqueados nos grupos (vale também para o que já estava na 
   for (const g of loadGrupos().filter((g) => g.nome !== "Geral")) {
     // O adesivo passava no nicho pela marca (Track & Field): agora cai na palavra bloqueada.
     const adesivo = motivoPeloNome({ nome: "Kit Faixa Adesivo Parati Track & Field Modelo Prata" }, g.filtros);
-    if (g.nome === "Fitness") assert.equal(adesivo, "palavra bloqueada");
+    // (Track&Field saiu da lista em 05/11/2026, a pedido do dono: o adesivo nem passa mais no nicho.)
+    if (g.nome === "Fitness") assert.ok(["palavra bloqueada", "fora do nicho"].includes(adesivo), adesivo);
     else assert.ok(adesivo, g.nome);
     for (const nome of ["Aromatizante para Carro Lavanda Natura", "Capacete Moto Feminino Rosa Nike", "Kit Amortecedor Dianteiro Gol Lupo"]) {
       assert.ok(motivoPeloNome({ nome }, g.filtros), g.nome + ": " + nome);
@@ -93,4 +94,23 @@ test("revisão da fila: xadrez Vichy, Natura Clean e time de futebol ficam de fo
   assert.equal(motivoPeloNome({ nome: "Sabonete em barra Tododia Natura caixa com 5 un de 90g cada" }, g.Beleza), null, "Natura de verdade");
   assert.equal(motivoPeloNome({ nome: "Gel de Limpeza Facial La Roche-Posay Effaclar 300g" }, g.Beleza), null, "gel de limpeza facial continua");
   assert.equal(motivoPeloNome({ nome: "Top Nike One Feminino" }, g.Fitness), null);
+});
+
+// 05/11/2026, o dono: "primeiro vê se tem deles [as marcas grandes], procure eles, se não houver vai descendo".
+test('busca por marca no ML: as grandes primeiro; as menores só quando as grandes trazem pouco, na ordem do dono', async () => {
+  const cats = ['tenis asics feminino', 'whey protein growth supplements', 'creatina new millen', 'max titanium whey', 'yopro', 'integralmedica whey'].map((b) => ({ grupo: 'Fitness', nome: `ML marca: ${b}`, buscaML: b, ativo: true }));
+  const grupos = [{ nome: 'Fitness', ativo: true, jid: 'x', filtros: {} }];
+  const rodar = async (achaNasGrandes) => {
+    const store = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-grandes-')), 'db.json'));
+    const feitas = [];
+    const buscaMarcaML = async (cat) => {
+      feitas.push(cat.buscaML);
+      if (!achaNasGrandes || /asics|millen|yopro/.test(cat.buscaML)) return [];
+      return Array.from({ length: 2 }, (_, i) => ({ id: `MLB${cat.buscaML.length}${i}`, grupo: 'Fitness', nome: `Whey ${cat.buscaML} ${i}`, url: `https://x/${cat.buscaML}${i}`, precoAtual: 100, descontoPct: 30, vendidos: '+1000 vendidos', nota: 4.8, imagem: 'i', loja: 'ml' }));
+    };
+    await coletar(store, { categoriasML: cats, grupos, buscaMarcaML, raspar: async () => [], esperar: async () => {}, mlMinIntervaloH: 999 });
+    return feitas;
+  };
+  assert.deepEqual(await rodar(true), ['whey protein growth supplements', 'max titanium whey', 'integralmedica whey']);
+  assert.deepEqual(await rodar(false), ['whey protein growth supplements', 'max titanium whey', 'integralmedica whey', 'yopro', 'tenis asics feminino', 'creatina new millen']);
 });
