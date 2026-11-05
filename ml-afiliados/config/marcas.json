@@ -433,6 +433,77 @@
         "under armour",
         "under armor"
       ]
-    }
+    },
+    {
+      "marca": "Dark Lab",
+      "termos": [
+        "dark lab",
+        "darklab"
+      ]
+    },
+    {
+      "marca": "Caffeine Army",
+      "termos": [
+        "caffeine army",
+        "supercoffee",
+        "super coffee"
+      ]
+    },
+    {
+      "marca": "Optimum Nutrition",
+      "termos": [
+        "optimum nutrition",
+        "gold standard whey"
+      ]
+    },
+    {
+      "marca": "Atlhetica Nutrition",
+      "termos": [
+        "atlhetica",
+        "athletica nutrition"
+      ]
+    },
+    {
+      "marca": "FTW",
+      "termos": [
+        "re:(?=[\\s\\S]*\\b(whey|creatina|pr[eé].?treino|prote[ií]na|suplemento|bcaa|glutamina|hipercal[oó]rico|termog[eê]nico|cafe[ií]na|col[aá]geno)\\b)[\\s\\S]*\\bftw\\b"
+      ]
+    },
+    {
+      "marca": "Soldiers Nutrition",
+      "termos": [
+        "soldiers nutrition"
+      ]
+    },
+    "Adaptogen",
+    {
+      "marca": "New Millen",
+      "termos": [
+        "new millen"
+      ]
+    },
+    {
+      "marca": "Universal Nutrition",
+      "termos": [
+        "universal nutrition"
+      ]
+    },
+    "Dymatize",
+    {
+      "marca": "MuscleTech",
+      "termos": [
+        "muscletech",
+        "muscle tech"
+      ]
+    },
+    "Sanavita",
+    {
+      "marca": "Puravida",
+      "termos": [
+        "puravida",
+        "re:(?=[\\s\\S]*\\b(whey|creatina|pr[eé].?treino|prote[ií]na|suplemento|bcaa|glutamina|hipercal[oó]rico|termog[eê]nico|cafe[ií]na|col[aá]geno)\\b)[\\s\\S]*\\bpura vida\\b"
+      ]
+    },
+    "Nutrify"
   ]
 }

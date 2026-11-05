@@ -54,6 +54,10 @@
           }
         ],
         "_comentario": "04/11/2026, o dono: 'quero que envie também os cupons que aparecem nesse grupo'. Canal só de cupons do Mercado Livre: do post saem só os códigos e as condições, num post do bot com o link de afiliado do dono para a página de cupons do ML (convites, tutoriais e #anúncio ficam de fora). No máximo 3 por grupo por dia, sem repetir os mesmos códigos em 2 dias."
+      },
+      {
+        "canal": "sentinelapromo",
+        "_comentario": "05/11/2026, o dono: 'o Sentinela Promo só manda coisa boa... o que importa lá são os whey, as barrinhas'. O mesmo do grupo de WhatsApp, pelo canal público do Telegram."
       }
     ],
     "destinos": [

@@ -87,6 +87,9 @@ const limpar = (l) =>
     .replace(/\s+/g, ' ')
     .trim();
 
+// Chamadas de canal que vêm antes do produto e não são o nome.
+const CHAMADA = /^(caiu de pre[cç]o|alerta de pre[cç]o|pre[cç]o imperd[ií]vel|olha o que eu achei|achadinho do dia|oportunidade de ouro|aproveite|imperd[ií]vel|baixou|menor pre[cç]o|corre que|s[oó] hoje)\b/i;
+
 /** Nome, preços, desconto e cupom a partir do texto da mensagem. */
 export function dadosDoTexto(texto) {
   const linhas = String(texto || '').split('\n').map((l) => l.trim()).filter(Boolean);
@@ -126,7 +129,11 @@ export function dadosDoTexto(texto) {
     );
   // Chamada antes do produto ("AINDA VALENDO, menor valor no melhor protetor", visto no @xetdaspromocoes em
   // 27/10/2026): a linha com uma marca da lista (config/marcas.json) é o nome; sem marca, a primeira.
-  const nome = candidatas.find((l) => marcaDoProduto({ nome: l })) || candidatas[0] || null;
+  // Linha marcada com 📦 é o produto (formato do Sentinela Promo, 05/11/2026: a 1ª linha é uma chamada como "Caiu de
+  // preço! Aproveite." e o bot achava que era o nome). Chamadas conhecidas também não contam como nome.
+  const doPacote = semLink.filter((l) => /^📦/u.test(l)).map(limpar).filter((l) => l.length >= 6);
+  const semChamada = candidatas.filter((l) => !CHAMADA.test(l));
+  const nome = (doPacote[0] || semChamada.find((l) => marcaDoProduto({ nome: l })) || semChamada[0] || candidatas[0] || null)?.replace(/\s*:\s*Amazon\.com\.br\b.*$/i, '').trim() || null;
   const precoObs = (atual && CONDICOES.find(([re]) => re.test(texto))?.[1]) || null;
   return { nome, precoAtual: atual, precoOriginal: original, descontoPct, cupom, precoObs };
 }

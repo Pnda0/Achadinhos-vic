@@ -471,3 +471,13 @@ test('caixa de entrada: link da Amazon sozinho pede o nome e o preço', async ()
   await espelho.tick();
   assert.match(respostas[0], /mande junto o nome do produto e o preço/);
 });
+
+// 05/11/2026: no Sentinela Promo a 1ª linha é uma chamada ("📉 Caiu de preço! Aproveite.") e o produto vem com 📦.
+test('dadosDoTexto: produto da linha com 📦, não a chamada; tira o ": Amazon.com.br: Cozinha" do fim', async () => {
+  const { dadosDoTexto } = await import('../src/amazon-espelho.js');
+  const d = dadosDoTexto('📉 Caiu de preço! Aproveite.\n\n📦 Top Whey Bar (Display 12 unid. 41g), Chocolate e Avelã, Max Titanium\n\n💰 R$59,90 😱\n💳 Parcelamento ou à vista\n\n🛒 COMPRE AQUI COM SEGURANÇA\nhttps://www.amazon.com.br/dp/B0TESTE123?tag=outro-20');
+  assert.equal(d.nome, 'Top Whey Bar (Display 12 unid. 41g), Chocolate e Avelã, Max Titanium');
+  assert.equal(d.precoAtual, 59.9);
+  assert.equal(dadosDoTexto('🚨 Alerta de preço baixo!\n\n📦 MONDIAL Forno Pratic Cook 6L - FR-09 : Amazon.com.br: Cozinha\n\n💰 R$143,91').nome, 'MONDIAL Forno Pratic Cook 6L - FR-09');
+  assert.equal(dadosDoTexto('Olha o que eu achei...\nCreatina 100% Pura 1kg Dark Lab\nR$ 89').nome, 'Creatina 100% Pura 1kg Dark Lab');
+});
