@@ -187,15 +187,33 @@ export async function buscarMaisVendidosML(cat, { api = new MLApi(), antes = () 
 }
 
 /**
+ * Tipos de produto do catálogo do ML (domain_id, sem o "MLB-") que cada grupo aceita na busca por marca. A busca do
+ * catálogo devolve tudo que tem a palavra: em 04/11/2026 "top track field" trouxe adesivo de carro da Parati Track &
+ * Field, livro e videogame, "legging lupo" trouxe livro e máscara, as de whey trouxeram colchão e disco — e o adesivo
+ * de carro saiu no Fitness (o dono: "que merda é essa de post de carro"). Só passa o tipo da lista; grupo sem lista
+ * não usa a busca por marca. `cat.dominiosML` (config/categorias.json) troca a lista de uma busca.
+ */
+export const DOMINIOS_BUSCA_MARCA = {
+  Fitness: [
+    'SUPPLEMENTS', 'CEREAL_BARS', 'SHAKER_BOTTLES', 'SNEAKERS', 'SPORT_BRAS', 'CLOTHING_LOTS', 'LEGGINGS', 'SPORT_LEGGINGS',
+    'SHORTS', 'SPORT_SHORTS', 'T_SHIRTS', 'SPORT_T_SHIRTS', 'TANK_TOPS', 'CROP_TOPS', 'PANTS', 'SWEATPANTS', 'JUMPSUITS',
+    'SWEATSHIRTS_AND_HOODIES', 'JACKETS_AND_COATS', 'WINDBREAKERS',
+  ],
+};
+
+/**
  * Busca por MARCA no catálogo do ML (`cat.buscaML` em config/categorias.json; 04/11/2026, o dono: "não é possível que
  * não tenha nada dessas marcas no Mercado Livre"). Os mais vendidos de uma categoria grande quase nunca são das marcas
  * da lista; aqui o bot procura a marca pelo nome. Só vale o anúncio da LOJA OFICIAL (official_store_id): é original e,
  * como a API não diz quantas vendas, a loja oficial faz as vezes da regra de "mais de 50 vendas" (`lojaOficialML`).
  */
 export async function buscarPorMarcaML(cat, { api = new MLApi(), antes = () => true, resultados = 8 } = {}) {
+  const tipos = cat.dominiosML || DOMINIOS_BUSCA_MARCA[cat.grupo];
+  if (!tipos?.length) return [];
   const busca = await api.get(`/products/search?status=active&site_id=MLB&limit=${resultados}&q=${encodeURIComponent(cat.buscaML)}`);
   const out = [];
   for (const r of busca?.results || []) {
+    if (!tipos.includes(String(r.domain_id || '').replace(/^MLB-/, ''))) continue;
     if (!r.name || !antes({ nome: r.name, grupo: cat.grupo })) continue;
     const anuncios = await api.get(`/products/${r.id}/items?limit=20`);
     const anuncio = escolherAnuncio((anuncios?.results || []).filter((a) => a.official_store_id));

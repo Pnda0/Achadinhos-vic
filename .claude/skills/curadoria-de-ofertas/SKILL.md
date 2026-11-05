@@ -43,6 +43,7 @@ Regras que **não se afrouxam sem o dono**: vendas mínimas, não repetir, públ
 
 ## Ao mexer em marcas, nichos ou buscas
 
+- Falso positivo de marca já visto (04/11/2026): "Track & Field" = versão da Parati (adesivo de carro saiu no Fitness), "xadrez Vichy" = estampa, "Natura Clean" = produto de limpeza. A busca do catálogo do ML (`buscaML`) devolve qualquer tipo de produto: ela só aceita os `domain_id` de `DOMINIOS_BUSCA_MARCA` (`src/ml/api.js`). Antes de pôr marca ou busca nova, rode a busca de verdade e olhe o que volta.
 - Marca nova: `config/marcas.json` (nome ou `{"marca", "termos"}` se escrita de outro jeito; `re:` para expressão regular). Confira falso positivo com produtos reais do `data/produtos.log`.
 - Antes de apertar um filtro, meça o efeito com o histórico (quantos posts de hoje passariam) e conte ao dono — filtro forte demais esvazia o grupo.
 - Grupo vazio dispara busca de reposição sozinho (no máximo 1 a cada 2 h por grupo). Se esvaziar sempre, falta fonte, não filtro.

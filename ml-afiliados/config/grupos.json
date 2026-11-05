@@ -24,10 +24,32 @@
       "case+samsung",
       "pelicula+celular",
       "pelicula+iphone",
-      "pelicula+samsung"
+      "pelicula+samsung",
+      "carro",
+      "automotivo",
+      "automotiva",
+      "veicular",
+      "veiculo",
+      "parati",
+      "moto",
+      "motocicleta",
+      "pneu",
+      "amortecedor",
+      "retrovisor",
+      "faixa+adesivo",
+      "adesivo+carro",
+      "querosene",
+      "natura clean",
+      "desengordurante",
+      "detergente",
+      "amaciante",
+      "lava roupas",
+      "sabao em po",
+      "papel de parede"
     ],
     "diasSemRepetir": 5
   },
+  "_comentarioCarro": "04/11/2026, saiu no Fitness um adesivo da Parati Track & Field (carro) pela busca por marca do ML (o dono: 'que merda é essa de post de carro'). Coisa de carro e moto bloqueada em todos os grupos (a lista do Geral já tinha), além da busca por marca só aceitar os tipos de produto do Fitness (DOMINIOS_BUSCA_MARCA em src/ml/api.js). Na mesma revisão (o dono: 'seja criterioso'): produto de limpeza da 'Natura Clean' (querosene perfumado, não é a Natura dos cosméticos) e papel de parede também ficam de fora.",
   "grupos": [
     {
       "nome": "Geral",

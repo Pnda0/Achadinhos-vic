@@ -199,8 +199,18 @@
       "mergulho",
       "pe de pato",
       "yoga",
-      "pilates"
+      "pilates",
+      "flamengo",
+      "corinthians",
+      "palmeiras",
+      "vasco",
+      "fluminense",
+      "botafogo",
+      "gremio",
+      "cruzeiro",
+      "manto"
     ],
+    "_comentarioTimes": "04/11/2026 (o dono: 'seja criterioso'): camisa e short de time (Flamengo da adidas, 'manto' = camisa de jogo) estavam na fila do Fitness; time de futebol fica de fora como o resto do futebol.",
     "_comentarioYoga": "04/11/2026, o dono: 'tem coisa demais de yoga, tire por favor, priorize tênis e suplementos das marcas boas'. Yoga e pilates (tapete, bola, bloco...) ficam de fora do Fitness; a prioridade de tênis e suplementos de marca está em 'prioridade' no grupo Fitness (config/grupos.json).",
     "_comentarioNatacao": "04/11/2026, o dono: 'tire do fitness por favor: Óculos de Natação Profissional Decathlon Nabaiji'. Natação e mergulho (óculos, touca, nadadeira, snorkel; Nabaiji é a linha de natação da Decathlon) ficam de fora do Fitness.",
     "_comentarioFutebol": "04/11/2026, o dono: 'por que você tá mandando chuteira e bola de futebol? esqueceu que o grupo é feminino'. Nike, Adidas, Centauro e Decathlon estão na lista de marcas do Fitness e marca conta como palavra do nicho, então 'Chuteira Nike' entrava; o filtro de gênero via chuteira e bola como neutras. Agora futebol (chuteira, bola, caneleira, camisa de time...) e basquete ficam de fora do Fitness — vale também para o que já estava na fila e para o WhatsApp.",
@@ -383,8 +393,12 @@
       "penteadeira",
       "sacola",
       "caneca",
-      "camiseta"
+      "camiseta",
+      "xadrez",
+      "papel de parede",
+      "body+manga"
     ],
+    "_comentarioXadrez": "04/11/2026 (o dono: 'seja criterioso'): 'Xadrez Vichy' é estampa, não a marca Vichy — papel de parede e roupa de bebê estavam na fila do Beleza.",
     "titulos": {
       "alto": [
         "BELEZA PELA METADE 😱",
