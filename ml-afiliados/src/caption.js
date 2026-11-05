@@ -4,6 +4,7 @@
  */
 import { settings } from './config.js';
 import { casaTermo, formatBRL, log, normalizar } from './util.js';
+import { marcaDoProduto } from './marcas.js';
 
 const TITULOS_PRONTOS = {
   alto: ['DESCONTÃO DE VERDADE 😱', 'CORRE QUE ACABA 🏃', 'QUEIMA TOTAL 🔥', 'BUGOU O PREÇO 🤯', 'METADE DO PREÇO 💸'],
@@ -79,9 +80,28 @@ export async function gerarTitulo(p, { titulos, tema, fetchImpl = fetch } = {}) 
   }
 }
 
-/** Nome curto: as 6 primeiras palavras (igual ao curso), sem cortar no meio de um hífen solto. */
+/**
+ * Nome curto: as 6 primeiras palavras (igual ao curso). Hífen ou barra soltos não contam como palavra, e a marca não
+ * fica de fora nem cortada (05/11/2026, o dono: "Creatina 100% Monohidratada 300g - New" — era New Millen; o "-"
+ * contava como palavra e o nome parava no meio da marca).
+ */
 export function nomeCurto(nome, palavras = 6) {
-  return nome.split(/\s+/).slice(0, palavras).join(' ').replace(/[\s\-–,]+$/, '');
+  const partes = String(nome || '').split(/\s+/).filter(Boolean);
+  const ehSeparador = (w) => /^[-–—|/+:·•]+$/.test(w);
+  let n = 0;
+  let fim = 0;
+  while (fim < partes.length && n < palavras) if (!ehSeparador(partes[fim++])) n++;
+  const cortar = (k) => partes.slice(0, k).join(' ').replace(/[\s\-–—|/+:·•,]+$/, '');
+  const marca = marcaDoProduto({ nome });
+  if (marca && marcaDoProduto({ nome: cortar(fim) }) !== marca) {
+    // A marca aparece logo depois do corte: estende até ela (no máximo 4 palavras a mais); senão, acrescenta o nome dela.
+    for (let k = fim + 1; k <= Math.min(partes.length, fim + 4); k++) if (marcaDoProduto({ nome: cortar(k) }) === marca) return cortar(k);
+    const base = cortar(fim);
+    const primeira = normalizar(marca).split(' ')[0];
+    const semPedaco = normalizar(base.split(' ').at(-1)) === primeira ? base.split(' ').slice(0, -1).join(' ') : base;
+    return `${semPedaco.replace(/[\s\-–—|/+:·•,]+$/, '')} - ${marca}`;
+  }
+  return cortar(fim);
 }
 
 /** Hora (Brasília) em que o preço da Amazon foi consultado — a Amazon exige mostrar isso. */

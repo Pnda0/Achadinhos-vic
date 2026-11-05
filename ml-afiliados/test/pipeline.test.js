@@ -145,3 +145,10 @@ test('Store.reabrirErros devolve para a fila só quem tem link', () => {
   assert.equal(s.proximo('Geral').id, 'MLB1');
   assert.equal(s.list((p) => p.status === 'ERRO').length, 1);
 });
+
+// 05/11/2026, o dono: o post saiu como "Creatina 100% Monohidratada 300g - New" (era New Millen).
+test('nomeCurto: hífen solto não conta como palavra e a marca não sai cortada', () => {
+  assert.equal(nomeCurto('Creatina 100% Monohidratada 300g - New Millen'), 'Creatina 100% Monohidratada 300g - New Millen');
+  assert.equal(nomeCurto('Kit 3 Leggings Suplex Lisa Cintura Alta Lupo Sport Feminina'), 'Kit 3 Leggings Suplex Lisa Cintura Alta Lupo');
+  assert.equal(nomeCurto('Perfume Feminino Eau De Parfum 100ml Floral Gourmand Lancôme La Vie Est Belle'), 'Perfume Feminino Eau De Parfum 100ml Floral Gourmand Lancôme');
+});
