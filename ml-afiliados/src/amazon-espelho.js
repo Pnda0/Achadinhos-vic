@@ -109,9 +109,10 @@ export function dadosDoTexto(texto) {
     else atual ??= precos[0];
   }
   if (original && atual && original <= atual) original = null;
-  const pct = String(texto).match(/(\d{1,2})\s?%\s?(?:off|de desconto)/i);
-  let descontoPct = pct ? Number(pct[1]) : null;
-  if (descontoPct === null && original && atual) descontoPct = Math.round((1 - atual / original) * 100);
+  // Desconto: o "de/por" do post vale mais que um "X% OFF" solto — e o % de uma linha de cupom não é o desconto da
+  // oferta (05/11/2026: "de R$ 1.129 por R$ 598,49 ... Resgate o cupom de 5% OFF" virou 5% e o perfume não saiu).
+  const pct = semLink.filter((l) => !/cupom|cupon/i.test(l)).join('\n').match(/(\d{1,2})\s?%\s?(?:off|de desconto)/i);
+  let descontoPct = original && atual ? Math.round((1 - atual / original) * 100) : pct ? Number(pct[1]) : null;
 
   const cupomM = String(texto).match(/cupom\s*:?\s*\*?([A-Z0-9]{4,20})\*?/i);
   const cupom = cupomM && /\d|[A-Z]{4,}/.test(cupomM[1]) && !/^(de|off|amazon)$/i.test(cupomM[1]) ? cupomM[1].toUpperCase() : null;

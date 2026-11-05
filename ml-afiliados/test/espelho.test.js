@@ -481,3 +481,14 @@ test('dadosDoTexto: produto da linha com 📦, não a chamada; tira o ": Amazon.
   assert.equal(dadosDoTexto('🚨 Alerta de preço baixo!\n\n📦 MONDIAL Forno Pratic Cook 6L - FR-09 : Amazon.com.br: Cozinha\n\n💰 R$143,91').nome, 'MONDIAL Forno Pratic Cook 6L - FR-09');
   assert.equal(dadosDoTexto('Olha o que eu achei...\nCreatina 100% Pura 1kg Dark Lab\nR$ 89').nome, 'Creatina 100% Pura 1kg Dark Lab');
 });
+
+// 05/11/2026: perfume do grupo da Luh com "de R$ 1.129 por R$ 598,49" e "Resgate o cupom de 5% OFF" — o bot lia 5%.
+test('dadosDoTexto: o desconto vem do de/por, não do % do cupom', async () => {
+  const { dadosDoTexto } = await import('../src/amazon-espelho.js');
+  const d = dadosDoTexto("APROVEITA! 🚨\n\n✨ Perfume Feminino L' Eau de Parfum La Vie Est Belle Lancôme, Frasco com 100ml\n\nde R$ 1.129\n🔥 por R$ 598,49 \n💳 ou 10x de R$ 59,85\n\n🏷️ Cupom: Resgate o cupom de 5% OFF abaixo do preço\n\n✅ Loja Oficial LANCÔME no ML.\n\n🛒 https://meli.la/1VUevA5");
+  assert.equal(d.nome, "Perfume Feminino L' Eau de Parfum La Vie Est Belle Lancôme, Frasco com 100ml");
+  assert.equal(d.precoAtual, 598.49);
+  assert.equal(d.precoOriginal, 1129);
+  assert.equal(d.descontoPct, 47);
+  assert.equal(dadosDoTexto('Sérum Vichy Mineral 89 50ml\n30% OFF\nR$ 99').descontoPct, 30, 'sem de/por, o % do texto vale');
+});
