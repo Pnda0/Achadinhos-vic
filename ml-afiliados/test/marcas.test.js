@@ -58,8 +58,9 @@ test('fila: oferta de marca sai antes da sem marca; feminino continua valendo', 
   const grupo = { nome: 'Geral', jid: 'G', filtros: { diasSemRepetir: 5 }, preferirFeminino: 4 };
   const ordem = [];
   for (let i = 0; i < 3; i++) ordem.push((await enviarProximo(sender, grupo, store))?.nome);
-  // feminina de marca (2 + 1,5) > neutra de marca (1 + 1,5) > feminina sem marca (2) > masculina de marca (0 + 1,5)
-  assert.deepEqual(ordem, ['Batom Ruby Rose Feminino', 'Tênis Nike Revolution', 'Vestido Midi Feminino']);
+  // Nota da oferta (src/ranking.js, 05/11/2026): feminina de marca > feminina sem marca com 60% (desconto conta) >
+  // neutra de marca com 10% > masculina. (Antes da nota, a neutra de marca passava a feminina sem marca.)
+  assert.deepEqual(ordem, ['Batom Ruby Rose Feminino', 'Vestido Midi Feminino', 'Tênis Nike Revolution']);
   assert.equal(preferenciaDeMarca({ peso: 2, x: ['Nike'] })({ nome: 'Tênis Nike' }), 2);
   assert.equal(preferenciaDeMarca({})({ nome: 'Tênis Nike' }), 0);
   // Marca com prioridade própria (WePink, pedido do dono, 27/10/2026) passa na frente das outras marcas.

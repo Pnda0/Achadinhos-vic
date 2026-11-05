@@ -63,7 +63,7 @@ const topo = (contagem, n = 3) => Object.entries(contagem).sort((a, b) => b[1] -
  * `agoraPode` = { ritmo, shopee, awin, masculino } do momento (calculado em index.js com as regras do pipeline).
  * `genero(p)` = 'f' | 'm' | null.
  */
-export function textoDaFila({ store, grupo, eventos = [], agora = Date.now(), tz = 'America/Sao_Paulo', agoraPode = {}, genero = () => null }) {
+export function textoDaFila({ store, grupo, eventos = [], agora = Date.now(), tz = 'America/Sao_Paulo', agoraPode = {}, genero = () => null, nota = null }) {
   const nome = grupo.nome;
   const fila = store.list((p) => p.grupo === nome && (p.status === 'PRONTO' || p.status === 'PENDENTE'));
   const enviados = store.list((p) => p.grupo === nome && (p.status === 'ENVIADO' || p.status === 'INCERTO') && p.enviadoEm).sort((a, b) => String(b.enviadoEm).localeCompare(String(a.enviadoEm)));
@@ -118,13 +118,17 @@ export function textoDaFila({ store, grupo, eventos = [], agora = Date.now(), tz
     '',
     conclusao,
     // O dono, 05/11/2026: "quando eu der um /fila, me exibe os itens, só o nome mesmo pra eu dar uma olhada".
-    ...(fila.length ? ['', '*Itens na fila:*', ...itensDaFila(fila)] : []),
+    // Com a nota da oferta (src/ranking.js), na ordem em que vão sair: "78 · Whey Growth...".
+    ...(fila.length ? ['', nota ? '*Itens na fila* (nota de 0 a 100, na ordem em que saem):' : '*Itens na fila:*', ...itensDaFila(fila, 40, nota && ((p) => nota(p, { ultimo, agora })))] : []),
   ].join('\n');
 }
 
 /** Os nomes da fila (no máximo `max`; o resto vira "e mais N"), sem os caracteres que quebram o Markdown do Telegram. */
-export function itensDaFila(fila, max = 40) {
+export function itensDaFila(fila, max = 40, nota = null) {
   const nomeLimpo = (p) => String(p.nome || p.id).replace(/[*_`[\]]/g, '').replace(/\s+/g, ' ').trim().slice(0, 70);
-  const linhas = fila.slice(0, max).map((p) => `• ${nomeLimpo(p)}`);
+  // `nota(p)` = { nota, bruta } (src/ranking.js) ou um número: a ordem segue a soma, o texto mostra a nota de 0 a 100.
+  const ler = (p) => { const r = nota(p); return typeof r === 'number' ? { nota: r, bruta: r } : r; };
+  const ordem = nota ? fila.map((p) => [p, ler(p)]).sort((a, b) => b[1].bruta - a[1].bruta) : fila.map((p) => [p, null]);
+  const linhas = ordem.slice(0, max).map(([p, n]) => (n == null ? `• ${nomeLimpo(p)}` : `${n.nota} · ${nomeLimpo(p)}`));
   return fila.length > max ? [...linhas, `… e mais ${fila.length - max}`] : linhas;
 }

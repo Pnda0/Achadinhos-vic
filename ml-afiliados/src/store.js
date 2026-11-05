@@ -232,7 +232,7 @@ export class Store {
    * Próximo produto PRONTO do grupo. Ofertas copiadas de outros grupos ("espelho") vão primeiro,
    * da mais nova para a mais antiga (elas vencem rápido); depois, as da busca própria, por desconto.
    */
-  proximo(grupo, { aceitar = () => true, preferir = null } = {}) {
+  proximo(grupo, { aceitar = () => true, preferir = null, nota = null } = {}) {
     let prontos = this.list((p) => p.grupo === grupo && p.status === 'PRONTO' && aceitar(p));
     if (!prontos.length) return null;
     // Reserva (Perfumes: mais vendido do ML com desconto abaixo do mínimo — o dono, 27/10/2026: "pode colocar, mas só
@@ -246,6 +246,12 @@ export class Store {
     const cupom = prontos.find((p) => p.prioridade);
     if (cupom && !ultimo?.prioridade) return cupom;
     if (cupom) prontos = prontos.filter((p) => !p.prioridade).length ? prontos.filter((p) => !p.prioridade) : prontos;
+    // Nota da oferta (src/ranking.js, 05/11/2026): a de maior nota sai; empate (até 2 pontos na soma) é sorteado.
+    if (nota) {
+      const comNota = prontos.map((p) => [p, nota(p, { ultimo }).bruta]).sort((a, b) => b[1] - a[1]);
+      const empatadas = comNota.filter(([, n]) => n >= comNota[0][1] - 2);
+      return empatadas[Math.floor(Math.random() * empatadas.length)][0];
+    }
     // `preferir` dá uma nota a cada oferta (ex.: feminino 2, neutro 1, masculino 0): só as de nota mais alta concorrem.
     if (preferir) {
       const melhor = Math.max(...prontos.map((p) => Number(preferir(p))));

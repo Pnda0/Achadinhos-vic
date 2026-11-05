@@ -19,7 +19,8 @@ import { Espelho, resolverFontes } from './espelho.js';
 import { LeitorDeCanais, fonteDoGrupoTelegram, fontesDosCanais } from './telegram-canais.js';
 import { MLAffiliate } from './ml/affiliate.js';
 import { MLApi } from './ml/api.js';
-import { PAUSA_ML_HORAS, awinLiberada, coletar, doCatalogoAwin, filaDeOutroDia, gerarLinks, enviarParaTodos, limpar, ritmoLiberado, shopeeLiberada } from './pipeline.js';
+import { PAUSA_ML_HORAS, awinLiberada, coletar, doCatalogoAwin, filaDeOutroDia, gerarLinks, enviarParaTodos, limpar, prioridadeDoGrupo, ritmoLiberado, shopeeLiberada } from './pipeline.js';
+import { notaDaOferta } from './ranking.js';
 import { createSender } from './senders.js';
 import { Store } from './store.js';
 import { diaLocal, log, normalizar, sleep } from './util.js';
@@ -271,7 +272,7 @@ function iniciarCaixaDeEntrada(cfg) {
           awin: awinLiberada(store, g.nome),
           masculino: fem.aceitar ? fem.aceitar({ nome: 'produto masculino' }) : true,
         };
-        await responder(m, textoDaFila({ store, grupo: g, eventos, agoraPode, genero: generoDoProduto, tz: settings.tz }));
+        await responder(m, textoDaFila({ store, grupo: g, eventos, agoraPode, genero: generoDoProduto, tz: settings.tz, nota: notaDaOferta({ prioridade: prioridadeDoGrupo(g) }) }));
       }
     },
     // /env NOME=valor: muda o .env do servidor de onde o dono estiver (src/env-arquivo.js), apaga a mensagem e reinicia.

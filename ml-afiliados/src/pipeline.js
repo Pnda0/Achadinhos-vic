@@ -31,7 +31,8 @@ import path from 'node:path';
 import { VENDAS_MINIMAS, motivoVendas } from './ml/vendas.js';
 import { evento, origemDe } from './eventos.js';
 import { preferenciaFeminina } from './genero.js';
-import { marcaDoProduto, motivoPrecoDaMarca, preferenciaDeMarca } from './marcas.js';
+import { marcaDoProduto, motivoPrecoDaMarca } from './marcas.js';
+import { notaDaOferta } from './ranking.js';
 import { BrowserSession, sessaoNavegador } from './browser.js';
 import { montarLegenda, tituloCupom } from './caption.js';
 import { comLinkRastreado } from './rastreio.js';
@@ -593,7 +594,6 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
   // Público principal: meninas. Femininos na frente, depois os neutros; masculino no máximo 1 a cada N posts.
   // E as marcas da lista (config/marcas.json) passam na frente das sem marca (pedido do dono, 15/10/2026).
   const feminina = grupo.preferirFeminino ? preferenciaFeminina(store, grupo.nome, grupo.preferirFeminino) : {};
-  const marca = preferenciaDeMarca();
   const prioridade = prioridadeDoGrupo(grupo);
   // Shopee no máximo 1 a cada N posts (a comissão é baixa — pedido do dono, 26/10/2026); catálogo da Awin com calma.
   const shopeeOk = shopeeLiberada(store, grupo.nome);
@@ -601,7 +601,8 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
   const temLimite = feminina.aceitar || !shopeeOk || !awinOk;
   const preferencia = {
     aceitar: temLimite ? (x) => (feminina.aceitar ? feminina.aceitar(x) : true) && (shopeeOk || x.loja !== 'shopee') && (awinOk || !doCatalogoAwin(x)) : undefined,
-    preferir: (x) => (feminina.preferir ? feminina.preferir(x) : 0) + marca(x) + prioridade(x),
+    // A ordem vem da nota da oferta (src/ranking.js): marca do dono, desconto, público, tipo, vendas, avaliação...
+    nota: notaDaOferta({ prioridade }),
   };
   let p = null;
   // Cada candidato barrado sai da fila (muda de status), então o laço termina; null = fila realmente vazia.
