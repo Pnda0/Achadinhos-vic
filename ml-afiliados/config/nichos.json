@@ -217,7 +217,12 @@
       "botafogo",
       "gremio",
       "cruzeiro",
-      "manto"
+      "manto",
+      "black skull+barra",
+      "black skull+barrinha",
+      "black skull+bar",
+      "black skull+wafer",
+      "black skull+snack"
     ],
     "_comentarioTimes": "04/11/2026 (o dono: 'seja criterioso'): camisa e short de time (Flamengo da adidas, 'manto' = camisa de jogo) estavam na fila do Fitness; time de futebol fica de fora como o resto do futebol.",
     "_comentarioYoga": "04/11/2026, o dono: 'tem coisa demais de yoga, tire por favor, priorize tênis e suplementos das marcas boas'. Yoga e pilates (tapete, bola, bloco...) ficam de fora do Fitness; a prioridade de tênis e suplementos de marca está em 'prioridade' no grupo Fitness (config/grupos.json).",
@@ -244,7 +249,8 @@
         "BOA PRO TREINO 👍",
         "ACHADO FITNESS 🛒"
       ]
-    }
+    },
+    "_comentarioBlackSkullBarra": "05/11/2026, o dono: 'barrinha black skull não coloque mais'. Os outros produtos da Black Skull continuam."
   },
   "beleza": {
     "tema": "maquiagem, skincare, cabelo e cuidados pessoais",

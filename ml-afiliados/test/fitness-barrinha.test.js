@@ -18,3 +18,12 @@ test('Fitness: barrinhas de proteína e YoPRO das marcas entram; o resto continu
 test('grupo de WhatsApp Sentinela Promo é fonte', () => {
   assert.ok(JSON.parse(fs.readFileSync(new URL('../config/fontes.json', import.meta.url), 'utf8')).gruposWhatsApp.grupos.some((g) => g.titulo === 'Sentinela'));
 });
+
+// 05/11/2026, o dono: "barrinha black skull não coloque mais".
+test('Fitness: barrinha da Black Skull fica de fora; o resto da Black Skull continua', () => {
+  for (const nome of ['Barra de Proteína Black Skull Bone Crusher Chocolate 60g 12 un', 'Barrinha Proteica Black Skull Cookies', 'Protein Bar Black Skull Caveira Preta 12x60g', 'Wafer Proteico Black Skull 12 unidades']) {
+    assert.equal(motivoPeloNome({ nome }, f), 'palavra bloqueada', nome);
+  }
+  assert.equal(motivoPeloNome({ nome: 'Creatina Monohidratada Black Skull 300g' }, f), null);
+  assert.equal(motivoPeloNome({ nome: 'Barra de Proteína Bold Bar Cookies 60g' }, f), null, 'barrinha de outra marca continua');
+});
