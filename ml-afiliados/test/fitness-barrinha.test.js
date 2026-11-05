@@ -37,3 +37,13 @@ test('Fitness: suplementos das marcas que faltavam (Dark Lab, Caffeine Army...) 
   assert.ok(motivoPeloNome({ nome: 'Placa de Vídeo EVGA GeForce RTX 3080 FTW3 Ultra' }, f));
   assert.ok(motivoPeloNome({ nome: 'Pelúcia Pura Vida Praia' }, f), 'Puravida só com produto de suplemento');
 });
+
+// 05/11/2026, o dono: "relógio inteligente de marca boa, não genéricos".
+test('Fitness: relógio inteligente de marca boa entra; genérico, acessório e GPS de carro não', () => {
+  for (const nome of ['Smartwatch Amazfit Balance Feminino Rosa', 'Relógio Garmin Forerunner 265 GPS Feminino', 'Garmin Venu 3S Sage Gray', 'Apple Watch SE GPS 40mm Estelar', 'Samsung Galaxy Watch7 40mm Creme', 'Xiaomi Smart Band 9 Rosa', 'Relógio Polar Pacer Pro Branco', 'Smartwatch Huawei Watch Fit 3 Rosa', 'Coros Pace 3 GPS Branco']) {
+    assert.equal(motivoPeloNome({ nome }, f), null, nome);
+  }
+  for (const nome of ['Smartwatch D20 Feminino Rosa Bluetooth', 'Relógio Inteligente Ultra 9 Pro Max', 'Pulseira de Silicone Compatível Apple Watch 41mm', 'Película para Galaxy Watch 6', 'Carregador Magnético Amazfit Bip', 'GPS Automotivo Garmin Drive 52', 'Smartphone Xiaomi Redmi Note 13 128GB', 'Blusa Fleece Polar Feminina', 'Smartwatch Infantil Xiaomi Kids']) {
+    assert.ok(motivoPeloNome({ nome }, f), nome);
+  }
+});

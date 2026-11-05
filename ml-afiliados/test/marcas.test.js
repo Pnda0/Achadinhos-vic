@@ -137,7 +137,10 @@ test('capinha de celular com logo de marca não entra em grupo nenhum (busca "Ni
   }
   const fit = grupos.find((x) => x.nome === 'Fitness').filtros;
   // (Óculos de natação Nabaiji era exemplo daqui até 04/11/2026, quando o dono pediu para tirar natação do Fitness.)
-  for (const bom of ['Garrafa Squeeze Decathlon 1L', 'Meia New Balance Cano Longo Kit 3 Pares', 'Relógio Smartwatch compatível com celular Nike Run']) assert.equal(motivoRecusa(p('Fitness', bom), fit), null, bom);
+  // ("Relógio Smartwatch compatível com celular Nike Run" era exemplo bom até 05/11/2026: é relógio genérico, e o dono pediu
+  // "relógio inteligente de marca boa, não genéricos".)
+  assert.ok(motivoRecusa(p('Fitness', 'Relógio Smartwatch compatível com celular Nike Run'), fit));
+  for (const bom of ['Garrafa Squeeze Decathlon 1L', 'Meia New Balance Cano Longo Kit 3 Pares']) assert.equal(motivoRecusa(p('Fitness', bom), fit), null, bom);
 });
 
 test('Shopee no máximo 1 a cada 4 posts: ML e Awin primeiro; só Shopee na fila = 1 a cada 12 min (não trava)', async () => {

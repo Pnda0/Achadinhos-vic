@@ -107,5 +107,14 @@ export function textoDaFila({ store, grupo, eventos = [], agora = Date.now(), tz
     ...(Object.keys(barradas).length ? [`🚫 Barradas na hora de postar: ${topo(barradas)}`] : []),
     '',
     conclusao,
+    // O dono, 05/11/2026: "quando eu der um /fila, me exibe os itens, só o nome mesmo pra eu dar uma olhada".
+    ...(fila.length ? ['', '*Itens na fila:*', ...itensDaFila(fila)] : []),
   ].join('\n');
+}
+
+/** Os nomes da fila (no máximo `max`; o resto vira "e mais N"), sem os caracteres que quebram o Markdown do Telegram. */
+export function itensDaFila(fila, max = 40) {
+  const nomeLimpo = (p) => String(p.nome || p.id).replace(/[*_`[\]]/g, '').replace(/\s+/g, ' ').trim().slice(0, 70);
+  const linhas = fila.slice(0, max).map((p) => `• ${nomeLimpo(p)}`);
+  return fila.length > max ? [...linhas, `… e mais ${fila.length - max}`] : linhas;
 }

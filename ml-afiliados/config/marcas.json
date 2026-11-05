@@ -504,6 +504,67 @@
         "re:(?=[\\s\\S]*\\b(whey|creatina|pr[eé].?treino|prote[ií]na|suplemento|bcaa|glutamina|hipercal[oó]rico|termog[eê]nico|cafe[ií]na|col[aá]geno)\\b)[\\s\\S]*\\bpura vida\\b"
       ]
     },
-    "Nutrify"
+    "Nutrify",
+    {
+      "marca": "Garmin",
+      "termos": [
+        "re:^(?=[\\s\\S]*\\bgarmin\\b)(?![\\s\\S]*\\b(automotivo|carro|drive|dashcam|veicular|n[aá]utico|sonar|moto)\\b)"
+      ]
+    },
+    {
+      "marca": "Apple Watch",
+      "termos": [
+        "apple watch"
+      ]
+    },
+    {
+      "marca": "Samsung Galaxy Watch",
+      "termos": [
+        "galaxy watch",
+        "galaxy watch4",
+        "galaxy watch5",
+        "galaxy watch6",
+        "galaxy watch7",
+        "galaxy watch8",
+        "galaxy watch9",
+        "galaxy fit",
+        "galaxy fit2",
+        "galaxy fit3",
+        "galaxy fit4"
+      ]
+    },
+    "Amazfit",
+    {
+      "marca": "Xiaomi",
+      "termos": [
+        "mi band",
+        "redmi watch",
+        "xiaomi watch",
+        "xiaomi smart band",
+        "redmi smart band",
+        "re:^(?=[\\s\\S]*\\b(xiaomi|redmi)\\b)(?=[\\s\\S]*\\b(smart ?band|smart ?watch|smartwatch|rel[oó]gio)\\b)"
+      ]
+    },
+    {
+      "marca": "Huawei",
+      "termos": [
+        "huawei watch",
+        "huawei band",
+        "re:^(?=[\\s\\S]*\\bhuawei\\b)(?=[\\s\\S]*\\b(smart ?band|smart ?watch|smartwatch|rel[oó]gio)\\b)"
+      ]
+    },
+    {
+      "marca": "Polar",
+      "termos": [
+        "re:^(?=[\\s\\S]*\\bpolar\\b)(?=[\\s\\S]*\\b(rel[oó]gio|smart ?watch|smartwatch|pacer|vantage|ignite|grit|unite|monitor card[ií]aco|cinta card[ií]aca)\\b)"
+      ]
+    },
+    {
+      "marca": "Coros",
+      "termos": [
+        "re:^(?=[\\s\\S]*\\bcoros\\b)(?=[\\s\\S]*\\b(pace|apex|vertix|dura|rel[oó]gio|smartwatch)\\b)"
+      ]
+    },
+    "Fitbit"
   ]
 }

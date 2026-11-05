@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { Espelho } from '../src/espelho.js';
-import { AJUDA, MENU, textoDaFila, textoDoStatus } from '../src/comandos.js';
+import { AJUDA, MENU, itensDaFila, textoDaFila, textoDoStatus } from '../src/comandos.js';
 import { EspelhoWhatsApp } from '../src/whatsapp-espelho.js';
 import { Store } from '../src/store.js';
 
@@ -102,4 +102,13 @@ test('/pausar vale para o WhatsApp também: nada é espelhado até o /voltar', a
   delete store.data.pausado;
   assert.equal((await e.enviarUma())?.id, 'x');
   assert.equal(enviados.length, 1);
+});
+
+// 05/11/2026, o dono: "quando eu der um /fila, me exibe os itens, só o nome mesmo".
+test('/fila mostra os nomes dos itens (até 40, sem quebrar o Markdown)', () => {
+  const fila = Array.from({ length: 42 }, (_, i) => ({ id: 'X' + i, nome: i ? `Whey Growth ${i}` : 'Top *Nike* [One]_feminino' }));
+  const linhas = itensDaFila(fila);
+  assert.equal(linhas.length, 41);
+  assert.equal(linhas[0], '• Top Nike Onefeminino');
+  assert.equal(linhas.at(-1), '… e mais 2');
 });

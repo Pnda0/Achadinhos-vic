@@ -108,19 +108,18 @@ test('fitness: o que ENTRA (suplementos, roupa e tênis de treino, relógios e e
   }
 });
 
-test('fitness: equipamentos e acessórios de relógio entram com títulos do tema', () => {
+test('fitness: equipamentos entram com títulos do tema; acessório avulso de relógio não (05/11/2026)', () => {
   for (const nome of [
     'Halter Emborrachado 5kg Par',
     'Kettlebell Emborrachado 12kg',
     // (Tapete de yoga era exemplo daqui até 04/11/2026, quando o dono tirou yoga e pilates do Fitness.)
     'Kit Faixa Elástica Mini Band 5 Intensidades',
-    'Pulseira Para Apple Watch Silicone 45mm',
-    'Película Protetora Smartwatch 44mm Kit 3',
-    'Carregador Magnético Para Smartwatch Amazfit',
   ]) {
     assert.equal(motivo(nome), null, nome);
     assert.deepEqual(estiloDoProduto(prod(nome), fitness).titulos, fitness.titulos, nome);
   }
+  // O dono, 05/11/2026: "relógio inteligente de marca boa, não genéricos" — pulseira, película e carregador avulsos saem.
+  for (const nome of ['Pulseira Para Apple Watch Silicone 45mm', 'Película Protetora Smartwatch 44mm Kit 3', 'Carregador Magnético Para Smartwatch Amazfit']) assert.ok(motivo(nome), nome);
 });
 
 test('fitness: extras (tênis casual, fone) entram com títulos gerais; beleza, perfume e ração têm os seus grupos', () => {
