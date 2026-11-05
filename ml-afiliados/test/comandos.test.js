@@ -80,7 +80,9 @@ test('/fila: o que tem na fila, o que segura o post e por que as ofertas foram r
   assert.match(texto, /Último post: 12:02 \(há 2 h 58 min\) Legging Lupo/);
   assert.match(texto, /Desde 12:02: 1 entraram na fila, 3 recusadas \(sem marca da lista 2 · palavra bloqueada 1\)/);
   assert.match(texto, /Barradas na hora de postar: masculino 1/);
-  assert.match(texto, /Tem 2 na fila, mas está esperando\*: Shopee esperando a vez .*; masculino esperando a vez/);
+  // A Awin (masculina) espera a vez do masculino e a Shopee espera a vez da Shopee: as duas presas.
+  assert.match(texto, /Tem 2 na fila, mas todas estão esperando\*: .*masculino esperando a vez/);
+  assert.match(texto, /Shopee esperando a vez/);
 
   for (const x of Object.values(store.data.produtos)) if (x.status === 'PRONTO') x.status = 'REJEITADO';
   assert.match(textoDaFila({ store, grupo: { nome: 'Fitness', ativo: true }, eventos, agora, genero }), /A fila está vazia\*: as buscas acharam 3 ofertas, mas nenhuma passou/);
@@ -111,4 +113,18 @@ test('/fila mostra os nomes dos itens (até 40, sem quebrar o Markdown)', () => 
   assert.equal(linhas.length, 41);
   assert.equal(linhas[0], '• Top Nike Onefeminino');
   assert.equal(linhas.at(-1), '… e mais 2');
+});
+
+// 05/11/2026, o dono: "Tem 55 na fila, mas está esperando: catálogo da Awin no limite do dia — vai postar ou não vai?"
+test('/fila: limite da Awin só segura os produtos da Awin; o resto da fila sai', () => {
+  const agora = new Date('2026-11-05T15:00:00-03:00').getTime();
+  const store = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-fila2-')), 'db.json'));
+  const p = (id, extra = {}) => (store.data.produtos[`Fitness:${id}`] = { id, grupo: 'Fitness', nome: `Produto ${id}`, status: 'PRONTO', loja: 'ml', ...extra });
+  p('AWF-1', { loja: 'awin' });
+  p('AWF-2', { loja: 'awin' });
+  p('MLB3');
+  const texto = textoDaFila({ store, grupo: { nome: 'Fitness', ativo: true }, agora, agoraPode: { ritmo: true, shopee: true, awin: false, masculino: true } });
+  assert.match(texto, /Vai postar\*: 1 de 3 podem sair no próximo horário de envio \(as outras 2 esperam: catálogo da Awin no limite do dia\)/);
+  delete store.data.produtos['Fitness:MLB3'];
+  assert.match(textoDaFila({ store, grupo: { nome: 'Fitness', ativo: true }, agora, agoraPode: { awin: false } }), /todas estão esperando\*: catálogo da Awin/);
 });

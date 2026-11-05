@@ -85,19 +85,29 @@ export function textoDaFila({ store, grupo, eventos = [], agora = Date.now(), tz
     else if (e.tipo === 'recusado' || e.tipo === 'sem_link') recusas[e.detalhe || e.tipo] = (recusas[e.detalhe || e.tipo] || 0) + 1;
     else if (e.tipo === 'barrado' || e.tipo === 'link_invalido' || e.tipo === 'duplicado') barradas[e.detalhe || e.tipo] = (barradas[e.detalhe || e.tipo] || 0) + 1;
   }
-  const segurando = [
+  // O que segura o grupo inteiro (nada sai) e o que segura só um tipo de oferta (as outras saem normalmente).
+  // 05/11/2026, o dono: "Tem 55 na fila, mas está esperando: catálogo da Awin no limite do dia — vai postar ou não?"
+  // O limite da Awin só segura os produtos do catálogo da Awin; os outros 50 e tantos saem.
+  const tudo = [
     !grupo.ativo && 'o grupo está pausado em config/grupos.json',
     store.data.pausado && 'os posts estão pausados (/voltar)',
     agoraPode.ritmo === false && `limite do dia (${grupo.maxPorDia} posts) ou ainda não é a hora do próximo`,
-    agoraPode.shopee === false && 'Shopee esperando a vez (1 a cada N posts)',
-    agoraPode.awin === false && 'catálogo da Awin no limite do dia',
-    agoraPode.masculino === false && 'masculino esperando a vez (1 a cada N posts)',
   ].filter(Boolean);
+  const ehAwin = (p) => String(p.id).startsWith('AWF-');
+  const presos = (p) =>
+    [
+      agoraPode.shopee === false && p.loja === 'shopee' && 'Shopee esperando a vez (1 a cada N posts)',
+      agoraPode.awin === false && ehAwin(p) && 'catálogo da Awin no limite do dia',
+      agoraPode.masculino === false && genero(p) === 'm' && 'masculino esperando a vez (1 a cada N posts)',
+    ].filter(Boolean);
+  const livres = fila.filter((p) => !presos(p).length).length;
+  const porque = [...new Set(fila.flatMap(presos))];
   const total = Object.values(recusas).reduce((s, n) => s + n, 0);
   let conclusao;
   if (!fila.length) conclusao = total ? `👉 *A fila está vazia*: as buscas acharam ${total} ofertas, mas nenhuma passou nas regras do grupo (motivos acima).` : '👉 *A fila está vazia* e as buscas não trouxeram nada novo para este grupo.';
-  else if (segurando.length) conclusao = `👉 *Tem ${fila.length} na fila, mas está esperando*: ${segurando.join('; ')}.`;
-  else conclusao = `👉 Tem ${fila.length} na fila e nada segurando: sai no próximo horário de envio.`;
+  else if (tudo.length) conclusao = `👉 *Tem ${fila.length} na fila, mas nada sai agora*: ${tudo.join('; ')}.`;
+  else if (!livres) conclusao = `👉 *Tem ${fila.length} na fila, mas todas estão esperando*: ${porque.join('; ')}.`;
+  else conclusao = `👉 *Vai postar*: ${livres} de ${fila.length} podem sair no próximo horário de envio${porque.length ? ` (as outras ${fila.length - livres} esperam: ${porque.join('; ')})` : ''}.`;
   const desdeTxt = new Date(desde).toLocaleTimeString('pt-BR', { timeZone: tz, hour: '2-digit', minute: '2-digit' });
   return [
     `*Fila do ${nome}* 🔎`,
