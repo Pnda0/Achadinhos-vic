@@ -67,6 +67,16 @@ export class TelegramSender {
     throw err;
   }
 
+  /**
+   * Endereço para baixar uma foto guardada pelo file_id (foto de mensagem do Telegram). O WhatsApp precisa do arquivo:
+   * sem isso a oferta saía só com o texto no WhatsApp (05/11/2026, Apple Watch da Amazon sem foto). A URL tem o token:
+   * só serve para baixar aqui, nunca vai em mensagem nem em log.
+   */
+  async urlDaFoto(fileId) {
+    const f = await this.call('getFile', { file_id: fileId });
+    return f?.file_path ? `https://api.telegram.org/file/bot${this.token}/${f.file_path}` : null;
+  }
+
   async init() {
     const eu = await this.call('getMe');
     this.eu = eu;

@@ -153,3 +153,20 @@ test('espelho: reiniciar o bot não encurta o ritmo — espera o que falta desde
   await e2.rodar({ parar: () => v2++ >= 1 });
   assert.ok(esperas2[0] >= 6 * 60_000, 'a 1ª espera é a do intervalo, depois de tentar mandar');
 });
+
+// 05/11/2026, o dono: "esse não apareceu a imagem" (Apple Watch da Amazon no WhatsApp). A foto era file_id do Telegram.
+test('espelho: foto do Telegram (file_id) é baixada pelo Telegram e vai com a imagem', async () => {
+  const b = montar();
+  b.e.urlDaFoto = async (id) => `https://api.telegram.org/file/botX/photos/${id}.jpg`;
+  await b.e.ligarGrupos();
+  b.publicar('C1', 'Beleza', 5, { imagem: 'AgACAgEAAx0file_id_do_telegram' });
+  await b.e.enviarUma();
+  assert.equal(b.enviados[0][1], 'https://api.telegram.org/file/botX/photos/AgACAgEAAx0file_id_do_telegram.jpg');
+  // Telegram fora do ar: vai só o texto, como antes.
+  const c = montar();
+  c.e.urlDaFoto = async () => { throw new Error('sem rede'); };
+  await c.e.ligarGrupos();
+  c.publicar('C2', 'Beleza', 5, { imagem: 'AgACfile' });
+  await c.e.enviarUma();
+  assert.equal(c.enviados[0][1], null);
+});

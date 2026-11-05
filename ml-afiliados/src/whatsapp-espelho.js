@@ -71,7 +71,8 @@ export function dentroDoHorario(agora = new Date()) {
 }
 
 export class EspelhoWhatsApp {
-  constructor({ sender, store, carregarGrupos, avisos = null, intervaloMin = 6, arquivoGrupos = ARQUIVO_GRUPOS, agora = () => Date.now(), esperar = sleep }) {
+  constructor({ sender, store, carregarGrupos, avisos = null, intervaloMin = 6, arquivoGrupos = ARQUIVO_GRUPOS, agora = () => Date.now(), esperar = sleep, urlDaFoto = null }) {
+    this.urlDaFoto = urlDaFoto; // file_id do Telegram -> endereço para baixar (TelegramSender.urlDaFoto)
     this.sender = sender;
     this.store = store;
     this.carregarGrupos = carregarGrupos;
@@ -160,9 +161,12 @@ export class EspelhoWhatsApp {
     this.store.save();
     try {
       await this.sender.typing?.(jid, 4 + Math.random() * 6).catch(() => {});
-      const temFoto = /^https?:\/\//.test(p.imagem || '') || /^assets\//.test(p.imagem || '');
+      // Foto de mensagem do Telegram (file_id, ex.: a Amazon copiada de um canal): baixa pelo Telegram (urlDaFoto).
+      let imagem = p.imagem || '';
+      if (imagem && !/^(https?:\/\/|assets\/)/.test(imagem) && this.urlDaFoto) imagem = (await this.urlDaFoto(imagem).catch(() => null)) || '';
+      const temFoto = /^https?:\/\//.test(imagem) || /^assets\//.test(imagem);
       const legenda = paraWhatsApp(p.legenda); // o clique no link do site conta como WhatsApp
-      if (temFoto) await this.sender.sendImage(jid, p.imagem, legenda);
+      if (temFoto) await this.sender.sendImage(jid, imagem, legenda);
       else await this.sender.sendText(jid, legenda);
       evento('whatsapp', p);
       log(`📲 [WhatsApp ${grupo.nome}] ${String(p.nome).slice(0, 60)}`);

@@ -337,7 +337,7 @@ async function iniciarWhatsApp() {
       avisos.avisar('whatsapp-codigo', `*Conectar o WhatsApp do bot* 📲\nNo celular do chip: WhatsApp → Aparelhos conectados → Conectar um aparelho → *Conectar com número de telefone* e digite:\n\n*${codigo}*\n\n(o código muda a cada 3 minutos)`, { sempre: true }).catch(() => {});
     log(`📲 WhatsApp: conectando o número do bot (na 1ª vez, ${settings.whatsappNumero ? 'o código para conectar chega no Telegram do dono' : 'escaneie o QR code na janela do WhatsApp Web que abrir'})...`);
     await whats.init();
-    espelhoWhats = new EspelhoWhatsApp({ sender: whats, store, carregarGrupos: loadGrupos, avisos, intervaloMin: settings.whatsappIntervaloMin });
+    espelhoWhats = new EspelhoWhatsApp({ sender: whats, store, carregarGrupos: loadGrupos, avisos, intervaloMin: settings.whatsappIntervaloMin, urlDaFoto: sender.urlDaFoto ? (id) => sender.urlDaFoto(id) : null });
     const { ligados, problemas } = await espelhoWhats.ligarGrupos();
     log(`📲 WhatsApp ligado: ${ligados.map((n) => `${n} → "${loadGrupos().find((g) => g.nome === n)?.whatsapp}"`).join(', ') || 'nenhum grupo'} — 1 mensagem a cada ${settings.whatsappIntervaloMin} min.`);
     for (const p of problemas) log(`   ⚠️  WhatsApp — ${p}`);
