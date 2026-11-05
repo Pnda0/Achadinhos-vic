@@ -80,7 +80,12 @@
       "termos": [
         "dercos"
       ]
-    }
+    },
+    "Skala",
+    "Inoar",
+    "Haskell",
+    "Lowell",
+    "Cantu"
   ],
   "maquiagem": [
     "Maybelline",
@@ -165,7 +170,8 @@
     "Episol",
     "Needs",
     "Simple Organic",
-    "The Ordinary"
+    "The Ordinary",
+    "Eucerin"
   ],
   "precoMinimo": {
     "_comentario": "Marca cara vendida mais barata que isto (R$) = suspeita de falso e fica de fora (27/10/2026: um 'Lattafa Yara' de R$ 27 saiu no Perfumes; o de verdade custa R$ 150+; na Shopee os árabes originais com vendas custam de R$ 63 (30 ml) para cima).",
@@ -183,7 +189,12 @@
     "Yves Saint Laurent": 100,
     "Paco Rabanne": 100,
     "Jean Paul Gaultier": 100,
-    "Burberry": 100
+    "Burberry": 100,
+    "Armani": 100,
+    "Prada": 100,
+    "Versace": 100,
+    "Givenchy": 100,
+    "Ralph Lauren": 100
   },
   "perfumes": [
     "Carolina Herrera",
@@ -251,6 +262,72 @@
       "termos": [
         "l occitane",
         "loccitane"
+      ]
+    },
+    {
+      "marca": "Victoria's Secret",
+      "termos": [
+        "victoria s secret",
+        "victorias secret",
+        "victoria secret"
+      ]
+    },
+    {
+      "marca": "Antonio Banderas",
+      "termos": [
+        "antonio banderas",
+        "banderas"
+      ]
+    },
+    "Shakira",
+    {
+      "marca": "Britney Spears",
+      "termos": [
+        "britney spears",
+        "britney"
+      ]
+    },
+    {
+      "marca": "Armani",
+      "termos": [
+        "giorgio armani",
+        "emporio armani",
+        "armani"
+      ]
+    },
+    "Prada",
+    "Versace",
+    "Givenchy",
+    {
+      "marca": "Ralph Lauren",
+      "termos": [
+        "ralph lauren",
+        "polo ralph lauren"
+      ]
+    },
+    {
+      "marca": "Natura",
+      "termos": [
+        "natura",
+        "kaiak",
+        "essencial natura",
+        "natura ekos",
+        "natura luna",
+        "natura humor"
+      ]
+    },
+    {
+      "marca": "O Boticário",
+      "termos": [
+        "o boticario",
+        "boticario",
+        "floratta",
+        "egeo",
+        "malbec",
+        "zaad",
+        "lily lumiere",
+        "nativa spa",
+        "quasar"
       ]
     }
   ],
@@ -343,6 +420,18 @@
       "termos": [
         "mais mu",
         "+mu"
+      ]
+    },
+    "Asics",
+    "Mizuno",
+    "Olympikus",
+    "Fila",
+    "Puma",
+    {
+      "marca": "Under Armour",
+      "termos": [
+        "under armour",
+        "under armor"
       ]
     }
   ]

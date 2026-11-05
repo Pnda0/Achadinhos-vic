@@ -185,3 +185,18 @@ test('marca cara barata demais = suspeita de falso: fica de fora na busca e na h
   assert.equal(await enviarProximo({ sendImage: async () => ({ comImagem: true }), sendText: async () => {} }, grupo, s), null, 'o que já estava na fila não sai');
   assert.equal(s.list()[0].status, 'REJEITADO');
 });
+
+// 05/11/2026, o dono pediu marcas novas nos três grupos.
+test('marcas novas de 05/11/2026 entram no grupo certo; mochila escolar infantil não', async () => {
+  const { loadGrupos } = await import('../src/config.js');
+  const { motivoPeloNome } = await import('../src/pipeline.js');
+  const G = Object.fromEntries(loadGrupos().map((g) => [g.nome, g.filtros]));
+  const ok = {
+    Perfumes: ["Body Splash Victoria's Secret Bare Vanilla 250ml", 'Perfume Antonio Banderas Her Golden Secret Feminino EDT 80ml', 'Shakira Dance Eau de Toilette 80ml', 'Britney Spears Fantasy EDP 100ml', "Givenchy L'Interdit Eau de Parfum 50ml", 'Floratta Rose Desodorante Colônia 75ml O Boticário', 'Kaiak Feminino Desodorante Colônia Natura 100ml'],
+    Fitness: ['Tênis Asics Gel Nimbus Feminino', 'Tênis Mizuno Wave Prophecy Feminino', 'Tênis Olympikus Corre 3 Feminino', 'Tênis Fila Racer Feminino', 'Legging Puma Feminina Training', 'Top Under Armour Feminino Infinity'],
+    Beleza: ['Creme de Tratamento Skala Mais Cachos 1kg', 'Hidratante Eucerin Urea Repair 250ml', 'Shampoo Inoar Absolut 1L', 'Máscara Haskell Cavalo Forte 500g', 'Lowell Protect Care Shampoo', 'Cantu Shea Butter Leave-in Conditioning Repair Cream'],
+  };
+  for (const [g, nomes] of Object.entries(ok)) for (const nome of nomes) assert.equal(motivoPeloNome({ nome, precoAtual: 150 }, G[g]), null, `${g}: ${nome}`);
+  assert.ok(motivoPeloNome({ nome: 'Mochila Fila Escolar Infantil' }, G.Fitness));
+  assert.ok(motivoPeloNome({ nome: "Lingerie Victoria's Secret Renda" }, G.Perfumes));
+});

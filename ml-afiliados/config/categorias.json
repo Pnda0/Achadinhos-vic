@@ -460,5 +460,48 @@
     "buscaML": "whey bar max titanium",
     "reservaDescontoMinimo": 5,
     "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: tenis asics feminino",
+    "buscaML": "tenis asics feminino",
+    "reservaDescontoMinimo": 5,
+    "ativo": true,
+    "_comentario": "05/11/2026, o dono pediu as marcas Asics, Mizuno, Olympikus, Fila, Puma e Under Armour no Fitness."
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: tenis mizuno feminino",
+    "buscaML": "tenis mizuno feminino",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: tenis olympikus feminino",
+    "buscaML": "tenis olympikus feminino",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: tenis fila feminino",
+    "buscaML": "tenis fila feminino",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: tenis puma feminino",
+    "buscaML": "tenis puma feminino",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: under armour feminino",
+    "buscaML": "under armour feminino",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
   }
 ]
