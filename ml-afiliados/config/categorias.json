@@ -431,5 +431,34 @@
     "buscaML": "tenis new balance feminino",
     "reservaDescontoMinimo": 5,
     "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: barra de proteina bold",
+    "buscaML": "barra de proteina bold",
+    "reservaDescontoMinimo": 5,
+    "ativo": true,
+    "_comentario": "05/11/2026, o dono: 'precisamos incluir barrinha e yopro no fitness'."
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: barra de proteina integralmedica",
+    "buscaML": "barra de proteina integralmedica",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: barra proteica probiotica",
+    "buscaML": "barra proteica probiotica",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
+  },
+  {
+    "grupo": "Fitness",
+    "nome": "ML marca: whey bar max titanium",
+    "buscaML": "whey bar max titanium",
+    "reservaDescontoMinimo": 5,
+    "ativo": true
   }
 ]

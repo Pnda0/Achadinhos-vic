@@ -306,6 +306,44 @@
       "termos": [
         "re:^(?![\\s\\S]*(suti[ãa]|soutien|calcinha|\\bcuecas?\\b|\\bmeias?\\b|modelador|\\bcinta\\b|\\bloba\\b|infantil|\\bkids\\b))(?=[\\s\\S]*\\blupo\\b)(?=[\\s\\S]*\\b(leggings?|cal[cç]as?|tops?|cropped|shorts?|bermudas?|macaquinho|macac[ãa]o|regatas?|camisetas?|conjuntos?|jaquetas?|corta.?vento|saias?)\\b)"
       ]
+    },
+    {
+      "marca": "YoPRO",
+      "termos": [
+        "yopro",
+        "yo pro"
+      ]
+    },
+    {
+      "marca": "Bold",
+      "termos": [
+        "bold bar",
+        "bold snacks",
+        "bold thin",
+        "re:\bbold\b(?=[sS]*\b(barras?|barrinhas?|bar|protein|proteinas?|whey|snacks?)\b)",
+        "re:\b(barras?|barrinhas?|bar|protein|proteinas?|whey)\b[sS]*\bbold\b"
+      ]
+    },
+    {
+      "marca": "Probiótica",
+      "termos": [
+        "probiotica"
+      ]
+    },
+    "Nutrata",
+    {
+      "marca": "Dr. Peanut",
+      "termos": [
+        "dr peanut",
+        "dr. peanut"
+      ]
+    },
+    {
+      "marca": "+Mu",
+      "termos": [
+        "mais mu",
+        "+mu"
+      ]
     }
   ]
 }
