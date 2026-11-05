@@ -336,7 +336,7 @@
       "marca": "Growth Supplements",
       "termos": [
         "growth supplements",
-        "growth"
+        "re:^(?=[\\s\\S]*\\bgrowth\\b)(?=[\\s\\S]*\\b(whey|creatina|pr[eé].?treino|prote[ií]na|suplemento|bcaa|glutamina|hipercal[oó]rico|termog[eê]nico|cafe[ií]na|col[aá]geno|albumina|barras?|barrinhas?|bar|proteic[oa]s?|shake|bebida|iogurte|pasta de amendoim)\\b)"
       ]
     },
     "Max Titanium",
@@ -351,7 +351,7 @@
       "marca": "Dux Nutrition",
       "termos": [
         "dux nutrition",
-        "dux"
+        "re:^(?=[\\s\\S]*\\bdux\\b)(?=[\\s\\S]*\\b(whey|creatina|pr[eé].?treino|prote[ií]na|suplemento|bcaa|glutamina|hipercal[oó]rico|termog[eê]nico|cafe[ií]na|col[aá]geno|albumina|barras?|barrinhas?|bar|proteic[oa]s?|shake|bebida|iogurte|pasta de amendoim)\\b)"
       ]
     },
     "Black Skull",
@@ -419,14 +419,25 @@
       "marca": "+Mu",
       "termos": [
         "mais mu",
-        "+mu"
+        "re:^(?=[\\s\\S]*\\+\\s?mu\\b)(?=[\\s\\S]*\\b(whey|creatina|pr[eé].?treino|prote[ií]na|suplemento|bcaa|glutamina|hipercal[oó]rico|termog[eê]nico|cafe[ií]na|col[aá]geno|albumina|barras?|barrinhas?|bar|proteic[oa]s?|shake|bebida|iogurte|pasta de amendoim)\\b)"
       ]
     },
     "Asics",
     "Mizuno",
     "Olympikus",
-    "Fila",
-    "Puma",
+    {
+      "marca": "Fila",
+      "termos": [
+        "re:^(?=[\\s\\S]*\\bfila\\b)(?=[\\s\\S]*\\b(t[eê]nis|chinelos?|sand[aá]lias?|meias?|camisetas?|camisas?|regatas?|leggings?|cal[cç]as?|tops?|shorts?|bermudas?|jaquetas?|moletom|agasalho|mochilas?|bon[eé]s?|viseira|conjuntos?|macaquinho|cropped|jogger|corta.?vento|squeeze|garrafa|luvas?)\\b)"
+      ],
+      "_comentario": "05/11/2026: 'fila' também é fileira ('pérola fila dupla'): um brinco da Shopee saiu no Fitness. Só vale junto de roupa/tênis."
+    },
+    {
+      "marca": "Puma",
+      "termos": [
+        "re:^(?=[\\s\\S]*\\bpuma\\b)(?=[\\s\\S]*\\b(t[eê]nis|chinelos?|sand[aá]lias?|meias?|camisetas?|camisas?|regatas?|leggings?|cal[cç]as?|tops?|shorts?|bermudas?|jaquetas?|moletom|agasalho|mochilas?|bon[eé]s?|viseira|conjuntos?|macaquinho|cropped|jogger|corta.?vento|squeeze|garrafa|luvas?)\\b)"
+      ]
+    },
     {
       "marca": "Under Armour",
       "termos": [

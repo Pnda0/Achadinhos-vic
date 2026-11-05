@@ -47,3 +47,14 @@ test('Fitness: relógio inteligente de marca boa entra; genérico, acessório e 
     assert.ok(motivoPeloNome({ nome }, f), nome);
   }
 });
+
+// 05/11/2026, o dono (bravo, com o grupo no ar): "DREJEW 2 Peças Brincos De Pérola" saiu no Fitness. "Fila" (a marca)
+// também é fileira ("pérola fila dupla"): marca com nome de palavra comum só vale junto do tipo de produto certo.
+test('Fitness: bijuteria e palavras comuns que são marca (fila, puma, growth, +mu, dux) não passam sozinhas', () => {
+  for (const nome of ['DREJEW 2 Peças Brincos De Pérola', 'DREJEW 2 Peças Brincos De Pérola Fila Dupla Feminino', 'Colar de Pérolas 3 Filas Banhado a Ouro', 'Organizador de Fila Retrátil', 'Pelúcia Puma Filhote', 'Hair Growth Oil Alecrim 30ml', 'Brinco Argola Adidas', 'Anel Prata 925 Ajustável', 'Tiara Fitness Feminina Strass', 'Kit Pincéis Maquiagem Nike']) {
+    assert.ok(motivoPeloNome({ nome }, f), nome);
+  }
+  for (const nome of ['Tênis Fila Racer Feminino', 'Legging Puma Feminina Training', 'Creatina Growth 250g', 'Whey Protein Concentrado Growth 1kg', 'Kit 12 Barrinhas +Mu Proteína', 'Whey Dux Nutrition 900g']) {
+    assert.equal(motivoPeloNome({ nome }, f), null, nome);
+  }
+});
