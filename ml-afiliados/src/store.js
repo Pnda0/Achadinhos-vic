@@ -38,7 +38,7 @@ const TAMANHO = /^\d+([.,]\d+)?(ml|l|g|kg|mg|un|und|unid|pcs|caps|capsulas)?$/;
 // anúncio dizia "50ml" e o bot achou que eram tamanhos diferentes). Número sem unidade vale como o mesmo número com unidade.
 const UNIDADE_SEPARADA = /\b(\d+(?:[.,]\d+)?) (ml|l|g|kg|mg|un|und|unid|pcs|caps|capsulas)\b/g;
 const numeroDoTamanho = (t) => t.match(/^\d+(?:[.,]\d+)?/)[0].replace(',', '.');
-function palavrasDoProduto(nome) {
+export function palavrasDoProduto(nome) {
   const palavras = new Set();
   const tamanhos = new Set();
   for (const t of normalizar(nome).replace(UNIDADE_SEPARADA, '$1$2').split(' ')) {

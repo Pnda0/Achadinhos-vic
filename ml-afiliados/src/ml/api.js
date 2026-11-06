@@ -21,7 +21,8 @@ import path from 'node:path';
 import { DATA_DIR, settings } from '../config.js';
 import { normalizar, sleep } from '../util.js';
 import { generoDoProduto } from '../genero.js';
-import { parecido } from '../store.js';
+import { marcaDoProduto } from '../marcas.js';
+import { palavrasDoProduto, parecido } from '../store.js';
 import { imageUrlFromId, normalizeImageUrl } from './parser.js';
 
 const API = 'https://api.mercadolibre.com';
@@ -251,6 +252,64 @@ export function mesmoProduto(doPost, doCatalogo) {
   const ga = generoDoProduto({ nome: doPost });
   const gb = generoDoProduto({ nome: doCatalogo });
   return !(ga && gb && ga !== gb);
+}
+
+// Sabor e cor: os dois nomes dizem um e nenhum é o mesmo = outra versão do produto (a foto seria de outra embalagem/cor).
+const VERSOES = [
+  /\b(chocolate|baunilha|morango|cookies?|banana|coco|limao|maracuja|uva|laranja|neutro|frutas vermelhas|cappuccino|doce de leite|caramelo|menta|abacaxi|melancia|tangerina|cereja|acai|pessego|brigadeiro|leite ninho|chocomenta)\b/g,
+  /\b(preto|preta|branco|branca|rosa|azul|cinza|verde|vermelho|vermelha|lilas|roxo|roxa|bege|nude|marrom|amarelo|amarela|dourado|dourada|prata|grafite|marinho|vinho|coral|salmao|caqui)\b/g,
+];
+const raiz = (w) => (w.length > 4 ? w.replace(/s$/, '') : w); // "proteínas" = "proteína", "barras" = "barra"
+
+/**
+ * A foto do catálogo serve para o post? O mesmo produto (mesmoProduto) ou, com nome escrito de outro jeito (o da
+ * Amazon é comprido: "YoPRO Bebida Láctea UHT Chocolate 15g de proteínas 250ml" x "Bebida Láctea Yopro Chocolate 15g
+ * Proteína 250ml"), a mesma marca da lista, o mesmo tamanho, o mesmo tipo (refil, kit...), o mesmo público, sem sabor
+ * ou cor diferente, e pelo menos 3/4 das palavras do nome do catálogo no nome do post.
+ */
+export function mesmaFoto(doPost, doCatalogo) {
+  // Sabor/cor primeiro: o mesmoProduto aceita "Whey Growth 1kg Chocolate" = "... Baunilha" (5 de 7 palavras), e a
+  // foto seria de outra embalagem.
+  for (const re of VERSOES) {
+    const a = new Set(normalizar(doPost).match(re) || []);
+    const b = new Set(normalizar(doCatalogo).match(re) || []);
+    if (a.size && b.size && ![...a].some((x) => b.has(x))) return false;
+  }
+  if (mesmoProduto(doPost, doCatalogo)) return true;
+  const marca = marcaDoProduto({ nome: doPost });
+  if (!marca || marcaDoProduto({ nome: doCatalogo }) !== marca) return false;
+  const A = palavrasDoProduto(juntarUnidade(doPost));
+  const B = palavrasDoProduto(juntarUnidade(doCatalogo));
+  if (A.tamanhos.size && B.tamanhos.size && ![...A.tamanhos].some((t) => B.tamanhos.has(t))) return false;
+  const va = variantes(doPost);
+  const vb = variantes(doCatalogo);
+  if (va.size !== vb.size || [...va].some((v) => !vb.has(v))) return false;
+  const ga = generoDoProduto({ nome: doPost });
+  const gb = generoDoProduto({ nome: doCatalogo });
+  if (ga && gb && ga !== gb) return false;
+  const doPostRaiz = new Set([...A.palavras].map(raiz));
+  const doCatalogoRaiz = [...new Set([...B.palavras].map(raiz))];
+  const comuns = doCatalogoRaiz.filter((w) => doPostRaiz.has(w)).length;
+  return comuns >= 3 && comuns / doCatalogoRaiz.length >= 0.75;
+}
+
+/**
+ * Foto do MESMO produto no catálogo do ML, pelo nome (06/11/2026, o dono: "alguns posts da amazon estão vindo sem
+ * imagem"). Da Amazon não dá para tirar a foto: a API só abre depois das vendas mínimas e o Associados proíbe robô no
+ * site; a foto do canal pode ter o selo dele (fotoDoCanal: false) e a prévia do link da Amazon muitas vezes não monta.
+ * A do catálogo é a foto oficial do produto (fundo branco, sem selo de ninguém). Null se não achar o mesmo produto.
+ */
+export async function fotoPeloNome(api, nome, { resultados = 5 } = {}) {
+  if (!api?.configurada || !nome) return null;
+  const busca = await api.get(`/products/search?status=active&site_id=MLB&limit=${resultados}&q=${encodeURIComponent(String(nome).slice(0, 80))}`);
+  for (const r of busca?.results || []) {
+    if (!r.name || !mesmaFoto(nome, r.name)) continue;
+    const info = await api.produto(r.id);
+    if (!info?.imagem) continue;
+    api.salvarCache?.();
+    return info.imagem;
+  }
+  return null;
 }
 
 /**

@@ -6,7 +6,7 @@
  */
 import { loadCategorias, loadGrupos, loadMarcas, loadShopee, settings } from './config.js';
 import { ErroBloqueioML, scrapeCategoria } from './ml/scraper.js';
-import { buscarMaisVendidosML, buscarPorMarcaML } from './ml/api.js';
+import { buscarMaisVendidosML, buscarPorMarcaML, fotoPeloNome, MLApi } from './ml/api.js';
 
 /** Quanto tempo o bot fica sem pedir páginas ao ML depois de um bloqueio (verificação de tráfego suspeito). */
 export const PAUSA_ML_HORAS = 6;
@@ -22,6 +22,10 @@ const produtosAwinPadrao = process.env.NODE_TEST_CONTEXT
 // Nem a API do ML (os testes passam a sua).
 const maisVendidosPadrao = process.env.NODE_TEST_CONTEXT ? async () => [] : buscarMaisVendidosML;
 const buscaMarcaPadrao = process.env.NODE_TEST_CONTEXT ? async () => [] : buscarPorMarcaML;
+let apiDasFotos = null;
+const fotoDoCatalogoPadrao = process.env.NODE_TEST_CONTEXT ? async () => null : (nome) => fotoPeloNome((apiDasFotos ??= new MLApi()), nome);
+/** Quanto a busca da foto do catálogo pode segurar um envio: passou disso, o post sai sem ela. */
+const PRAZO_FOTO_MS = 15_000;
 /** Buscas por marca no ML (categorias com "buscaML") por coleta, revezando a lista: a API recusa quem pergunta demais. */
 export const BUSCAS_MARCA_POR_COLETA = 8;
 /** Quantas dessas vão para as marcas grandes, e quantas ofertas novas delas bastam para não descer às menores. */
@@ -624,7 +628,7 @@ export function prioridadeDoGrupo(grupo) {
   };
 }
 
-export async function enviarProximo(sender, grupo, store = new Store()) {
+export async function enviarProximo(sender, grupo, store = new Store(), { fotoDoCatalogo = fotoDoCatalogoPadrao } = {}) {
   const dias = grupo.filtros?.diasSemRepetir || 5;
   // Grupo com limite por dia (maxPorDia): ainda não é a hora do próximo post (ou o limite de hoje já saiu).
   if (!ritmoLiberado(store, grupo)) return { esperando: true };
@@ -672,7 +676,21 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
     log(`📭 [${grupo.nome}] fila vazia.`);
     return null;
   }
-  store.setStatus(p, 'ENVIANDO', { tentativaEm: new Date().toISOString() });
+  // Amazon sem foto (o canal põe o selo dele na foto, ou o post veio sem foto): a do MESMO produto no catálogo do ML
+  // (06/11/2026, o dono: "alguns posts da amazon estão vindo sem imagem"). Sem ela, vale a prévia do link, como antes.
+  let fotoNova = null;
+  if (!p.imagem && p.loja === 'amazon' && p.tipo !== 'cupom') {
+    let prazo;
+    const estourou = new Promise((resolve) => (prazo = setTimeout(() => resolve(null), PRAZO_FOTO_MS)));
+    fotoNova = await Promise.race([fotoDoCatalogo(p.nome), estourou])
+      .catch((e) => (log(`  🖼️  foto do catálogo do ML não veio (${String(e.message).split('\n')[0]})`), null))
+      .finally(() => clearTimeout(prazo));
+    if (fotoNova) {
+      p.imagem = fotoNova;
+      log(`  🖼️  [${grupo.nome}] Amazon sem foto: vai a do catálogo do ML (mesmo produto) — ${p.nome.slice(0, 55)}`);
+    }
+  }
+  store.setStatus(p, 'ENVIANDO', { tentativaEm: new Date().toISOString(), ...(fotoNova && { imagem: fotoNova, fotoDoCatalogoML: true }) });
   store.save();
   try {
     const titulo = p.tipo === 'cupom' ? tituloCupom(p) : null; // produto não tem mais título (formato de 20/10/2026)
