@@ -460,27 +460,29 @@ O bot só funciona com o computador ligado e a janela do `3-iniciar.bat` aberta.
 ## 5. Exemplo de mensagem gerada
 
 ```
-*CORRE QUE ACABA 🏃*
+💛 *MERCADO LIVRE*
 
-Tênis Masculino Feminino Kappa Park 2.0
+*Tênis Masculino Feminino Kappa Park 2.0*
 
-~De R$ 169,99~
-🔥 *Por R$ 69,34* no Pix (59% OFF)
-💰 Economia de R$ 100,65
+💰 de ~R$ 169,99~ por *R$ 69,34* no Pix
+💸 Economia de R$ 100,65 (59% OFF)
 
 🎟️ R$ 15 OFF com cupom
 🚚 Frete grátis ⚡FULL
 ⭐ 4,7 · +250 mil vendidos
 ⏳ Oferta relâmpago — acaba hoje!
 
-🛒 Ver oferta no Mercado Livre:
+🔗 use o link:
 https://meli.la/xxxxx
+
+> _Oferta válida por tempo limitado_
 
 🔗 Convide um amigo para o grupo: https://chat.whatsapp.com/...
 ```
 
 Regras da copy (`src/caption.js`), sempre com dado real, nunca inventado:
-- **Economia em R$** só quando ela for de R$ 30 ou mais; abaixo disso o % basta (e o % aparece uma vez só).
+- **Preço cheio riscado** (06/11/2026, o dono: "risque o valor cheio... pra focar mais no 300"): `~R$ 169,99~` é riscado no WhatsApp e vira `<s>` no Telegram (`paraHTML` em `src/telegram.js`); o preço de agora em negrito.
+- **Economia em R$** sempre que houver preço cheio, com o %; sem preço cheio, só o %.
 - **Preço com cupom** só quando o cupom é em reais e o preço não tem condição (sem "no Pix"); senão, só a linha do cupom.
 - **Prova social** (nota e/ou vendas) aparece mesmo com só um dos dois; **urgência** só na oferta relâmpago de verdade.
 - Código de cupom vai em `código`: no Telegram, um toque copia.

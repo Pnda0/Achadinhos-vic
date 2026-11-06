@@ -7,7 +7,7 @@ test('paraHTML: negrito e riscado do WhatsApp viram HTML do Telegram, sem quebra
   const p = { nome: 'Fone JBL <Tune> & Cia', precoAtual: 199.9, precoOriginal: 399.9, descontoPct: 50, linkAfiliado: 'https://meli.la/a_b*c' };
   const html = paraHTML(montarLegenda(p, { titulo: 'BUGOU O PREÇO' }));
   assert.match(html, /^💛 <b>MERCADO LIVRE<\/b>/);
-  assert.match(html, /💰 de R\$ 399,90 por <b>R\$ 199,90<\/b>/);
+  assert.match(html, /💰 de <s>R\$ 399,90<\/s> por <b>R\$ 199,90<\/b>/); // preço cheio riscado (06/11/2026)
   assert.match(html, /💸 Economia de R\$ 200 \(50% OFF\)/);
   assert.match(html, /<blockquote><i>Oferta válida por tempo limitado<\/i><\/blockquote>/);
   assert.match(html, /Fone JBL &lt;Tune&gt; &amp; Cia/);

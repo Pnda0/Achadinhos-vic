@@ -62,7 +62,7 @@ test('legenda: loja no topo, nome, de/por, economia, cupom, frete, nota e vendid
   const l = montarLegenda(produto, { titulo: 'pisante barato 👟', mensagemAdicional: '🔗 Convide um amigo' });
   assert.match(l, /^💛 \*MERCADO LIVRE\*\n\n\*Tênis Masculino Feminino Kappa Park 2\.0\*\n/);
   assert.doesNotMatch(l, /PISANTE/i, 'produto não tem mais título');
-  assert.match(l, /💰 de R\$ 169,99 por \*R\$ 69,34\* no Pix\n/);
+  assert.match(l, /💰 de ~R\$ 169,99~ por \*R\$ 69,34\* no Pix\n/); // preço cheio riscado (06/11/2026)
   assert.match(l, /💸 Economia de R\$ 100,65 \(59% OFF\)/);
   assert.match(l, /> _Oferta válida por tempo limitado_/);
   assert.match(l, /🎟️ R\$ 15 OFF com cupom\n/); // preço "no Pix": não dá para garantir que o cupom acumula

@@ -140,6 +140,6 @@ test('legenda da Amazon mostra a loja e a hora do preço (exigência da Amazon)'
   assert.match(txt, /^🛒 \*AMAZON\*/);
   assert.match(txt, /🔗 use o link:\nhttps:\/\/www\.amazon\.com\.br\/dp\/B0TESTE123\?tag=panda-20/);
   assert.match(txt, /> _Preço da Amazon às 14:32 — pode mudar_/);
-  assert.match(txt, /💰 de R\$ 499,90 por/);
+  assert.match(txt, /💰 de ~R\$ 499,90~ por/);
   assert.doesNotMatch(txt, /Mercado Livre/);
 });

@@ -191,7 +191,9 @@ export function montarLegenda(p, { titulo, mensagemAdicional = '' } = {}) {
   const linhasPreco = [];
   if (p.precoAtual) {
     const temDe = p.precoOriginal && p.precoOriginal > p.precoAtual;
-    linhasPreco.push(`💰 ${temDe ? `de ${formatBRL(p.precoOriginal)} ` : ''}por *${formatBRL(p.precoAtual)}*${p.precoObs ? ` ${p.precoObs}` : ''}`);
+    // Preço cheio riscado (06/11/2026, o dono: "risque o valor cheio... pra focar mais no 300"): ~x~ é riscado no
+    // WhatsApp, e o paraHTML (src/telegram.js) troca por <s> no Telegram.
+    linhasPreco.push(`💰 ${temDe ? `de ~${formatBRL(p.precoOriginal)}~ ` : ''}por *${formatBRL(p.precoAtual)}*${p.precoObs ? ` ${p.precoObs}` : ''}`);
     const economia = temDe ? centavos(p.precoOriginal - p.precoAtual) : 0;
     const pct = p.descontoPct || (temDe ? Math.round((economia / p.precoOriginal) * 100) : 0);
     if (economia > 0) linhasPreco.push(`💸 Economia de ${formatBRL(economia)}${pct ? ` (${pct}% OFF)` : ''}`);
