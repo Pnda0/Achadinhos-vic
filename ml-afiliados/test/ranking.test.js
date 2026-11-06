@@ -105,3 +105,15 @@ test('nota: produto caro perde pontos no Fitness e marca que já saiu hoje perde
   add(o('Whey Protein Max Titanium 900g', { id: 'MAX', descontoPct: 20, precoAtual: 119.9 }));
   assert.equal(store.proximo('Fitness', { nota: notaFit }).id, 'MAX');
 });
+
+// 06/11/2026, o dono: "que promoção lixo é essa... whey, creatina, tênis, yopro, monster, coca zero, barrinha, essas coisas
+// tem que ser prioridade".
+test('nota: whey, creatina, tênis, YoPRO, Monster, Coca Zero e barrinha passam na frente de roupa e relógio', () => {
+  const p = (nome, extra) => nota(o(nome, extra));
+  for (const nome of ['Whey Protein Growth Supplements 900g', 'Creatina Max Titanium 300g', 'Tênis Asics Gel Feminino', 'YoPRO Bebida Láctea 15g Proteína 250ml 12 unidades', 'Energético Monster Energy Lata 473ml', 'Coca-Cola Sem Açúcar Lata 350ml 12 unidades', 'Barra de Proteína Bold 60g 12 unidades']) {
+    assert.equal(p(nome).partes.tipo, 40, nome);
+  }
+  // Legging feminina da Lupo com 40% perde para Coca Zero com 20%.
+  assert.ok(p('Coca-Cola Sem Açúcar Lata 350ml 12 unidades', { descontoPct: 20 }).bruta > p('Legging Lupo Feminina Cintura Alta', { descontoPct: 40 }).bruta);
+  assert.ok(p('Whey Protein Integralmedica 900g', { descontoPct: 15 }).bruta > p('Smartwatch Amazfit Bip 6 Feminino', { descontoPct: 45 }).bruta);
+});

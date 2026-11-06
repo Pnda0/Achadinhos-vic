@@ -19,6 +19,9 @@
         "Centauro",
         "Lupo",
         "YoPRO",
+        "Monster",
+        "Coca-Cola Zero",
+        "Pepsi Black",
         "Bold",
         "Probiótica",
         "Nutrata",
@@ -454,13 +457,37 @@
       ]
     },
     {
+      "marca": "Monster",
+      "termos": [
+        "monster energy",
+        "monster+energetico",
+        "monster+energeticos",
+        "monster+ultra",
+        "monster+lata"
+      ]
+    },
+    {
+      "marca": "Coca-Cola Zero",
+      "termos": [
+        "coca+zero",
+        "coca+sem acucar"
+      ]
+    },
+    {
+      "marca": "Pepsi Black",
+      "termos": [
+        "pepsi+zero",
+        "pepsi black"
+      ]
+    },
+    {
       "marca": "Bold",
       "termos": [
         "bold bar",
         "bold snacks",
         "bold thin",
-        "re:\bbold\b(?=[sS]*\b(barras?|barrinhas?|bar|protein|proteinas?|whey|snacks?)\b)",
-        "re:\b(barras?|barrinhas?|bar|protein|proteinas?|whey)\b[sS]*\bbold\b"
+        "re:\\bbold\\b(?=[\\s\\S]*\\b(barras?|barrinhas?|bar|protein|prote[ií]nas?|whey|snacks?)\\b)",
+        "re:\\b(barras?|barrinhas?|bar|protein|prote[ií]nas?|whey)\\b[\\s\\S]*\\bbold\\b"
       ]
     },
     {
@@ -631,5 +658,6 @@
       ]
     },
     "Fitbit"
-  ]
+  ],
+  "_comentarioBebidas": "06/11/2026, o dono: 'whey, creatina, tênis, yopro, monster, coca zero, barrinha... tem que ser prioridade'. Monster (só o energético), Coca-Cola Zero / Sem Açúcar e Pepsi Black / Zero entram no Fitness; a Coca e a Pepsi normais não."
 }

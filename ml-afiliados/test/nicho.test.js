@@ -157,3 +157,22 @@ test('fitness: o que FICA DE FORA', () => {
   assert.equal(motivo('Creatina 300g', { descontoPct: 5 }), 'desconto baixo');
   assert.equal(motivo('Creatina 300g', { nota: 3.1 }), 'nota baixa');
 });
+
+// 06/11/2026, o dono: "não é possível que não tinha promoção melhor: Loop De Banda Respirável Com Alça - Fitbit".
+test('fitness: pulseira de relógio com outro nome (loop, banda, alça, strap) fica de fora; o relógio não', () => {
+  for (const nome of ['Loop De Banda Respirável Com Alça Para Fitbit Charge 6', 'Strap Nylon Esportivo Apple Watch 41mm', 'Alça Loop Magnética Para Garmin Forerunner', 'Bumper Protetor Galaxy Watch 6 44mm']) {
+    assert.equal(motivo(nome), 'palavra bloqueada', nome);
+  }
+  for (const nome of ['Smartwatch Fitbit Charge 6 Preto', 'Relógio Garmin Forerunner 265 GPS', 'Kit Faixa Elástica Mini Band 5 Intensidades']) assert.equal(motivo(nome), null, nome);
+});
+
+// 06/11/2026, o dono: "whey, creatina, tênis, yopro, monster, coca zero, barrinha, essas coisas tem que ser prioridade".
+test('fitness: Monster, Coca Zero e Pepsi Black entram (só zero/energético); Coca normal não', async () => {
+  const { marcaDoProduto } = await import('../src/marcas.js');
+  for (const [nome, marca] of [['Energético Monster Energy Ultra Lata 473ml Pack 6', 'Monster'], ['Refrigerante Coca-Cola Sem Açúcar Lata 350ml 12 Unidades', 'Coca-Cola Zero'], ['Coca Cola Zero 2L', 'Coca-Cola Zero'], ['Refrigerante Zero Pepsi Black Lata 350ml Pack com 12 unidades', 'Pepsi Black']]) {
+    assert.equal(marcaDoProduto({ nome }), marca, nome);
+    assert.equal(motivo(nome), null, nome);
+  }
+  assert.equal(marcaDoProduto({ nome: 'Refrigerante Coca-Cola Original Lata 350ml' }), null);
+  assert.equal(marcaDoProduto({ nome: 'Boneca Monster High Draculaura' }), null);
+});

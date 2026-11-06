@@ -10,7 +10,8 @@
  *   Desconto ......... até 30  0,5 ponto por % de desconto (até 60%); mais que isso costuma ser "de" inflado
  *   Público .......... feminino 25, neutro 0, masculino -40 (o público é de meninas, 15/10/2026: masculino só quando
  *                      não há outra; o limite de 1 masculino a cada N continua à parte)
- *   Tipo do grupo .... até 20  "prioridade" do grupo (Fitness: tênis e suplementos de marca, 04/11/2026)
+ *   Tipo do grupo .... até 40  "prioridade" do grupo, 10 por ponto de peso (Fitness: whey, creatina, tênis, YoPRO, Monster,
+ *                      Coca Zero, barrinha = 40; outros suplementos = 20 — 04 e 06/11/2026)
  *   Vendas ........... até 10  10 mil+ = 10, mil = 7,5, cem = 5; sem número (Amazon dos canais) = 5
  *   Avaliação ........ -5 a 5  4,8+ = 5; 4,5+ = 3; abaixo de 4 = -5; sem nota = 2
  *   Menor preço 30 d .     5
@@ -30,7 +31,7 @@ import { generoDoProduto } from './genero.js';
 import { listaDeMarcas, marcaDoProduto } from './marcas.js';
 import { lerVendas } from './ml/vendas.js';
 
-const MAXIMO = 40 + 30 + 25 + 20 + 10 + 5 + 5 + 5; // a melhor oferta possível
+const MAXIMO = 40 + 30 + 25 + 40 + 10 + 5 + 5 + 5; // a melhor oferta possível
 
 /** Marcas que o Claude acrescentou por conta própria (config/marcas.json > "nivel" > "secundarias"). */
 function secundarias(cfg = loadMarcas()) {
@@ -69,7 +70,7 @@ export function notaDaOferta({ prioridade = () => 0, genero = generoDoProduto, c
     partes.marca = pontosDaMarca(marca, conf, extras);
     partes.desconto = Math.min(60, Math.max(0, Number(p.descontoPct) || 0)) * 0.5;
     partes.publico = { f: 25, m: -40 }[genero(p)] ?? 0;
-    partes.tipo = Math.min(20, 10 * (Number(prioridade(p)) || 0));
+    partes.tipo = Math.min(40, 10 * (Number(prioridade(p)) || 0));
     const vendas = lerVendas(p.vendidos)?.minimo;
     partes.vendas = vendas ? Math.min(10, 2.5 * Math.log10(1 + vendas)) : 5;
     const n = Number(p.nota);

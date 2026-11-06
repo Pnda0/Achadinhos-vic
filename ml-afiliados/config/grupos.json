@@ -148,17 +148,51 @@
       "soMarcas": true,
       "prioridade": [
         {
-          "termos": ["tenis"],
-          "peso": 2,
+          "termos": [
+            "whey",
+            "creatina",
+            "tenis",
+            "yopro",
+            "yo pro",
+            "monster",
+            "energetico",
+            "coca+zero",
+            "coca+sem acucar",
+            "pepsi+zero",
+            "pepsi black",
+            "refrigerante+zero",
+            "barrinha",
+            "barra de proteina",
+            "barra proteica",
+            "barras de proteina",
+            "protein bar",
+            "whey bar",
+            "bebida lactea+proteina",
+            "bebida proteica",
+            "shake proteico"
+          ],
+          "peso": 4,
           "soComMarca": true
         },
         {
-          "termos": ["whey", "creatina", "colageno", "pre treino", "pre-treino", "proteina", "hipercalorico", "bcaa", "glutamina", "barra de proteina", "barra proteica", "barrinha", "protein bar", "whey bar", "yopro", "multivitaminico", "termogenico", "suplemento"],
+          "termos": [
+            "pre treino",
+            "pre-treino",
+            "proteina",
+            "hipercalorico",
+            "bcaa",
+            "glutamina",
+            "colageno",
+            "multivitaminico",
+            "termogenico",
+            "suplemento",
+            "pasta de amendoim"
+          ],
           "peso": 2,
           "soComMarca": true
         }
       ],
-      "_comentarioPrioridade": "04/11/2026, o dono: 'priorize tênis e suplementos das marcas boas'. Tênis e suplementos de marca da lista (config/marcas.json, Fitness) passam na frente na fila (prioridadeDoGrupo em src/pipeline.js). Sem marca, não ganham nada."
+      "_comentarioPrioridade": "04/11/2026, o dono: 'priorize tênis e suplementos das marcas boas'. 06/11/2026, bravo com uma pulseira de Fitbit: 'whey, creatina, tênis, yopro, monster, coca zero, barrinha, essas coisas tem que ser prioridade'. Na nota da oferta (src/ranking.js) o 1º bloco vale 40 pontos (peso 4) e o 2º (outros suplementos) 20: com isso eles passam na frente de roupa, relógio e acessório. Só com marca da lista."
     },
     {
       "nome": "Beleza",
