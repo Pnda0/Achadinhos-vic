@@ -100,12 +100,13 @@ test('fitness: o que ENTRA (suplementos, roupa e tênis de treino, relógios e e
     'Tênis Olympikus Corre 3 Masculino',
     'Tênis Masculino Esportivo Leve Para Corrida',
     'Smartwatch Xiaomi Redmi Watch 5 Active',
-    'Relógio Inteligente Amazfit Bip 5',
     'Fone De Ouvido Esportivo Bluetooth Jbl Endurance',
     'Balança Digital Corporal Bioimpedância Bluetooth',
   ]) {
     assert.equal(motivo(nome), null, nome);
   }
+  // Relógio de marca tem preço mínimo (config/marcas.json > precoMinimo): a R$ 99 seria réplica.
+  assert.equal(motivo('Relógio Inteligente Amazfit Bip 5', { precoAtual: 399 }), null);
 });
 
 test('fitness: equipamentos entram com títulos do tema; acessório avulso de relógio não (05/11/2026)', () => {
@@ -163,7 +164,56 @@ test('fitness: pulseira de relógio com outro nome (loop, banda, alça, strap) f
   for (const nome of ['Loop De Banda Respirável Com Alça Para Fitbit Charge 6', 'Strap Nylon Esportivo Apple Watch 41mm', 'Alça Loop Magnética Para Garmin Forerunner', 'Bumper Protetor Galaxy Watch 6 44mm']) {
     assert.equal(motivo(nome), 'palavra bloqueada', nome);
   }
-  for (const nome of ['Smartwatch Fitbit Charge 6 Preto', 'Relógio Garmin Forerunner 265 GPS', 'Kit Faixa Elástica Mini Band 5 Intensidades']) assert.equal(motivo(nome), null, nome);
+  for (const nome of ['Smartwatch Fitbit Charge 6 Preto', 'Relógio Garmin Forerunner 265 GPS', 'Kit Faixa Elástica Mini Band 5 Intensidades']) assert.equal(motivo(nome, { precoAtual: 899 }), null, nome);
+});
+
+test('casaTermo: "re:" é expressão sobre o nome normalizado; expressão inválida não casa nem quebra', () => {
+  assert.equal(casaTermo(normalizar('Fonte Turbo 20W'), 're:\\bfonte\\b(?! de proteina)'), true);
+  assert.equal(casaTermo(normalizar('Whey Fonte de Proteína'), 're:\\bfonte\\b(?! de proteina)'), false);
+  assert.equal(casaTermo('qualquer coisa', 're:(['), false);
+});
+
+// 06/11/2026, o dono: "caiu fonte de carregador de celular no grupo fitness, tá certo isso?". "Carregador" já era
+// bloqueado; o anúncio que diz "Fonte" e cita o relógio (Apple Watch, Galaxy Watch, Mi Band: palavra do nicho e marca) passava.
+test('fitness: fonte, carregador, cabo e power bank de celular ficam de fora; "fonte de proteína" não', () => {
+  for (const nome of [
+    'Fonte Turbo 20W USB-C Original Para iPhone iPad AirPods Apple Watch',
+    'Fonte Carregador Turbo 25W Samsung Galaxy Watch',
+    'Fonte Xiaomi 33W Para Mi Band',
+    'Kit 2 Carregadores Turbo Galaxy Watch Galaxy Buds',
+    'Adaptador De Energia USB-C 20W Para iPhone e Apple Watch',
+    'Power Bank Magnético 10000mAh Para iPhone e Apple Watch',
+    'Cabo USB-C Magnético Para Apple Watch 1m',
+    'Cabo Magnético Para Smartwatch Amazfit Bip',
+    'Base De Carregamento Magnética Para Smartwatch Amazfit',
+  ]) {
+    assert.equal(motivo(nome), 'palavra bloqueada', nome);
+  }
+  for (const nome of [
+    'Whey Protein Concentrado 900g Growth Supplements Fonte De Proteína',
+    'Pasta De Amendoim Dr. Peanut 600g Alta Fonte De Proteínas',
+    'Barra De Proteína Bold 60g Fonte De Fibras',
+    'Maltodextrina 1kg Fonte De Energia',
+    'Iogurte YoPRO 160g Rica Fonte De Proteína',
+    'Whey Protein 3W 900g Max Titanium Excelente Fonte Proteica',
+    'Creatina Monohidratada 300g Growth Supplements Fonte',
+    'Fone De Ouvido Esportivo Bluetooth Jbl Endurance',
+  ]) {
+    assert.equal(motivo(nome), null, nome);
+  }
+  // Nos outros grupos também: carregador, fonte e adaptador de tomada, cabo USB e power bank nunca são do tema.
+  const beleza = semFiltroDeMarca(loadGrupos().find((g) => g.nome === 'Beleza'));
+  for (const w of ['carregador+celular', 'fonte+usb', 'adaptador+tomada', 'cabo+usb', 'power bank']) assert.ok(beleza.filtros.palavrasBloqueadas.includes(w), w);
+});
+
+test('relógio de marca barato demais é réplica ou acessório que cita a marca; o de verdade passa', async () => {
+  const { motivoPrecoDaMarca } = await import('../src/marcas.js');
+  assert.match(motivoPrecoDaMarca({ nome: 'Relógio Smartwatch Série 9 Tipo Apple Watch 45mm', precoAtual: 89.9 }) || '', /Apple Watch/);
+  assert.match(motivoPrecoDaMarca({ nome: 'Smartwatch Galaxy Watch 6 Classic 47mm', precoAtual: 79 }) || '', /Galaxy Watch/);
+  assert.match(motivoPrecoDaMarca({ nome: 'Carregador Para Garmin Forerunner', precoAtual: 29 }) || '', /Garmin/);
+  for (const [nome, preco] of [['Apple Watch SE GPS 40mm Caixa Meia-noite de Alumínio', 1599], ['Xiaomi Smart Band 9 Active Preto', 119], ['Monitor Cardíaco Garmin HRM-Dual', 449], ['Relógio Inteligente Amazfit Bip 5', 399]]) {
+    assert.equal(motivoPrecoDaMarca({ nome, precoAtual: preco }), null, nome);
+  }
 });
 
 // 06/11/2026, o dono: "whey, creatina, tênis, yopro, monster, coca zero, barrinha, essas coisas tem que ser prioridade".

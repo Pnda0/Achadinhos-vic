@@ -66,14 +66,32 @@ export function normalizar(t) {
     .trim();
 }
 
+const regexDoTermo = new Map();
+
 /**
  * O texto (já normalizado) casa com o termo? Cada parte separada por "+" precisa aparecer como
  * palavra inteira (aceita plural simples): "tenis+corrida" casa com "Tênis de Corrida Masculino",
  * "top+fitness" NÃO casa com "Laptop Fitness".
+ * "re:<expressão>" (06/11/2026): expressão regular sobre o texto JÁ NORMALIZADO (minúsculo, sem acento, só letras,
+ * números e espaço), para o que o "a+b" não diz — ex.: nas bloqueadas do Fitness, "fonte" (de tomada) fica de fora,
+ * mas "fonte de proteína" não. Expressão inválida não casa com nada (e não derruba o filtro).
  */
 export function casaTermo(textoNorm, termo) {
+  const t = String(termo);
+  if (t.startsWith('re:')) {
+    if (!regexDoTermo.has(t)) {
+      let re = null;
+      try {
+        re = new RegExp(t.slice(3), 'i');
+      } catch {
+        console.warn(`⚠️  expressão inválida na configuração (ignorada): ${t}`);
+      }
+      regexDoTermo.set(t, re);
+    }
+    return regexDoTermo.get(t)?.test(textoNorm) ?? false;
+  }
   const alvo = ` ${textoNorm} `;
-  return String(termo)
+  return t
     .split('+')
     .map(normalizar)
     .filter(Boolean)

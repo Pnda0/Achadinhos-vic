@@ -93,6 +93,7 @@ Um grupo pode receber só um tipo de produto. Em `config/grupos.json` o grupo ga
 - `obrigatorias`: o nome do produto precisa casar com **pelo menos uma** linha. `tenis+corrida` = precisa ter as duas palavras. Vale palavra inteira, sem ligar para acento, maiúscula ou plural simples.
 - `extras`: também entram, mas com os títulos gerais (ex.: fone comum e tênis casual no Fitness — não faz sentido "BORA TREINAR" num fone).
 - `bloqueadas`: se casar com alguma, fica de fora (ex.: `aquario`; `aparador+grama` = as duas palavras juntas). Vale palavra inteira: `pet` não barra "tapete".
+- `re:<expressão>` (06/11/2026), em qualquer lista acima: expressão regular sobre o nome **já sem acento, minúsculo e só com letras, números e espaço** (`casaTermo` em `src/util.js`), para o que `a+b` não diz. Ex.: no Fitness, "fonte" de tomada fica de fora, mas "fonte de proteína" não. Expressão inválida é ignorada (aviso no log).
 - `titulos`: títulos prontos com a cara do nicho (usados quando não há IA configurada).
 
 Grupo ligado (`"ativo": true`) mas **sem canal** fica em espera: o bot não busca nem posta nada para ele, e o aviso "Bot ligado" lista quem está esperando. Para ligar o canal, veja a seção 3.12.
