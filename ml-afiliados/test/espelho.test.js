@@ -472,6 +472,36 @@ test('caixa de entrada: link da Amazon sozinho pede o nome e o preço', async ()
   assert.match(respostas[0], /mande junto o nome do produto e o preço/);
 });
 
+// 06/11/2026, o dono: "coloquei esse link pra ir pro topo da fila do fitness, mas ele não tá reconhecendo" (Pepsi Black
+// Zero, tudo numa linha só, e Pepsi não é palavra do nicho de nenhum grupo).
+test('caixa de entrada: nome antes do preço numa linha só; o nome do grupo na mensagem escolhe o grupo', async () => {
+  const agora = { t: 1_800_000_000_000 };
+  const pepsi = 'Refrigerante Zero Pepsi Black Lata 350ml Pack com 12 unidades R$ 31,08 Comprar na Amazon: https://www.amazon.com.br/dp/B0954R6FNH?tag=sentinelapr03-20&th=1';
+  const rodar = async (textos) => {
+    const respostas = [];
+    const store = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-amz-')), 'db.json'));
+    const espelho = new Espelho({
+      sender: { lerMensagens: async () => textos.map((texto, i) => ({ id: `tg-555-${i}`, jid: '555', t: seg(agora, 1), texto, foto: null })), sendText: async (jid, t) => respostas.push(t) },
+      store,
+      affiliate: { refresh: async () => {}, createLinks: async () => new Map() },
+      fontes: [{ nome: 'Caixa de entrada', jid: '555', destino: 'Fitness', manual: true, destinos: [{ grupo: 'Fitness', palavras: ['whey'] }, { grupo: 'Beleza', palavras: ['batom'] }] }],
+      grupos: [{ nome: 'Fitness', jid: '-1001', ativo: true, filtros: {} }, { nome: 'Beleza', jid: '-1002', ativo: true, filtros: {} }],
+      cfg: { pausaEntreConsultasSeg: 0 },
+      agora: () => agora.t, esperar: async () => {},
+      amazonTag: 'achadin09027e-20',
+    });
+    await espelho.tick();
+    return { respostas, fila: Object.values(store.data.produtos) };
+  };
+  const sem = await rodar([pepsi]);
+  assert.match(sem.respostas[0], /não reconheci de qual grupo é[\s\S]*fitness, beleza/);
+  for (const texto of [`fitness\n${pepsi}`, `${pepsi}\npro grupo fitness`, `#fit ${pepsi}`]) {
+    const { respostas, fila } = await rodar([texto]);
+    assert.match(respostas[0], /✅ Entrou na fila: Refrigerante Zero Pepsi Black Lata 350ml Pack/, texto);
+    assert.deepEqual(fila.map((p) => [p.grupo, p.nome, p.precoAtual, p.manual, p.linkAfiliado]), [['Fitness', 'Refrigerante Zero Pepsi Black Lata 350ml Pack com 12 unidades', 31.08, true, 'https://www.amazon.com.br/dp/B0954R6FNH?tag=achadin09027e-20']], texto);
+  }
+});
+
 // 05/11/2026: no Sentinela Promo a 1ª linha é uma chamada ("📉 Caiu de preço! Aproveite.") e o produto vem com 📦.
 test('dadosDoTexto: produto da linha com 📦, não a chamada; tira o ": Amazon.com.br: Cozinha" do fim', async () => {
   const { dadosDoTexto } = await import('../src/amazon-espelho.js');

@@ -22,7 +22,8 @@ export const AJUDA = [
   '*Comandos do bot* 🤖',
   ...MENU.map((c) => `/${c.command} — ${c.description}`),
   '',
-  'Mandar um link da Amazon, do Mercado Livre ou da Shopee aqui continua pondo a oferta na fila.',
+  'Mandar um link da Amazon, do Mercado Livre ou da Shopee aqui continua pondo a oferta na fila (e ela sai primeiro).',
+  'Para escolher o grupo, escreva o nome dele numa linha da mensagem (ex.: fitness).',
 ].join('\n');
 
 const hhmm = (iso, tz) => new Date(iso).toLocaleTimeString('pt-BR', { timeZone: tz, hour: '2-digit', minute: '2-digit' });

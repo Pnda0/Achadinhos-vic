@@ -230,7 +230,9 @@ export class Espelho {
         ? `✅ Entrou na fila: ${this.ultimoAceito.nome.slice(0, 60)}\n${this.ultimoAceito.link}\nSai no próximo envio.`
         : r === 'sem link do ML/Amazon'
           ? 'Me mande (ou encaminhe) uma oferta com link da Amazon, do Mercado Livre ou de uma loja parceira da Awin: eu troco pelo seu link e posto no canal.\nEscreva o nome do produto e o preço na mensagem (ex.: "de R$ 499 por R$ 299") para sair completo.'
-          : `⚠️ Não entrou na fila: ${r}.`;
+          : /^fora do nicho/.test(r)
+            ? `⚠️ Não entrou na fila: não reconheci de qual grupo é (o nome não tem palavra de nenhum nicho).\nMande de novo com o nome do grupo numa linha (${[...this.grupos.values()].filter((g) => g.ativo !== false).map((g) => g.nome.toLowerCase()).join(', ')}) que ele vai direto para lá.`
+            : `⚠️ Não entrou na fila: ${r}.`;
     try {
       await this.sender.sendText(m.jid, texto);
     } catch (e) {
@@ -530,9 +532,37 @@ export class Espelho {
     return null;
   }
 
+  /**
+   * Caixa de entrada: o dono pode dizer o grupo na mensagem ("fitness" numa linha, "#fit", "pro grupo beleza").
+   * 06/11/2026, o dono mandou um Pepsi Black Zero "pra ir pro topo da fila do fitness" e recebeu "fora do nicho":
+   * escolha dele vale mais que as palavras do nicho. Devolve o grupo e o texto sem a linha do grupo.
+   */
+  grupoPedido(texto) {
+    const alias = (nome) => {
+      const n = normalizar(nome);
+      return [n, n.replace(/s$/, ''), ...(n.startsWith('fit') ? ['fit'] : [])];
+    };
+    const ativos = [...this.grupos.values()].filter((g) => g.ativo !== false);
+    const qual = (palavra) => ativos.find((g) => alias(g.nome).includes(normalizar(palavra)));
+    const linhas = String(texto || '').split('\n');
+    for (let i = 0; i < linhas.length; i++) {
+      const m = normalizar(linhas[i]).match(/^(?:(?:vai|manda|mandar|pro|pra|para|o|no|do|grupo)\s+)*#?([a-z]+)[\s!.]*$/);
+      const g = m && qual(m[1]);
+      if (g) return { grupo: g, texto: linhas.filter((_, j) => j !== i).join('\n') };
+    }
+    const tag = String(texto || '').match(/(?:^|\s)#([a-zà-ú]+)\b/i);
+    const g = tag && qual(tag[1]);
+    return g ? { grupo: g, texto: String(texto).replace(tag[0], ' ') } : null;
+  }
+
   async processar(m) {
-    const fonte = this.fontes.get(m.jid);
+    let fonte = this.fontes.get(m.jid);
     if (fonte?.cuponsML) return this.processarCuponsML(m, fonte); // vai para os "destinos" dele
+    const pedido = fonte?.manual ? this.grupoPedido(m.texto) : null;
+    if (pedido) {
+      fonte = { ...fonte, destino: pedido.grupo.nome, destinos: [{ grupo: pedido.grupo.nome }] };
+      m = { ...m, texto: pedido.texto };
+    }
     let destino = this.grupos.get(fonte?.destino || this.cfg.destinoPadrao);
     if (!fonte || !destino) return 'sem destino';
 

@@ -134,7 +134,14 @@ export function dadosDoTexto(texto) {
   // preço! Aproveite." e o bot achava que era o nome). Chamadas conhecidas também não contam como nome.
   const doPacote = semLink.filter((l) => /^📦/u.test(l)).map(limpar).filter((l) => l.length >= 6);
   const semChamada = candidatas.filter((l) => !CHAMADA.test(l));
-  const nome = (doPacote[0] || semChamada.find((l) => marcaDoProduto({ nome: l })) || semChamada[0] || candidatas[0] || null)?.replace(/\s*:\s*Amazon\.com\.br\b.*$/i, '').trim() || null;
+  // Tudo numa linha só (06/11/2026, o dono colou "Refrigerante Zero Pepsi Black Lata 350ml Pack com 12 unidades R$ 31,08
+  // Comprar na Amazon: https://..." e o bot respondeu que só veio o link): o nome é o que vem antes do preço.
+  const antesDoPreco = candidatas.length
+    ? []
+    : semLink
+        .map((l) => limpar(l.slice(0, Math.max(0, l.search(TEM_PRECO)))).replace(/(?:\s*(?:[-–|:,]|\bpor\b|\bde\b))+\s*$/i, ''))
+        .filter((l) => l.length >= 12 && /[a-zà-ú]/.test(l) && !/^(cupom|use o cupom|frete|link|compre|corre|aproveita|oferta|promo)/i.test(l));
+  const nome = (doPacote[0] || semChamada.find((l) => marcaDoProduto({ nome: l })) || semChamada[0] || candidatas[0] || antesDoPreco[0] || null)?.replace(/\s*:\s*Amazon\.com\.br\b.*$/i, '').trim() || null;
   const precoObs = (atual && CONDICOES.find(([re]) => re.test(texto))?.[1]) || null;
   return { nome, precoAtual: atual, precoOriginal: original, descontoPct, cupom, precoObs };
 }
