@@ -272,7 +272,7 @@ function iniciarCaixaDeEntrada(cfg) {
           awin: awinLiberada(store, g.nome),
           masculino: fem.aceitar ? fem.aceitar({ nome: 'produto masculino' }) : true,
         };
-        await responder(m, textoDaFila({ store, grupo: g, eventos, agoraPode, genero: generoDoProduto, tz: settings.tz, nota: notaDaOferta({ prioridade: prioridadeDoGrupo(g) }) }));
+        await responder(m, textoDaFila({ store, grupo: g, eventos, agoraPode, genero: generoDoProduto, tz: settings.tz, nota: notaDaOferta({ prioridade: prioridadeDoGrupo(g), precoBom: g.precoBom }) }));
       }
     },
     // /env NOME=valor: muda o .env do servidor de onde o dono estiver (src/env-arquivo.js), apaga a mensagem e reinicia.

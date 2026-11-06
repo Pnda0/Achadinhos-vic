@@ -140,6 +140,8 @@
         "descontoMinimo": 15
       },
       "nicho": "fitness",
+      "precoBom": 250,
+      "_comentarioPrecoBom": "06/11/2026, o dono: 'tô achando os produtos da Nike muito caros, tem como dar uma variada nas marcas'. Na nota da oferta (src/ranking.js), acima de R$ 250 perde 1 ponto a cada R$ 15 (R$ 400 = -10, R$ 625 ou mais = -25); e marca que já saiu nas últimas 24 h perde 8 pontos por post dela.",
       "telegram": "-1004454980210",
       "preferirFeminino": 10,
       "whatsapp": "Achadinhos Vic - Fitness",

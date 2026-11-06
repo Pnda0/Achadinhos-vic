@@ -19,6 +19,9 @@
  *   Mandada pelo dono no privado do bot: +100 (ele escolheu: sai na frente de tudo; 05/11/2026)
  *   Mesma marca de um dos 3 últimos posts: -15 (05/11/2026, o dono: "só tem coisa da Nike aí" — a fila tinha 40 Nike do
  *   catálogo da Awin com notas parecidas; sem isso saíam marcas iguais seguidas)
+ *   Marca que já saiu nas últimas 24 h no grupo: -8 por post dela (até -32), para variar as marcas no dia
+ *   Preço acima do "precoBom" do grupo (grupos.json): -1 a cada R$ 15 acima (até -25). Fitness: R$ 250
+ *   (06/11/2026, o dono: "tô achando os produtos da Nike muito caros, tem como dar uma variada nas marcas")
  *
  * A soma vai de uns -50 a 135 pontos; a nota mostrada é ela em 0 a 100. A fila sai pela soma (`bruta`).
  */
@@ -56,11 +59,11 @@ export function pontosDaMarca(marca, cfg = loadMarcas(), extras = secundarias(cf
  * Monta a função de nota de um grupo. `prioridade(p)` = peso do tipo de produto no grupo (prioridadeDoGrupo, 0 se não
  * for), `genero(p)` = 'f' | 'm' | null. Devolve (p, { ultimo, agora }) => { nota, partes }.
  */
-export function notaDaOferta({ prioridade = () => 0, genero = generoDoProduto, cfg } = {}) {
+export function notaDaOferta({ prioridade = () => 0, genero = generoDoProduto, cfg, precoBom = null } = {}) {
   const conf = cfg || loadMarcas();
   const lista = listaDeMarcas(conf);
   const extras = secundarias(conf);
-  return (p, { ultimo, recentes = ultimo ? [ultimo] : [], agora = Date.now() } = {}) => {
+  return (p, { ultimo, recentes = ultimo ? [ultimo] : [], doDia = [], agora = Date.now() } = {}) => {
     const partes = {};
     const marca = lista.length ? marcaDoProduto(p, lista) : null;
     partes.marca = pontosDaMarca(marca, conf, extras);
@@ -76,6 +79,10 @@ export function notaDaOferta({ prioridade = () => 0, genero = generoDoProduto, c
     partes.novidade = idadeH < 1 ? 5 : idadeH < 3 ? 2 : idadeH > 24 ? -5 : 0;
     partes.loja = ultimo && (ultimo.loja || 'ml') === (p.loja || 'ml') ? -8 : 0;
     partes.repetida = marca && recentes.some((r) => marcaDoProduto(r, lista) === marca) ? -15 : 0;
+    const noDia = marca ? doDia.filter((r) => marcaDoProduto(r, lista) === marca).length : 0;
+    partes.marcaNoDia = -8 * Math.min(4, noDia);
+    const preco = Number(p.precoAtual);
+    partes.preco = precoBom && preco > precoBom ? -Math.min(25, Math.round((preco - precoBom) / 15)) : 0;
     if (p.manual) partes.doDono = 100;
     const bruta = Object.values(partes).reduce((s, v) => s + v, 0);
     return { nota: Math.round(Math.max(0, Math.min(MAXIMO, bruta)) * 100 / MAXIMO), bruta, partes, marca };

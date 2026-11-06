@@ -81,3 +81,27 @@ test('nota: oferta mandada pelo dono no privado passa na frente de tudo', () => 
   add(o('Dr. Peanut Pasta de Amendoim 600g Avelã', { id: 'AMZ-B0BVZY7BM6', loja: 'amazon', descontoPct: 38, manual: true, vendidos: null }));
   assert.equal(store.proximo('Fitness', { nota }).id, 'AMZ-B0BVZY7BM6');
 });
+
+// 06/11/2026, o dono: "tô achando os produtos da Nike muito caros, tem como dar uma variada nas marcas".
+test('nota: produto caro perde pontos no Fitness e marca que já saiu hoje perde 8 por post', () => {
+  const notaFit = notaDaOferta({ prioridade: prioridadeDoGrupo(fitness), precoBom: fitness.precoBom });
+  assert.equal(fitness.precoBom, 250);
+  const caro = o('Tênis Nike Pegasus 41 Feminino', { precoAtual: 699.99 });
+  assert.equal(notaFit(caro).partes.preco, -25);
+  assert.equal(notaFit(o('Tênis Nike Revolution 7 Feminino', { precoAtual: 249.9 })).partes.preco, 0);
+  assert.equal(notaFit(o('Tênis Nike Revolution 7 Feminino', { precoAtual: 400 })).partes.preco, -10);
+  const doDia = [{ nome: 'Top Nike Swoosh Feminino' }, { nome: 'Legging Nike One Feminina' }];
+  assert.equal(notaFit(caro, { doDia }).partes.marcaNoDia, -16);
+  // Na fila: o tênis Nike de R$ 700 com 2 Nike hoje perde para um whey Max Titanium de R$ 120 com menos desconto.
+  const store = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-rank4-')), 'db.json'));
+  const add = (p) => (store.data.produtos[`Fitness:${p.id}`] = { ...p, status: 'PRONTO', linkAfiliado: 'https://x' });
+  const env = (id, nome, h) => (store.data.produtos[`Fitness:${id}`] = { id, grupo: 'Fitness', nome, loja: 'awin', status: 'ENVIADO', enviadoEm: new Date(agora - h * 3_600_000).toISOString() });
+  env('E1', 'Top Nike Swoosh Feminino', 9);
+  env('E2', 'Legging Nike One Feminina', 6);
+  env('E3', 'Creatina Growth Supplements 300g', 3);
+  env('E4', 'Legging Lupo Feminina', 2);
+  env('E5', 'Garrafa Integralmedica', 1);
+  add(o('Tênis Nike Pegasus 41 Feminino', { id: 'NIKE', descontoPct: 40, precoAtual: 699.99 }));
+  add(o('Whey Protein Max Titanium 900g', { id: 'MAX', descontoPct: 20, precoAtual: 119.9 }));
+  assert.equal(store.proximo('Fitness', { nota: notaFit }).id, 'MAX');
+});

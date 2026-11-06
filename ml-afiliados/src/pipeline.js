@@ -625,7 +625,7 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
   const preferencia = {
     aceitar: temLimite ? (x) => (feminina.aceitar ? feminina.aceitar(x) : true) && (shopeeOk || x.loja !== 'shopee') && (awinOk || !doCatalogoAwin(x)) : undefined,
     // A ordem vem da nota da oferta (src/ranking.js): marca do dono, desconto, público, tipo, vendas, avaliação...
-    nota: notaDaOferta({ prioridade }),
+    nota: notaDaOferta({ prioridade, precoBom: grupo.precoBom }),
   };
   let p = null;
   // Cada candidato barrado sai da fila (muda de status), então o laço termina; null = fila realmente vazia.
