@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { extrairLinksML, tipoLink, parseSocialPage, parseProductPage, resolverOferta, ErroVerificacao } from '../src/ml/resolver.js';
-import { Espelho, resolverFontes, textoCopiado } from '../src/espelho.js';
+import { Espelho, resolverFontes, textoCopiado, fotoDaMensagem } from '../src/espelho.js';
 import { montarLegenda } from '../src/caption.js';
 import { Store } from '../src/store.js';
 import { enviarProximo } from '../src/pipeline.js';
@@ -500,6 +500,18 @@ test('caixa de entrada: nome antes do preço numa linha só; o nome do grupo na 
     assert.match(respostas[0], /✅ Entrou na fila: Refrigerante Zero Pepsi Black Lata 350ml Pack/, texto);
     assert.deepEqual(fila.map((p) => [p.grupo, p.nome, p.precoAtual, p.manual, p.linkAfiliado]), [['Fitness', 'Refrigerante Zero Pepsi Black Lata 350ml Pack com 12 unidades', 31.08, true, 'https://www.amazon.com.br/dp/B0954R6FNH?tag=achadin09027e-20']], texto);
   }
+});
+
+// 06/11/2026, o dono sobre um YoPRO do @xetdaspromocoes: "tente deixar a mensagem do jeito que a gente combinou" (o nome
+// saiu "5 CONTO CADA YOPRO, corre que") "e veja que aparece o logo deles ali".
+test('dadosDoTexto: chamada com a marca não vira o nome; "exclusiva no APP" vira condição do preço', async () => {
+  const { dadosDoTexto } = await import('../src/amazon-espelho.js');
+  const d = dadosDoTexto('5 CONTO CADA YOPRO, corre que acaba rápido\n\n12 Unidades YoPRO Bebida Láctea Chocolate UHT 250ml\n\nDe R$ 108 por R$ 60 em 2x\nhttps://link.amazon/B07HOkzmb\n\nPRA CHEGAR NO VALOR\n- oferta exclusiva no APP\n- resgate o cupom: YOPRO20APP 🎟️\n- desconto na finalização');
+  assert.deepEqual([d.nome, d.precoAtual, d.precoOriginal, d.cupom, d.precoObs], ['12 Unidades YoPRO Bebida Láctea Chocolate UHT 250ml', 60, 108, 'YOPRO20APP', 'no app da Amazon']);
+  assert.equal(dadosDoTexto('NO MERCADO CUSTA O DOBRO\n\n12 Unidades YoPRO Bebida Láctea UHT Chocolate 250ml\n\nDe R$ 98 por R$ 61 em 2x\n- oferta exclusiva Prime (no APP)').precoObs, 'no app da Amazon');
+  const { loadFontes } = await import('../src/config.js');
+  const xet = fontesDosCanais(loadFontes().cfg.canaisTelegram, { amazonTag: 'achadin09027e-20' }).find((f) => /xetdaspromocoes/.test(f.nome));
+  assert.equal(fotoDaMensagem({ foto: 'AgACAgEAAx0-foto-com-selo' }, xet), null, 'a foto do xet tem o selo do canal');
 });
 
 // 05/11/2026: no Sentinela Promo a 1ª linha é uma chamada ("📉 Caiu de preço! Aproveite.") e o produto vem com 📦.

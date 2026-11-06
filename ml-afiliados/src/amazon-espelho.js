@@ -79,7 +79,11 @@ const CONDICOES = [
   [/programe e poupe/i, 'no Programe e Poupe'],
   [/exclusiv\w* para (?:assinantes|membros)[^\n]*prime/i, 'para assinantes Prime'],
   [/\bno pix\b/i, 'no Pix'],
+  // "oferta exclusiva no APP" (@xetdaspromocoes, 06/11/2026): no site o preço é outro.
+  [/exclusiv\w*[^\n]{0,12}\b(?:no|pelo)\s*\(?\s*app\b/i, 'no app da Amazon'],
 ];
+// Tamanho ou quantidade ("250ml", "12 Unidades", "900g"): a linha com isso é o produto, não a chamada do canal.
+const MEDIDA = /\b\d+(?:[.,]\d+)?\s?(?:ml|l|g|kg|mg|un|und|unid|unidades|caps|c[aá]psulas|sach[eê]s|latas?|pacotes?|pe[cç]as|doses)\b/i;
 const limpar = (l) =>
   l
     .replace(/[*_~`]/g, '')
@@ -141,7 +145,10 @@ export function dadosDoTexto(texto) {
     : semLink
         .map((l) => limpar(l.slice(0, Math.max(0, l.search(TEM_PRECO)))).replace(/(?:\s*(?:[-–|:,]|\bpor\b|\bde\b))+\s*$/i, ''))
         .filter((l) => l.length >= 12 && /[a-zà-ú]/.test(l) && !/^(cupom|use o cupom|frete|link|compre|corre|aproveita|oferta|promo)/i.test(l));
-  const nome = (doPacote[0] || semChamada.find((l) => marcaDoProduto({ nome: l })) || semChamada[0] || candidatas[0] || antesDoPreco[0] || null)?.replace(/\s*:\s*Amazon\.com\.br\b.*$/i, '').trim() || null;
+  // Com a marca na chamada ("5 CONTO CADA YOPRO, corre que acaba rápido", @xetdaspromocoes, 06/11/2026) a linha do produto
+  // é a com marca E tamanho/quantidade ("12 Unidades YoPRO Bebida Láctea Chocolate UHT 250ml").
+  const comMarca = semChamada.filter((l) => marcaDoProduto({ nome: l }));
+  const nome = (doPacote[0] || comMarca.find((l) => MEDIDA.test(l)) || comMarca[0] || semChamada[0] || candidatas[0] || antesDoPreco[0] || null)?.replace(/\s*:\s*Amazon\.com\.br\b.*$/i, '').trim() || null;
   const precoObs = (atual && CONDICOES.find(([re]) => re.test(texto))?.[1]) || null;
   return { nome, precoAtual: atual, precoOriginal: original, descontoPct, cupom, precoObs };
 }
