@@ -566,5 +566,174 @@
     "buscaML": "whey nutrata",
     "reservaDescontoMinimo": 5,
     "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume la vie est belle lancome",
+    "buscaML": "perfume la vie est belle lancome",
+    "ativo": true,
+    "_comentario": "06/11/2026, o dono: 'o de perfume não tem 1 post, só tem cupom... procure perfumes vei, ml'. Busca no catálogo do ML (API oficial) dos perfumes femininos mais procurados: só anúncio de loja oficial (original e com vendas). 5 por coleta, revezando, com a vez própria (não disputa com as do Fitness). Com 10% a 20% de desconto entram como reserva (reservaDescontoMinimo do grupo)."
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume good girl carolina herrera",
+    "buscaML": "perfume good girl carolina herrera",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume olympea paco rabanne",
+    "buscaML": "perfume olympea paco rabanne",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume libre yves saint laurent",
+    "buscaML": "perfume libre yves saint laurent",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume yara lattafa",
+    "buscaML": "perfume yara lattafa",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: body splash victoria secret",
+    "buscaML": "body splash victoria secret",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume natura essencial feminino",
+    "buscaML": "perfume natura essencial feminino",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume floratta boticario",
+    "buscaML": "perfume floratta boticario",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume idole lancome",
+    "buscaML": "perfume idole lancome",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume 212 vip rose carolina herrera",
+    "buscaML": "perfume 212 vip rose carolina herrera",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume lady million paco rabanne",
+    "buscaML": "perfume lady million paco rabanne",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume miss dior",
+    "buscaML": "perfume miss dior",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume scandal jean paul gaultier",
+    "buscaML": "perfume scandal jean paul gaultier",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume my way giorgio armani",
+    "buscaML": "perfume my way giorgio armani",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume her secret antonio banderas",
+    "buscaML": "perfume her secret antonio banderas",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume fantasy britney spears",
+    "buscaML": "perfume fantasy britney spears",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume natura ilia",
+    "buscaML": "perfume natura ilia",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume lily boticario",
+    "buscaML": "perfume lily boticario",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume egeo dolce boticario",
+    "buscaML": "perfume egeo dolce boticario",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume the scent for her hugo boss",
+    "buscaML": "perfume the scent for her hugo boss",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume bright crystal versace",
+    "buscaML": "perfume bright crystal versace",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume coco mademoiselle chanel",
+    "buscaML": "perfume coco mademoiselle chanel",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume gucci bloom",
+    "buscaML": "perfume gucci bloom",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume nina ricci feminino",
+    "buscaML": "perfume nina ricci feminino",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume eudora feminino",
+    "buscaML": "perfume eudora feminino",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume avon far away",
+    "buscaML": "perfume avon far away",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume ariana grande cloud",
+    "buscaML": "perfume ariana grande cloud",
+    "ativo": true
+  },
+  {
+    "grupo": "Perfumes",
+    "nome": "ML marca: perfume lacoste pour femme",
+    "buscaML": "perfume lacoste pour femme",
+    "ativo": true
   }
 ]

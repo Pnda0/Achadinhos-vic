@@ -270,7 +270,7 @@ function iniciarCaixaDeEntrada(cfg) {
           ritmo: ritmoLiberado(store, g),
           shopee: shopeeLiberada(store, g.nome),
           awin: awinLiberada(store, g.nome),
-          masculino: fem.aceitar ? fem.aceitar({ nome: 'produto masculino' }) : true,
+          masculino: fem.aceitar ? fem.aceitar({ nome: 'produto masculino' }) || !!fem.folga : true,
         };
         await responder(m, textoDaFila({ store, grupo: g, eventos, agoraPode, genero: generoDoProduto, tz: settings.tz, nota: notaDaOferta({ prioridade: prioridadeDoGrupo(g), precoBom: g.precoBom }) }));
       }

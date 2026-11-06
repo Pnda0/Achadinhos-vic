@@ -26,17 +26,26 @@ export function generoDoProduto(p) {
 }
 export const generoDoPerfume = generoDoProduto;
 
-/** Opções para Store.proximo(): femininos > neutros > masculinos, e masculino só se não saiu nenhum nos últimos N-1 posts. */
-export function preferenciaFeminina(store, grupo, cadaN = 3) {
+/** Sem outra oferta para sair, um masculino pode sair se o último masculino do grupo saiu há pelo menos isto (horas). */
+export const MASCULINO_SEM_OUTRA_H = 2;
+
+/**
+ * Opções para Store.proximo(): femininos > neutros > masculinos, e masculino só se não saiu nenhum nos últimos N-1 posts.
+ * `folga` (06/11/2026, o Perfumes ficou só com cupom: a fila só tinha perfume masculino e o "1 a cada 10 posts" não
+ * andava, porque nada mais saía): quando NADA mais pode sair, um masculino sai se o último saiu há 2 h ou mais.
+ */
+export function preferenciaFeminina(store, grupo, cadaN = 3, { agora = Date.now(), semOutraH = MASCULINO_SEM_OUTRA_H } = {}) {
   const n = Number.isInteger(cadaN) && cadaN >= 2 ? cadaN : 3;
   const ultimos = store
     .list((p) => p.grupo === grupo && (p.status === 'ENVIADO' || p.status === 'INCERTO') && p.enviadoEm)
     .sort((a, b) => String(b.enviadoEm).localeCompare(String(a.enviadoEm)))
     .slice(0, n - 1);
-  const masculinoRecente = ultimos.some((p) => generoDoProduto(p) === 'm');
+  const ultimoMasculino = ultimos.find((p) => generoDoProduto(p) === 'm');
+  const masculinoRecente = !!ultimoMasculino;
   const nota = { f: 2, m: 0 };
   return {
     aceitar: (p) => !masculinoRecente || generoDoProduto(p) !== 'm',
     preferir: (p) => nota[generoDoProduto(p)] ?? 1,
+    folga: masculinoRecente && agora - Date.parse(ultimoMasculino.enviadoEm) >= semOutraH * 3_600_000,
   };
 }

@@ -184,7 +184,34 @@ test('Fila: cupom passa na frente, mas nunca dois seguidos', () => {
   const segundo = s.proximo('Geral'); // depois de um cupom, a vez é de um produto
   assert.equal(segundo.id, 'P1');
   s.setStatus(segundo, 'ENVIADO', { enviadoEm: new Date(Date.now() + 1000).toISOString() });
+  // Desde 06/11/2026 (o dono: "não tem 1 post, só tem cupom"): cupom no máximo 1 a cada 3 posts. Sem outro produto,
+  // o grupo espera em vez de mandar outro cupom.
+  assert.equal(s.proximo('Geral'), null);
+  s.upsert({ ...base, id: 'P2', nome: 'Produto 2', descontoPct: 30 });
+  const terceiro = s.proximo('Geral');
+  assert.equal(terceiro.id, 'P2');
+  s.setStatus(terceiro, 'ENVIADO', { enviadoEm: new Date(Date.now() + 2000).toISOString() });
   assert.equal(s.proximo('Geral').id, 'C2');
+});
+
+// 06/11/2026, o dono: "e o de perfume, não tem 1 post, só tem cupom, isso não pode acontecer". O perfume de reserva
+// (desconto entre 10% e 20%) só saía sem NENHUMA outra oferta na fila — e o cupom contava como oferta.
+test('Fila: perfume de reserva sai entre os cupons; cupom não segura a reserva', () => {
+  const s = tmpStore();
+  const base = { grupo: 'Perfumes', url: 'u', linkAfiliado: 'l', precoAtual: 150 };
+  s.upsert({ ...base, id: 'C1', nome: 'Cupom do Mercado Livre', tipo: 'cupom' });
+  s.upsert({ ...base, id: 'C2', nome: 'Cupom do Mercado Livre (Entregas Full)', tipo: 'cupom' });
+  s.upsert({ ...base, id: 'R1', nome: 'Perfume Lattafa Yara Feminino 100ml', descontoPct: 12, reserva: true });
+  s.upsert({ ...base, id: 'R2', nome: 'Perfume Natura Ilía Feminino 50ml', descontoPct: 14, reserva: true });
+  const saiu = [];
+  for (let i = 0; i < 4; i++) {
+    const p = s.proximo('Perfumes');
+    if (!p) break;
+    saiu.push(p.tipo === 'cupom' ? 'cupom' : 'perfume');
+    s.setStatus(p, 'ENVIADO', { enviadoEm: new Date(Date.now() + i * 1000).toISOString() });
+  }
+  assert.equal(saiu.filter((x) => x === 'perfume').length, 2, saiu.join(', '));
+  assert.ok(!saiu.some((x, i) => x === 'cupom' && (saiu[i - 1] === 'cupom' || saiu[i - 2] === 'cupom')), `cupom no máximo 1 a cada 3 posts: ${saiu.join(', ')}`);
 });
 
 test('Espelho: link de loja parceira num canal entra com o MEU link da Awin e o nome da loja', async () => {

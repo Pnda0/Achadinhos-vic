@@ -117,3 +117,31 @@ test('nota: whey, creatina, tênis, YoPRO, Monster, Coca Zero e barrinha passam 
   assert.ok(p('Coca-Cola Sem Açúcar Lata 350ml 12 unidades', { descontoPct: 20 }).bruta > p('Legging Lupo Feminina Cintura Alta', { descontoPct: 40 }).bruta);
   assert.ok(p('Whey Protein Integralmedica 900g', { descontoPct: 15 }).bruta > p('Smartwatch Amazfit Bip 6 Feminino', { descontoPct: 45 }).bruta);
 });
+
+// 06/11/2026: o Perfumes ficou só com cupom. A fila só tinha perfume masculino e o "1 masculino a cada 10 posts" não
+// andava, porque nada mais saía. Sem outra oferta, um masculino sai se o último masculino foi há 2 h ou mais.
+test('masculino: sem outra oferta na fila, sai um a cada 2 h no mínimo (o grupo não fica parado)', async () => {
+  const { preferenciaFeminina } = await import('../src/genero.js');
+  const store = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-masc-')), 'db.json'));
+  const env = (id, nome, h) => (store.data.produtos[`Perfumes:${id}`] = { id, grupo: 'Perfumes', nome, status: 'ENVIADO', enviadoEm: new Date(agora - h * 3_600_000).toISOString() });
+  env('E1', 'Perfume Asad Lattafa Masculino 100ml', 3);
+  env('E2', 'Cupom do Mercado Livre', 1);
+  const fem = preferenciaFeminina(store, 'Perfumes', 10, { agora });
+  assert.equal(fem.aceitar({ nome: 'Perfume Club de Nuit Intense Man' }), false, 'pelo "1 a cada 10" ainda não é a vez');
+  assert.equal(fem.folga, true, 'mas o último masculino foi há 3 h');
+  env('E3', 'Perfume Malbec Boticário Masculino', 1);
+  assert.equal(preferenciaFeminina(store, 'Perfumes', 10, { agora }).folga, false, 'masculino há 1 h: espera');
+});
+
+test('envio: fila só com perfume masculino e o último masculino há 3 h — sai um (antes o grupo ficava só com cupom)', async () => {
+  const { enviarProximo } = await import('../src/pipeline.js');
+  const store = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-masc2-')), 'db.json'));
+  const grupo = { nome: 'Perfumes', jid: '-1', mensagemAdicional: '', preferirFeminino: 10, filtros: { diasSemRepetir: 5 } };
+  const env = (id, nome, h, extra = {}) => (store.data.produtos[`Perfumes:${id}`] = { id, grupo: 'Perfumes', nome, status: 'ENVIADO', enviadoEm: new Date(Date.now() - h * 3_600_000).toISOString(), ...extra });
+  env('E1', 'Perfume Asad Lattafa Masculino 100ml', 3);
+  env('E2', 'Cupom do Mercado Livre', 1, { tipo: 'cupom' });
+  store.upsert({ id: 'MLB77', grupo: 'Perfumes', nome: 'Perfume Club de Nuit Intense Man Armaf Masculino 105ml', loja: 'ml', url: 'https://www.mercadolivre.com.br/p/MLB77', linkAfiliado: 'https://meli.la/abc', imagem: 'i', precoAtual: 189.9, precoOriginal: 259.9, descontoPct: 27, manual: true });
+  const sender = { sendImage: async () => ({ comImagem: true }), sendText: async () => {} };
+  const p = await enviarProximo(sender, grupo, store);
+  assert.equal(p?.id, 'MLB77');
+});

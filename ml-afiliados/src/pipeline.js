@@ -27,6 +27,8 @@ export const BUSCAS_MARCA_POR_COLETA = 8;
 /** Quantas dessas vão para as marcas grandes, e quantas ofertas novas delas bastam para não descer às menores. */
 export const BUSCAS_GRANDES_POR_COLETA = 5;
 export const NOVOS_PARA_NAO_DESCER = 4;
+/** Buscas por coleta de cada grupo sem "ordem" de marcas (Perfumes), com a vez própria. */
+export const BUSCAS_MARCA_OUTROS_POR_COLETA = 5;
 import { buscarOfertasShopee } from './shopee-busca.js';
 import { HistoricoDePrecos } from './precos.js';
 import fs from 'node:fs';
@@ -153,8 +155,20 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
   // 05/11/2026, o dono: "primeiro vê se tem deles [as marcas grandes], procure eles, se não houver vai descendo pela marca
   // menos conhecida". As buscas das marcas grandes (config/marcas.json > nivel.grandes) vêm primeiro em toda coleta,
   // revezando; as das menores, na ordem do dono, só entram nas vagas que sobram e só se as grandes trouxerem pouco de novo.
-  const deMarca = ativas.filter((c) => c.buscaML);
   const cfgMarcas = loadMarcas();
+  // Grupo sem "ordem" de marcas (Perfumes, 06/11/2026: "não tem 1 post, só tem cupom... procure perfumes"): as buscas
+  // dele têm a vez própria, BUSCAS_MARCA_OUTROS_POR_COLETA por coleta, sem disputar com as do Fitness.
+  const temOrdem = (c) => !!cfgMarcas?.nivel?.ordem?.[grupos[c.grupo]?.nicho || String(c.grupo).toLowerCase()];
+  const deMarca = ativas.filter((c) => c.buscaML && temOrdem(c));
+  const rodadaOutros = [];
+  const outrosPorGrupo = {};
+  for (const c of ativas.filter((x) => x.buscaML && !temOrdem(x))) (outrosPorGrupo[c.grupo] ??= []).push(c);
+  for (const [nome, lista] of Object.entries(outrosPorGrupo)) {
+    const vez = store.data.vezBuscaMLGrupo?.[nome] || 0;
+    const rodada = Array.from({ length: Math.min(lista.length, BUSCAS_MARCA_OUTROS_POR_COLETA) }, (_, i) => lista[(vez + i) % lista.length]);
+    rodadaOutros.push(...rodada);
+    if (!soCupons) store.data.vezBuscaMLGrupo = { ...store.data.vezBuscaMLGrupo, [nome]: (vez + rodada.length) % lista.length };
+  }
   const posicao = (c) => posicaoDaMarca(marcaDoProduto({ nome: c.buscaML }), cfgMarcas);
   const grandes = deMarca.filter((c) => posicao(c)?.grande);
   const menores = deMarca.filter((c) => !posicao(c)?.grande).map((c, k) => [c, posicao(c)?.i ?? 999, k]).sort((a, b) => a[1] - b[1] || a[2] - b[2]).map(([c]) => c);
@@ -165,7 +179,7 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
   const ehMenor = new Set(rodadaMenores);
   let novosDasGrandes = 0;
   let menoresFeitas = 0;
-  const catsApi = soCupons ? [] : [...ativas.filter((c) => c.maisVendidos), ...rodadaGrandes, ...rodadaMenores];
+  const catsApi = soCupons ? [] : [...ativas.filter((c) => c.maisVendidos), ...rodadaGrandes, ...rodadaMenores, ...rodadaOutros];
   if (catsApi.length) log(`🔎 Mercado Livre (API oficial): mais vendidos de ${catsApi.length} categoria(s)...`);
   for (const cat of catsApi) {
     const grupo = grupos[cat.grupo];
@@ -622,15 +636,18 @@ export async function enviarProximo(sender, grupo, store = new Store()) {
   const shopeeOk = shopeeLiberada(store, grupo.nome);
   const awinOk = awinLiberada(store, grupo.nome);
   const temLimite = feminina.aceitar || !shopeeOk || !awinOk;
+  const lojaOk = (x) => (shopeeOk || x.loja !== 'shopee') && (awinOk || !doCatalogoAwin(x));
   const preferencia = {
-    aceitar: temLimite ? (x) => (feminina.aceitar ? feminina.aceitar(x) : true) && (shopeeOk || x.loja !== 'shopee') && (awinOk || !doCatalogoAwin(x)) : undefined,
+    aceitar: temLimite ? (x) => (feminina.aceitar ? feminina.aceitar(x) : true) && lojaOk(x) : undefined,
     // A ordem vem da nota da oferta (src/ranking.js): marca do dono, desconto, público, tipo, vendas, avaliação...
     nota: notaDaOferta({ prioridade, precoBom: grupo.precoBom }),
   };
+  // Nada mais pode sair e o último masculino foi há 2 h ou mais (src/genero.js, "folga"): um masculino pode sair.
+  const comFolga = feminina.folga ? { ...preferencia, aceitar: lojaOk } : null;
   let p = null;
   // Cada candidato barrado sai da fila (muda de status), então o laço termina; null = fila realmente vazia.
   while (!p) {
-    const candidato = store.proximo(grupo.nome, preferencia);
+    const candidato = store.proximo(grupo.nome, preferencia) || (comFolga && store.proximo(grupo.nome, comFolga));
     if (!candidato) break;
     const repetido = store.jaPublicado(candidato, dias);
     const linkRuim = !repetido && motivoLinkInvalido(candidato);

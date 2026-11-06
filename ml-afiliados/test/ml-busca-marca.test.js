@@ -114,3 +114,21 @@ test('busca por marca no ML: as grandes primeiro; as menores só quando as grand
   assert.deepEqual(await rodar(true), ['whey protein growth supplements', 'max titanium whey', 'integralmedica whey']);
   assert.deepEqual(await rodar(false), ['whey protein growth supplements', 'max titanium whey', 'integralmedica whey', 'yopro', 'tenis asics feminino', 'creatina new millen']);
 });
+
+// 06/11/2026, o dono: "o de perfume, não tem 1 post, só tem cupom... procure perfumes vei, ml". O Perfumes ganhou buscas
+// no catálogo do ML com a vez própria: não disputam as vagas do Fitness, mesmo com as grandes do Fitness trazendo pouco.
+test('busca por marca no ML: as do Perfumes têm a vez própria (5 por coleta, revezando), além das do Fitness', async () => {
+  const fit = ['whey protein growth supplements', 'max titanium whey', 'integralmedica whey'].map((b) => ({ grupo: 'Fitness', nome: `ML marca: ${b}`, buscaML: b, ativo: true }));
+  const perf = Array.from({ length: 7 }, (_, i) => ({ grupo: 'Perfumes', nome: `ML marca: perfume ${i}`, buscaML: `perfume ${i}`, ativo: true }));
+  const grupos = [{ nome: 'Fitness', ativo: true, jid: 'x', nicho: 'fitness', filtros: {} }, { nome: 'Perfumes', ativo: true, jid: 'y', nicho: 'perfumes', filtros: {} }];
+  const store = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-perf-')), 'db.json'));
+  const rodar = async () => {
+    const feitas = [];
+    await coletar(store, { categoriasML: [...fit, ...perf], grupos, buscaMarcaML: async (cat) => (feitas.push(cat.buscaML), []), raspar: async () => [], esperar: async () => {}, mlMinIntervaloH: 999 });
+    return feitas;
+  };
+  const primeira = await rodar();
+  assert.deepEqual(primeira.filter((b) => b.startsWith('perfume')), ['perfume 0', 'perfume 1', 'perfume 2', 'perfume 3', 'perfume 4']);
+  assert.ok(fit.every((c) => primeira.includes(c.buscaML)), 'as do Fitness continuam');
+  assert.deepEqual((await rodar()).filter((b) => b.startsWith('perfume')), ['perfume 5', 'perfume 6', 'perfume 0', 'perfume 1', 'perfume 2']);
+});

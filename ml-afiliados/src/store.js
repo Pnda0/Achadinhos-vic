@@ -235,12 +235,17 @@ export class Store {
   proximo(grupo, { aceitar = () => true, preferir = null, nota = null } = {}) {
     let prontos = this.list((p) => p.grupo === grupo && p.status === 'PRONTO' && aceitar(p));
     if (!prontos.length) return null;
-    // Reserva (Perfumes: mais vendido do ML com desconto abaixo do mínimo — o dono, 27/10/2026: "pode colocar, mas só
-    // se não tiver as outras"): só sai quando nenhuma outra oferta pode sair agora.
-    const normais = prontos.filter((p) => !p.reserva);
-    if (normais.length) prontos = normais;
     const enviados = this.list((p) => p.grupo === grupo && p.status === 'ENVIADO' && p.enviadoEm).sort((a, b) => String(a.enviadoEm).localeCompare(String(b.enviadoEm)));
     const ultimo = enviados.at(-1);
+    // Cupom no máximo 1 a cada 3 posts (06/11/2026, o dono sobre o Perfumes: "não tem 1 post, só tem cupom, isso não pode
+    // acontecer"): com um cupom entre os 2 últimos posts do grupo, o próximo é produto — sem produto, o grupo espera.
+    if (enviados.slice(-2).some((p) => p.tipo === 'cupom')) prontos = prontos.filter((p) => p.tipo !== 'cupom');
+    if (!prontos.length) return null;
+    // Reserva (Perfumes: mais vendido do ML com desconto abaixo do mínimo — o dono, 27/10/2026: "pode colocar, mas só
+    // se não tiver as outras"): só sai quando não há outro PRODUTO para sair agora. Cupom não conta (até 06/11/2026
+    // contava, e com cupom na fila o perfume de reserva nunca saía: o Perfumes ficou só com cupom).
+    const normais = prontos.filter((p) => !p.reserva);
+    if (normais.some((p) => p.tipo !== 'cupom')) prontos = normais;
     // Cupom de loja (Awin) passa na frente ANTES das preferências (ele não tem gênero nem marca no nome e perdia a vez
     // para sempre — 21/10/2026), mas nunca dois seguidos. O dono quer pelo menos 1 cupom por dia em cada grupo.
     const cupom = prontos.find((p) => p.prioridade);

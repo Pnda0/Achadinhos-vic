@@ -59,6 +59,10 @@
       {
         "canal": "sentinelapromo",
         "_comentario": "05/11/2026, o dono: 'o Sentinela Promo só manda coisa boa... o que importa lá são os whey, as barrinhas'. O mesmo do grupo de WhatsApp, pelo canal público do Telegram."
+      },
+      {
+        "canal": "ofertasdeperfumes",
+        "_comentario": "06/11/2026 (Perfumes só com cupom): canal 'Ofertas de Perfumes', quase tudo perfume do Mercado Livre (Floratta, Natura...). Entra pelo nome na API oficial do ML (mlPeloNome), com as regras do Perfumes."
       }
     ],
     "destinos": [
@@ -95,6 +99,10 @@
       {
         "titulo": "Sentinela",
         "_comentario": "05/11/2026, o dono pôs o chip no grupo 'Sentinela Promo' (tinha um YoPRO baratinho): Amazon e ML pelo nome, com as regras dos grupos."
+      },
+      {
+        "titulo": "Apromodaluh_perf",
+        "_comentario": "06/11/2026, o dono: 'procure no grupo da luh... os grupos são todos organizados'. O grupo de perfumes da comunidade da Luh (o de fitness é '05 - Apromodaluh_fitness'). O chip entra só se o dono puser (como no fitness); enquanto não estiver, o log mostra os grupos do chip com nome parecido."
       }
     ],
     "destinos": [

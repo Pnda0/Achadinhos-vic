@@ -199,6 +199,8 @@ export const DOMINIOS_BUSCA_MARCA = {
     'SHORTS', 'SPORT_SHORTS', 'T_SHIRTS', 'SPORT_T_SHIRTS', 'TANK_TOPS', 'CROP_TOPS', 'PANTS', 'SWEATPANTS', 'JUMPSUITS',
     'SWEATSHIRTS_AND_HOODIES', 'JACKETS_AND_COATS', 'WINDBREAKERS',
   ],
+  // Perfume e body splash caem no mesmo domínio (conferido no domain_discovery do ML em 06/11/2026).
+  Perfumes: ['PERFUMES'],
 };
 
 /**

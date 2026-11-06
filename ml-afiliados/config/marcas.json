@@ -71,7 +71,41 @@
       "Puravida",
       "Nutrify",
       "Decathlon",
-      "Centauro"
+      "Centauro",
+      "Hugo Boss",
+      "Chanel",
+      "Gucci",
+      "Bvlgari",
+      "Kenzo",
+      "Azzaro",
+      "Issey Miyake",
+      "Nina Ricci",
+      "Moschino",
+      "Marc Jacobs",
+      "Valentino",
+      "Dolce & Gabbana",
+      "Mugler",
+      "Narciso Rodriguez",
+      "Tom Ford",
+      "Guerlain",
+      "Hermès",
+      "Cacharel",
+      "Chloé",
+      "Estée Lauder",
+      "Montblanc",
+      "Lacoste",
+      "Elizabeth Arden",
+      "Tommy Hilfiger",
+      "Ariana Grande",
+      "Benetton",
+      "Jequiti",
+      "Mahogany",
+      "Água de Cheiro",
+      "Fragrance World",
+      "Paris Corner",
+      "Zimaya",
+      "Ard Al Zaafaran",
+      "French Avenue"
     ]
   },
   "peso": 1.5,
@@ -268,7 +302,37 @@
     "Prada": 100,
     "Versace": 100,
     "Givenchy": 100,
-    "Ralph Lauren": 100
+    "Ralph Lauren": 100,
+    "Hugo Boss": 100,
+    "Chanel": 150,
+    "Gucci": 100,
+    "Bvlgari": 100,
+    "Kenzo": 100,
+    "Azzaro": 100,
+    "Issey Miyake": 100,
+    "Nina Ricci": 100,
+    "Moschino": 100,
+    "Marc Jacobs": 100,
+    "Valentino": 100,
+    "Dolce & Gabbana": 100,
+    "Mugler": 100,
+    "Narciso Rodriguez": 100,
+    "Tom Ford": 150,
+    "Guerlain": 100,
+    "Hermès": 100,
+    "Cacharel": 100,
+    "Chloé": 100,
+    "Estée Lauder": 100,
+    "Montblanc": 100,
+    "Lacoste": 100,
+    "Elizabeth Arden": 60,
+    "Tommy Hilfiger": 70,
+    "Ariana Grande": 80,
+    "Fragrance World": 60,
+    "Paris Corner": 60,
+    "Zimaya": 60,
+    "Ard Al Zaafaran": 60,
+    "French Avenue": 60
   },
   "perfumes": [
     "Carolina Herrera",
@@ -402,6 +466,155 @@
         "lily lumiere",
         "nativa spa",
         "quasar"
+      ]
+    },
+    {
+      "marca": "Hugo Boss",
+      "termos": [
+        "hugo boss"
+      ]
+    },
+    "Chanel",
+    "Gucci",
+    {
+      "marca": "Bvlgari",
+      "termos": [
+        "bvlgari",
+        "bulgari"
+      ]
+    },
+    "Kenzo",
+    "Azzaro",
+    {
+      "marca": "Issey Miyake",
+      "termos": [
+        "issey miyake"
+      ]
+    },
+    {
+      "marca": "Nina Ricci",
+      "termos": [
+        "nina ricci"
+      ]
+    },
+    "Moschino",
+    {
+      "marca": "Marc Jacobs",
+      "termos": [
+        "marc jacobs"
+      ]
+    },
+    "Valentino",
+    {
+      "marca": "Dolce & Gabbana",
+      "termos": [
+        "dolce gabbana",
+        "dolce e gabbana"
+      ]
+    },
+    {
+      "marca": "Mugler",
+      "termos": [
+        "mugler"
+      ]
+    },
+    {
+      "marca": "Narciso Rodriguez",
+      "termos": [
+        "narciso rodriguez"
+      ]
+    },
+    {
+      "marca": "Tom Ford",
+      "termos": [
+        "tom ford"
+      ]
+    },
+    "Guerlain",
+    {
+      "marca": "Hermès",
+      "termos": [
+        "hermes"
+      ]
+    },
+    "Cacharel",
+    {
+      "marca": "Chloé",
+      "termos": [
+        "chloe"
+      ]
+    },
+    {
+      "marca": "Estée Lauder",
+      "termos": [
+        "estee lauder"
+      ]
+    },
+    {
+      "marca": "Montblanc",
+      "termos": [
+        "montblanc",
+        "mont blanc"
+      ]
+    },
+    "Lacoste",
+    {
+      "marca": "Elizabeth Arden",
+      "termos": [
+        "elizabeth arden"
+      ]
+    },
+    {
+      "marca": "Tommy Hilfiger",
+      "termos": [
+        "tommy hilfiger",
+        "tommy girl"
+      ]
+    },
+    {
+      "marca": "Ariana Grande",
+      "termos": [
+        "ariana grande"
+      ]
+    },
+    {
+      "marca": "Benetton",
+      "termos": [
+        "benetton"
+      ]
+    },
+    "Jequiti",
+    "Mahogany",
+    {
+      "marca": "Água de Cheiro",
+      "termos": [
+        "agua de cheiro"
+      ]
+    },
+    {
+      "marca": "Fragrance World",
+      "termos": [
+        "fragrance world"
+      ]
+    },
+    {
+      "marca": "Paris Corner",
+      "termos": [
+        "paris corner"
+      ]
+    },
+    "Zimaya",
+    {
+      "marca": "Ard Al Zaafaran",
+      "termos": [
+        "ard al zaafaran",
+        "al zaafaran"
+      ]
+    },
+    {
+      "marca": "French Avenue",
+      "termos": [
+        "french avenue"
       ]
     }
   ],
@@ -659,5 +872,6 @@
     },
     "Fitbit"
   ],
-  "_comentarioBebidas": "06/11/2026, o dono: 'whey, creatina, tênis, yopro, monster, coca zero, barrinha... tem que ser prioridade'. Monster (só o energético), Coca-Cola Zero / Sem Açúcar e Pepsi Black / Zero entram no Fitness; a Coca e a Pepsi normais não."
+  "_comentarioBebidas": "06/11/2026, o dono: 'whey, creatina, tênis, yopro, monster, coca zero, barrinha... tem que ser prioridade'. Monster (só o energético), Coca-Cola Zero / Sem Açúcar e Pepsi Black / Zero entram no Fitness; a Coca e a Pepsi normais não.",
+  "_comentarioPerfumes2": "06/11/2026, o dono: 'o de perfume não tem 1 post, só tem cupom... procure perfumes'. Grifes femininas (Hugo Boss, Chanel, Gucci, Nina Ricci, Mugler...), nacionais (Jequiti, Mahogany, Água de Cheiro; Eudora, Avon e Quem Disse Berenice já estavam na lista do Beleza e valem também aqui) e árabes conhecidas que faltavam: o canal @perfumepromo postava 'Boss The Scent For Her' e o bot recusava por 'sem marca da lista'. Entraram como secundárias (15 pontos na nota, nivel.secundarias) e com preço mínimo contra falsificação."
 }
