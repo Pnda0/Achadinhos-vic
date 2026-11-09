@@ -225,14 +225,20 @@ export class Espelho {
 
   /** Caixa de entrada: conta ao dono o que aconteceu com a mensagem que ele mandou. */
   async responder(m, r) {
+    // 09/11/2026, o dono: "ele não entendeu que isso era pra ir no grupo de beleza" — a resposta diz o grupo entendido.
+    const grupo = this.grupoDoPedido ? `👍 Grupo: ${this.grupoDoPedido}.\n` : '';
     const texto =
       r === 'ok'
-        ? `✅ Entrou na fila: ${this.ultimoAceito.nome.slice(0, 60)}\n${this.ultimoAceito.link}\nSai no próximo envio.`
-        : r === 'sem link do ML/Amazon'
-          ? 'Me mande (ou encaminhe) uma oferta com link da Amazon, do Mercado Livre ou de uma loja parceira da Awin: eu troco pelo seu link e posto no canal.\nEscreva o nome do produto e o preço na mensagem (ex.: "de R$ 499 por R$ 299") para sair completo.'
-          : /^fora do nicho/.test(r)
-            ? `⚠️ Não entrou na fila: não reconheci de qual grupo é (o nome não tem palavra de nenhum nicho).\nMande de novo com o nome do grupo numa linha (${[...this.grupos.values()].filter((g) => g.ativo !== false).map((g) => g.nome.toLowerCase()).join(', ')}) que ele vai direto para lá.`
-            : `⚠️ Não entrou na fila: ${r}.`;
+        ? `✅ Entrou na fila${this.ultimoAceito.grupo ? ` do ${this.ultimoAceito.grupo}` : ''}: ${this.ultimoAceito.nome.slice(0, 60)}\n${this.ultimoAceito.link}\nSai no próximo envio.`
+        : r === 'sem link do ML/Amazon' || r === 'ML sem nome ou preço no post'
+          ? `${grupo}Me mande (ou encaminhe) a oferta com o link da loja (Amazon, Mercado Livre, Shopee ou loja parceira da Awin): eu troco pelo seu link e posto no canal.\nSem link, escreva o nome do produto e o preço (ex.: "de R$ 72 por R$ 30") que eu procuro no Mercado Livre.`
+          : r === 'ML: produto do post não achado'
+            ? `${grupo}⚠️ Não entrou na fila: não achei esse produto no Mercado Livre pelo mesmo preço (até 10% a mais).\nMande o link da loja onde está a oferta (Amazon, Mercado Livre ou Shopee) que eu troco pelo seu e posto.`
+            : r === 'ML: limite de buscas por hora'
+              ? `${grupo}⚠️ Não entrou na fila: já procurei muitos produtos no Mercado Livre nesta hora. Mande de novo daqui a pouco, ou mande com o link da loja.`
+              : /^fora do nicho/.test(r)
+                ? `⚠️ Não entrou na fila: não reconheci de qual grupo é (o nome não tem palavra de nenhum nicho).\nMande de novo com o nome do grupo numa linha (${[...this.grupos.values()].filter((g) => g.ativo !== false).map((g) => g.nome.toLowerCase()).join(', ')}) que ele vai direto para lá.`
+                : `${grupo}⚠️ Não entrou na fila: ${r}.`;
     try {
       await this.sender.sendText(m.jid, texto);
     } catch (e) {
@@ -312,7 +318,7 @@ export class Espelho {
       evento('na_fila', produto);
       this.contar(g.nome);
       aceitos++;
-      this.ultimoAceito = { nome: base.nome, link: linkAfiliado };
+      this.ultimoAceito = { nome: base.nome, link: linkAfiliado, grupo: g.nome };
       log(`🪞 [${g.nome}] ${nomeLoja(base)} de "${fonte.nomeWhats || fonte.nome}": ${base.nome.slice(0, 55)} — ${linkAfiliado}`);
     }
     return aceitos ? 'ok' : motivos[0];
@@ -331,9 +337,10 @@ export class Espelho {
     const d = dadosDoTexto(m.texto);
     if (!d.nome || !d.precoAtual) return 'ML sem nome ou preço no post';
     const destinos = this.alvosDe(d.nome, fonte, destino);
-    // O nome do post já passa pelo nicho, pelas bloqueadas e pelo "só marcas" antes de gastar a API.
+    // O nome do post já passa pelo nicho, pelas bloqueadas e pelo "só marcas" antes de gastar a API (a escolha do dono,
+    // na caixa de entrada, só pelo "não repetir": um "Refil" que ele mandou não é barrado).
     destinos.alvos = destinos.alvos.filter((g) => {
-      const r = motivoPeloNome({ nome: d.nome }, g.filtros || {});
+      const r = motivoPeloNome({ nome: d.nome }, this.filtros(fonte, g));
       if (r) destinos.motivos.push(r);
       return !r;
     });
@@ -559,6 +566,7 @@ export class Espelho {
     let fonte = this.fontes.get(m.jid);
     if (fonte?.cuponsML) return this.processarCuponsML(m, fonte); // vai para os "destinos" dele
     const pedido = fonte?.manual ? this.grupoPedido(m.texto) : null;
+    this.grupoDoPedido = pedido?.grupo.nome || null; // a resposta ao dono diz que grupo o bot entendeu
     if (pedido) {
       fonte = { ...fonte, destino: pedido.grupo.nome, destinos: [{ grupo: pedido.grupo.nome }] };
       m = { ...m, texto: pedido.texto };
@@ -578,7 +586,12 @@ export class Espelho {
       const linksShopee = this.shopee ? extrairLinksShopee(m.links || [], m.texto) : [];
       if (linksShopee.length) return this.processarShopee(m, linksShopee, fonte, destino);
       const linksLoja = this.awin?.ligada() && fonte.lojasParceiras !== false ? extrairLinksLoja(m.texto) : [];
-      return linksLoja.length ? this.processarLoja(m, linksLoja, fonte, destino) : 'sem link do ML/Amazon';
+      if (linksLoja.length) return this.processarLoja(m, linksLoja, fonte, destino);
+      // Caixa de entrada sem link de loja (09/11/2026, o dono mandou "Hidratante Facial Neutrogena Hydro Boost... De R$ 72
+      // por R$ 30... beleza", sem link): com nome e preço, procura o mesmo produto no ML (até 10% mais caro, como as
+      // ofertas de loja sem programa) e posta com o link do dono.
+      if (fonte.manual && this.mlApi) return this.processarMLPeloNome(m, fonte, destino, { outraLoja: lojaSemPrograma(m) || 'mensagem sem link' });
+      return 'sem link do ML/Amazon';
     }
 
     if (linksAmazon.length) return this.processarAmazon(m, linksAmazon[0], fonte, destino);
@@ -626,7 +639,7 @@ export class Espelho {
       this.store.setLink(produto.url, link);
       evento('na_fila', produto);
       this.contar(destino.nome);
-      this.ultimoAceito = { nome: produto.nome, link };
+      this.ultimoAceito = { nome: produto.nome, link, grupo: destino.nome };
       log(`🪞 [${destino.nome}] de "${fonte.nomeWhats || fonte.nome}": ${produto.nome.slice(0, 55)} — ${link}`);
       return 'ok';
     } catch (e) {
@@ -768,7 +781,7 @@ export class Espelho {
         this.contar(produto.grupo);
         log(`🪞 [${produto.grupo}] copiado de "${fonte.nomeWhats || fonte.nome}": ${produto.nome.slice(0, 55)} — ${link}`);
       }
-      this.ultimoAceito = { nome: base.nome, link };
+      this.ultimoAceito = { nome: base.nome, link, grupo: aceitos.map((p) => p.grupo).join(", ") };
       return 'ok';
     } catch (e) {
       return this.erroDoML(e);

@@ -342,7 +342,7 @@ test('Caixa de entrada: oferta mandada pelo dono entra mesmo com desconto baixo,
   assert.equal(p.imagem, 'FILE123');
   assert.equal(respostas.length, 3);
   assert.ok(respostas.every(([jid]) => jid === '555'));
-  assert.match(respostas[0][1], /✅ Entrou na fila: Mouse gamer Logitech G203\nhttps:\/\/www\.amazon\.com\.br\/dp\/B0MOUSE001\?tag=extra0306-20/);
+  assert.match(respostas[0][1], /✅ Entrou na fila do Geral: Mouse gamer Logitech G203\nhttps:\/\/www\.amazon\.com\.br\/dp\/B0MOUSE001\?tag=extra0306-20/);
   assert.match(respostas[1][1], /Me mande/);
   assert.match(respostas[2][1], /Não entrou na fila: já está na fila/);
 });
@@ -497,9 +497,50 @@ test('caixa de entrada: nome antes do preço numa linha só; o nome do grupo na 
   assert.match(sem.respostas[0], /não reconheci de qual grupo é[\s\S]*fitness, beleza/);
   for (const texto of [`fitness\n${pepsi}`, `${pepsi}\npro grupo fitness`, `#fit ${pepsi}`]) {
     const { respostas, fila } = await rodar([texto]);
-    assert.match(respostas[0], /✅ Entrou na fila: Refrigerante Zero Pepsi Black Lata 350ml Pack/, texto);
+    assert.match(respostas[0], /✅ Entrou na fila do Fitness: Refrigerante Zero Pepsi Black Lata 350ml Pack/, texto);
     assert.deepEqual(fila.map((p) => [p.grupo, p.nome, p.precoAtual, p.manual, p.linkAfiliado]), [['Fitness', 'Refrigerante Zero Pepsi Black Lata 350ml Pack com 12 unidades', 31.08, true, 'https://www.amazon.com.br/dp/B0954R6FNH?tag=achadin09027e-20']], texto);
   }
+});
+
+// 09/11/2026, o dono: "mandei no telegram, ele não entendeu que isso era pra ir no grupo de beleza" — a mensagem tinha
+// nome, preço e "beleza", mas nenhum link de loja.
+test('caixa de entrada sem link: com nome e preço, acha o mesmo produto no ML e põe no grupo pedido; a resposta diz o grupo', async () => {
+  const agora = { t: 1_800_000_000_000 };
+  const neutrogena = 'Hidratante Facial Neutrogena Hydro Boost Water Gel Refil 50g\n\n💸 De R$ 72,00 por R$ 30,00 (-58%)\n📉 R$ 7,47 abaixo da média dos últimos 30 dias\n\nbeleza';
+  const rodar = async (texto, { noML = true } = {}) => {
+    const respostas = [];
+    const store = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-semlink-')), 'db.json'));
+    const mlApi = {
+      configurada: true,
+      get: async (c) => {
+        if (c.startsWith('/products/search')) return { results: noML ? [{ id: 'MLB900', name: 'Hidratante Facial Neutrogena Hydro Boost Water Gel Refil 50g' }] : [] };
+        if (c.startsWith('/products/MLB900/items')) return { results: [{ item_id: 'MLB9001', price: 31.9, original_price: 72, condition: 'new' }] };
+        throw new Error(`não esperado: ${c}`);
+      },
+      produto: async () => ({ nome: 'Hidratante Facial Neutrogena Hydro Boost Water Gel Refil 50g', imagem: 'https://http2.mlstatic.com/MLB900.jpg' }),
+      salvarCache() {},
+    };
+    const espelho = new Espelho({
+      sender: { lerMensagens: async () => [{ id: 'tg-555-1', jid: '555', t: seg(agora, 1), texto, foto: null }], sendText: async (jid, t) => respostas.push(t) },
+      store,
+      affiliate: { refresh: async () => {}, createLinks: async (urls) => new Map(urls.map((u) => [u, 'https://meli.la/MEU9'])) },
+      fontes: [{ nome: 'Caixa de entrada', jid: '555', destino: 'Fitness', manual: true, destinos: [{ grupo: 'Fitness', palavras: ['whey'] }, { grupo: 'Beleza', palavras: ['batom'] }] }],
+      grupos: [{ nome: 'Fitness', jid: '-1001', ativo: true, filtros: {} }, { nome: 'Beleza', jid: '-1002', ativo: true, filtros: { palavrasBloqueadas: ['refil'] } }],
+      cfg: { pausaEntreConsultasSeg: 0 },
+      agora: () => agora.t, esperar: async () => {},
+      mlApi,
+    });
+    await espelho.tick();
+    return { respostas, fila: Object.values(store.data.produtos) };
+  };
+  const achou = await rodar(neutrogena);
+  assert.match(achou.respostas[0], /^✅ Entrou na fila do Beleza: Hidratante Facial Neutrogena Hydro Boost/);
+  assert.deepEqual(achou.fila.map((p) => [p.grupo, p.precoAtual, p.manual, p.linkAfiliado, p.imagem]), [['Beleza', 31.9, true, 'https://meli.la/MEU9', 'https://http2.mlstatic.com/MLB900.jpg']]);
+  const naoAchou = await rodar(neutrogena, { noML: false });
+  assert.match(naoAchou.respostas[0], /^👍 Grupo: Beleza\.\n⚠️ Não entrou na fila: não achei esse produto no Mercado Livre/);
+  assert.equal(naoAchou.fila.length, 0);
+  const semPreco = await rodar('oi, tudo bem?\nbeleza');
+  assert.match(semPreco.respostas[0], /^👍 Grupo: Beleza\.\nMe mande \(ou encaminhe\) a oferta com o link da loja/);
 });
 
 // 06/11/2026, o dono sobre um YoPRO do @xetdaspromocoes: "tente deixar a mensagem do jeito que a gente combinou" (o nome

@@ -24,6 +24,7 @@ export const AJUDA = [
   '',
   'Mandar um link da Amazon, do Mercado Livre ou da Shopee aqui continua pondo a oferta na fila (e ela sai primeiro).',
   'Para escolher o grupo, escreva o nome dele numa linha da mensagem (ex.: fitness).',
+  'Sem link, mande o nome do produto e o preço ("de R$ 72 por R$ 30"): eu procuro o mesmo produto no Mercado Livre.',
 ].join('\n');
 
 const hhmm = (iso, tz) => new Date(iso).toLocaleTimeString('pt-BR', { timeZone: tz, hour: '2-digit', minute: '2-digit' });

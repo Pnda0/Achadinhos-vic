@@ -93,6 +93,11 @@ test('TelegramSender.lerMensagens: só o chat pedido, com link escondido e foto,
   ]);
   assert.deepEqual(await tg.lerMensagens(['555']), []);
   assert.equal(chamadas[1].body.offset, 13);
+  // Post encaminhado de outro canal com o link no botão "Comprar" (09/11/2026): o link entra no texto.
+  const { tg: tg2 } = tgFalso(() => ({ body: { ok: true, result: [
+    { update_id: 20, message: { message_id: 2, date: 1_800_000_002, chat: { id: 555, type: 'private' }, text: 'Hidratante Neutrogena 50g\nDe R$ 72 por R$ 30', reply_markup: { inline_keyboard: [[{ text: '🛒 Comprar', url: 'https://amzn.to/9XyZ' }], [{ text: 'Ver mais', callback_data: 'x' }]] } } },
+  ] } }));
+  assert.equal((await tg2.lerMensagens(['555']))[0].texto, 'Hidratante Neutrogena 50g\nDe R$ 72 por R$ 30\nhttps://amzn.to/9XyZ');
   assert.deepEqual((await tg.listGroups()).map((c) => c.jid), ['555', '999', '-1001']); // os chats lidos continuam na lista
 });
 

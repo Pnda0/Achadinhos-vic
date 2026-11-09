@@ -206,7 +206,8 @@ export class TelegramSender {
       }
       const m = u.message;
       if (!m || !chatIds.includes(String(m.chat.id))) continue;
-      const ocultos = [...(m.entities || []), ...(m.caption_entities || [])].map((e) => e.url).filter(Boolean);
+      // Links escondidos atrás de palavras e os botões ("🛒 Comprar") de um post encaminhado de outro canal (09/11/2026).
+      const ocultos = [...(m.entities || []), ...(m.caption_entities || []), ...(m.reply_markup?.inline_keyboard || []).flat()].map((e) => e.url).filter(Boolean);
       saida.push({
         id: `tg-${m.chat.id}-${m.message_id}`,
         jid: String(m.chat.id),

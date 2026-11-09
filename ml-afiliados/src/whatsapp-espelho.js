@@ -59,7 +59,8 @@ export function ligarPorNome(gruposBot, gruposWhats) {
  * "só marcas" e palavras bloqueadas do grupo. Cupom de loja e caixa de entrada passam no "só marcas".
  */
 export function valeNoGrupo(p, g) {
-  if (g.soMarcas && p.tipo !== 'cupom' && !p.manual && !marcaDoProduto(p)) return false;
+  if (p.manual) return true; // escolha do dono (caixa de entrada): sai igual no Telegram e no WhatsApp
+  if (g.soMarcas && p.tipo !== 'cupom' && !marcaDoProduto(p)) return false;
   const nome = normalizar(p.nome);
   return !(g.filtros?.palavrasBloqueadas || []).some((w) => casaTermo(nome, w));
 }
