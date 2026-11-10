@@ -453,6 +453,9 @@ export async function buscarCuponsAwin({ api = new Awin(), grupos = [], jaTem = 
     const nota = ({ promo, loja }) => (casaTermo(semRessalva(promo), palavra) ? 4 : 0) + ((loja.grupos || []).length ? 0 : 2) + (promo.voucher?.code ? 1 : 0);
     const bons = candidatos.filter(({ promo }) => {
       const tema = doTema(semRessalva(promo));
+      // "cuponsSoDoTema" (grupos.json; o Casa, 10/11/2026, o dono: "lingeries e pijamas combinam com casa? acho que não"):
+      // o grupo só recebe cupom cujo texto é do tema dele, nunca o de qualquer loja.
+      if (porNome.get(grupo)?.cuponsSoDoTema) return tema.includes(grupo);
       return !tema.length || tema.includes(grupo);
     });
     for (const c of [...bons].sort((a, b) => nota(b) - nota(a))) if (adicionar(c.promo, c.loja, grupo)) break;

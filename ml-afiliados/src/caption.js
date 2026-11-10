@@ -170,6 +170,8 @@ function linhaProva(p) {
  * Preço com condição ("no Pix") fica sem conta: não dá para garantir que o cupom acumula com ela.
  */
 function linhaCupomML(p) {
+  // Preço final com o cupom dito pelo canal (src/espelho.js, processarMLPeloNome).
+  if (p.precoComCupom > 0 && p.precoComCupom < p.precoAtual) return `🎟️ *${formatBRL(p.precoComCupom)}* com o cupom \`${p.cupom}\` (toque para copiar)`;
   const v = p.precoObs ? null : valorCupomReais(p.cupom);
   const final = v && p.precoAtual > v ? centavos(p.precoAtual - v) : null;
   return final ? `🎟️ *${formatBRL(final)}* com o cupom de ${formatBRL(v)}` : `🎟️ ${p.cupom.replace(/ com Cupom$/i, '')} com cupom`;

@@ -83,3 +83,19 @@ test('outra loja no ML: anúncio até 10% acima do preço de lá (ou mais barato
   assert.equal(await acharPeloNome(api(115), 'Sérum Facial Vitamina C Principia 30ml', 100, { outraLoja: true }), null);
   assert.equal(await acharPeloNome(api(70), 'Sérum Facial Vitamina C Principia 30ml', 100), null, 'post do ML: o preço tem de bater');
 });
+
+// 10/11/2026, o dono: "apareceu esse no grupo da luh, que regra ela usa que não usamos?" — Jean Paul Gaultier Divine
+// "por R$ 255,85" com o cupom ULTIMASCHANCES. O preço do post é com cupom: o anúncio custa mais e antes não batia.
+test('ML de canal com cupom: o anúncio pode custar até 50% a mais que o preço do post; a legenda mostra o preço com cupom', async () => {
+  const nome = 'Eau de Parfum Jean Paul Gaultier Divine Feminino 30 mL';
+  const api = (preco) => ({
+    get: async (url) => (url.startsWith('/products/search') ? { results: [{ id: 'MLB1', name: nome }] } : { results: [{ id: 'A', price: preco, original_price: 549, condition: 'new', item_id: 'MLB9', seller_id: 1, official_store_id: 5, shipping: {} }] }),
+    produto: async () => ({ nome, imagem: 'https://x/y.jpg' }),
+    salvarCache() {},
+  });
+  assert.equal(await acharPeloNome(api(319.9), nome, 255.85), null, 'sem cupom no post: o preço tem de bater');
+  assert.ok(await acharPeloNome(api(319.9), nome, 255.85, { comCupom: true }));
+  assert.equal(await acharPeloNome(api(420), nome, 255.85, { comCupom: true }), null, 'mais de 50% acima: outra oferta');
+  const legenda = montarLegenda({ id: 'MLB9', loja: 'ml', nome, precoAtual: 319.9, precoOriginal: 549, descontoPct: 53, cupom: 'ULTIMASCHANCES', precoComCupom: 255.85, linkAfiliado: 'https://meli.la/x' });
+  assert.match(legenda, /R\$\s?255,85\* com o cupom `ULTIMASCHANCES`/);
+});

@@ -333,3 +333,12 @@ test('cupom do dia: grupo sem cupom do tema recebe o que fala dele ("beleza") ou
   assert.equal(de.Fitness, 'ULTIMAS30'); // a loja do grupo primeiro
   assert.equal(de.Beleza, 'AFILIADOS10'); // fala de beleza e é loja de departamento — não o da marca esportiva
 });
+
+// 10/11/2026, o dono: "lingeries e pijamas combinam com casa? acho que não, pode retirar" (cupom da C&A no Casa).
+test('Awin cupons: grupo com "cuponsSoDoTema" não recebe o cupom genérico de outra loja, só o do tema dele', async () => {
+  const lingerie = apiFalsa({ promos: [{ promotionId: 11, advertiser: { id: 55555 }, title: 'Lingeries e Pijamas - 30% acima de 2 peças', endDate: '2099-12-31T00:00:00.000', urlTracking: 'https://www.awin1.com/cread.php?o=11', voucher: { code: 'MAISLOOK' } }] });
+  const grupos = [{ nome: 'Geral', ativo: true, filtros: {} }, { nome: 'Casa', ativo: true, cuponsSoDoTema: true, filtros: { palavrasObrigatorias: ['jogo de cama', 'panela'] } }];
+  assert.deepEqual((await buscarCuponsAwin({ api: lingerie.api, grupos })).produtos.map((p) => p.grupo), ['Geral']);
+  const cama = apiFalsa({ promos: [{ promotionId: 12, advertiser: { id: 55555 }, title: 'Jogo de cama com 25% OFF', endDate: '2099-12-31T00:00:00.000', urlTracking: 'https://www.awin1.com/cread.php?o=12', voucher: { code: 'CAMA25' } }] });
+  assert.deepEqual((await buscarCuponsAwin({ api: cama.api, grupos })).produtos.map((p) => p.grupo).sort(), ['Casa', 'Geral']);
+});

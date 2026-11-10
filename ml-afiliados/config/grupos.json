@@ -288,6 +288,8 @@
       "soMarcas": true,
       "maxPorDia": 40,
       "reservaDescontoMinimo": 10,
+      "cuponsSoDoTema": true,
+      "_comentarioCupons": "10/11/2026, o dono: 'lingeries e pijamas combinam com casa? acho que não, pode retirar' (cupom da C&A de lingerie e pijama). O 'pelo menos 1 cupom de loja por dia' dava ao Casa o cupom de qualquer loja; agora o Casa só recebe cupom cujo texto é de casa (src/awin.js).",
       "_comentario": "10/11/2026, o dono criou o canal \"Achadinhos Vic - Casa\" (https://t.me/+h_RsZNsKWa1jYzlh). Sem \"telegram\" o grupo fica em espera; quando o bot vira administrador do canal ele se liga sozinho (ligarCanalNovo em src/index.js, pelo título \"Casa\"). Só Telegram por enquanto (o espelho do WhatsApp divide 1 mensagem a cada 4-6 min entre todos os grupos; com um 2º chip dá para pôr). Só marca da lista, no máximo 40 por dia, até R$ 3.000; de 10% a 20% de desconto entra como reserva."
     }
   ],

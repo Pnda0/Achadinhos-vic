@@ -293,6 +293,7 @@ export class Espelho {
         precoObs: d.precoObs,
         descontoPct: d.descontoPct,
         cupom: d.cupom,
+        ...(d.precoComCupom > 0 && { precoComCupom: d.precoComCupom }),
         nota: null,
         precoConsultadoEm: new Date((m.t || this.agora() / 1000) * 1000).toISOString(),
       };
@@ -347,7 +348,7 @@ export class Espelho {
     if (!destinos.alvos.length) return destinos.motivos[0] || 'sem destino';
     let produto;
     try {
-      produto = await this.acharML(d.nome, d.precoAtual, { outraLoja: !!outraLoja });
+      produto = await this.acharML(d.nome, d.precoAtual, { outraLoja: !!outraLoja, comCupom: !!d.cupom });
     } catch (e) {
       this.mlPausadoAte = this.agora() + 15 * MIN; // ex.: HTTP 429 (muitas buscas): não insiste
       log(`  🪞 API do ML: ${String(e.message).split('\n')[0]} — ML dos canais pausado por 15 min`);
@@ -355,7 +356,14 @@ export class Espelho {
     }
     if (produto === undefined) return 'ML: limite de buscas por hora';
     if (!produto) return 'ML: produto do post não achado';
-    const dados ={ ...d, precoAtual: produto.precoAtual, precoOriginal: produto.precoOriginal ?? d.precoOriginal, descontoPct: produto.descontoPct ?? d.descontoPct, precoObs: null };
+    const dados = { ...d, precoAtual: produto.precoAtual, precoOriginal: produto.precoOriginal ?? d.precoOriginal, descontoPct: produto.descontoPct ?? d.descontoPct, precoObs: null };
+    // Preço do post com cupom (10/11/2026, grupo da Luh: "por R$ 255,85" + "Cupom: ULTIMASCHANCES"): o post sai com o
+    // preço do anúncio e a linha do cupom com o preço final; o desconto (para o mínimo do grupo) conta o cupom.
+    if (d.cupom && produto.precoAtual > d.precoAtual * 1.01) {
+      dados.precoComCupom = d.precoAtual;
+      const de = dados.precoOriginal || produto.precoAtual;
+      dados.descontoPct = Math.round((1 - d.precoAtual / de) * 100);
+    }
     const link = async () => {
       if (this.agora() - this.ultimoRefresh > 30 * MIN) {
         await this.affiliate.refresh();
@@ -386,14 +394,14 @@ export class Espelho {
    * BUSCAS_ML_POR_HORA buscas novas: a API recusa quem pergunta demais (HTTP 429, visto em 29/10/2026) e é a mesma que
    * traz os mais vendidos nas coletas. Undefined = limite da hora.
    */
-  async acharML(nome, preco, { outraLoja = false } = {}) {
-    const chave = `${normalizar(nome)}|${preco}|${outraLoja ? 'outra' : ''}`;
+  async acharML(nome, preco, { outraLoja = false, comCupom = false } = {}) {
+    const chave = `${normalizar(nome)}|${preco}|${outraLoja ? 'outra' : ''}|${comCupom ? 'cupom' : ''}`;
     const guardado = this.cacheML.get(chave);
     if (guardado && this.agora() - guardado.em < 6 * 60 * MIN) return guardado.produto;
     this.buscasML = this.buscasML.filter((t) => this.agora() - t < 60 * MIN);
     if (this.buscasML.length >= BUSCAS_ML_POR_HORA) return undefined;
     this.buscasML.push(this.agora());
-    const produto = await acharPeloNome(this.mlApi, nome, preco, { outraLoja });
+    const produto = await acharPeloNome(this.mlApi, nome, preco, { outraLoja, comCupom });
     if (this.cacheML.size > 2000) this.cacheML.clear();
     this.cacheML.set(chave, { produto, em: this.agora() });
     return produto;
