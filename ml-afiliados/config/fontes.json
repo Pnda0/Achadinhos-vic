@@ -91,7 +91,12 @@
     "grupos": [
       {
         "titulo": "Apromo da Luh",
-        "convite": "https://chat.whatsapp.com/ESjEPXL0XmPIt3085EaK3Y"
+        "convite": "https://chat.whatsapp.com/ESjEPXL0XmPIt3085EaK3Y",
+        "confiar": [
+          "Perfumes"
+        ],
+        "maxPorHora": 10,
+        "_comentarioConfiar": "10/11/2026, o dono (bravo): 'o grupo da promo da luh tem perfume demais e a nossa fila tá zerada'. O perfume daqui também é de confiança (sem 'só marcas' nem desconto mínimo, só no Perfumes; Beleza e Fitness seguem com as regras deles) e até 10 por hora em cada grupo (eram 3)."
       },
       {
         "titulo": "Apromodaluh_fitness"
@@ -133,7 +138,9 @@
     "exigirVendas": false,
     "copiarTexto": false,
     "fotoDoCanal": false,
-    "maxPorHora": 3
+    "maxPorHora": 3,
+    "buscasMLPorHora": 40,
+    "_comentarioBuscasML": "10/11/2026: até 40 ofertas do ML por hora procuradas na API oficial pelo nome, somando os grupos do WhatsApp (eram 20 e acabavam com a Beleza e o Fitness antes dos perfumes)."
   },
   "_comentarioGruposTelegram": "GRUPOS DO TELEGRAM PARA COPIAR — DESLIGADO (27/10/2026, o dono: \"vamos deixar grupo da lu de fora\"). Como funciona quando ligado: exceção ao \"não copiar\" de 16/10, só para os grupos desta lista. Grupo não tem página pública: o bot (@achadinhosvic_bot) precisa ser membro e estar com a privacidade desligada no @BotFather (/setprivacy > Disable); quando ele entra num grupo cujo título contém o \"titulo\" daqui, começa a copiar sozinho e avisa o dono. As ofertas passam por TODAS as regras do grupo de destino (nicho, só marcas, feminino primeiro, não repetir, Shopee 1 a cada 4) e saem no formato do bot (copiarTexto: false), com a foto da loja (fotoDoCanal: false: a foto do outro grupo pode ter a logo dele). semML: true = links do Mercado Livre ficam de fora (trocar exigiria abrir a página de cada um no ML, o que fez o ML bloquear o bot em 21/10). maxPorHora = no máximo N ofertas desses grupos por hora em cada grupo seu. Depois de mexer aqui, reinicie o bot.",
   "gruposTelegram": {

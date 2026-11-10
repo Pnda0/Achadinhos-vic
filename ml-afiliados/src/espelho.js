@@ -219,7 +219,7 @@ export class Espelho {
     const f = destino.filtros || {};
     if (fonte.manual) return { diasSemRepetir: f.diasSemRepetir };
     // Fonte de confiança ("confiar" em config/fontes.json): sem "só marcas", desconto mínimo nem faixa de preço.
-    if (fonte.confiar) return { palavrasObrigatorias: f.palavrasObrigatorias, palavrasBloqueadas: f.palavrasBloqueadas, diasSemRepetir: f.diasSemRepetir, semMasculino: f.semMasculino };
+    if (fonte.confiar === true || (Array.isArray(fonte.confiar) && fonte.confiar.includes(destino.nome))) return { palavrasObrigatorias: f.palavrasObrigatorias, palavrasBloqueadas: f.palavrasBloqueadas, diasSemRepetir: f.diasSemRepetir, semMasculino: f.semMasculino };
     if (fonte.copiarTexto) return { palavrasObrigatorias: f.palavrasObrigatorias, palavrasBloqueadas: f.palavrasBloqueadas, diasSemRepetir: f.diasSemRepetir, soMarcas: f.soMarcas, semMasculino: f.semMasculino };
     if (fonte.semDescontoMinimo) return { ...f, descontoMinimo: 0 }; // achado de outra loja já mais barato no ML
     return f;
@@ -296,7 +296,7 @@ export class Espelho {
         descontoPct: d.descontoPct,
         cupom: d.cupom,
         ...(d.precoComCupom > 0 && { precoComCupom: d.precoComCupom }),
-        ...(fonte.confiar && { confiavel: true }), // a marca não é conferida de novo na hora de postar
+        ...((fonte.confiar === true || (Array.isArray(fonte.confiar) && fonte.confiar.includes(g.nome))) && { confiavel: true }), // a marca não é conferida de novo na hora de postar
         nota: null,
         precoConsultadoEm: new Date((m.t || this.agora() / 1000) * 1000).toISOString(),
       };
@@ -402,7 +402,7 @@ export class Espelho {
     const guardado = this.cacheML.get(chave);
     if (guardado && this.agora() - guardado.em < 6 * 60 * MIN) return guardado.produto;
     this.buscasML = this.buscasML.filter((t) => this.agora() - t < 60 * MIN);
-    if (this.buscasML.length >= BUSCAS_ML_POR_HORA) return undefined;
+    if (this.buscasML.length >= (Number(this.cfg.buscasMLPorHora) || BUSCAS_ML_POR_HORA)) return undefined;
     this.buscasML.push(this.agora());
     const produto = await acharPeloNome(this.mlApi, nome, preco, { outraLoja, comCupom });
     if (this.cacheML.size > 2000) this.cacheML.clear();

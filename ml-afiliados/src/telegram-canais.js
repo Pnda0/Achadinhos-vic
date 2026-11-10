@@ -78,7 +78,7 @@ export function fonteDoGrupoTelegram(c, { jid, titulo }, { nichos = {}, lojasPar
     ...(Number.isInteger(o.maxPorHora) && { maxPorHora: o.maxPorHora }),
     // "confiar" (10/11/2026, o dono sobre o grupo de perfumes da Luh: "pegue tudo"): a curadoria é da fonte; valem só o
     // nicho, as bloqueadas, o público e o não repetir (src/espelho.js, filtros).
-    ...(o.confiar && { confiar: true }),
+    ...(o.confiar && { confiar: Array.isArray(o.confiar) ? o.confiar : true }), // true = todos os destinos; lista = só esses grupos
   };
 }
 

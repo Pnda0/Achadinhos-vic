@@ -20,3 +20,11 @@ test('fonte de confiança ("confiar"): sem "só marcas" e sem desconto mínimo; 
   assert.equal(motivoRecusa(p('Perfume Automotivo Carro'), e.filtros(luh, grupo), null, { exigirVendas: false }), 'palavra bloqueada');
   assert.equal(motivoRecusa(p('Perfume Malbec Masculino'), e.filtros(luh, grupo), null, { exigirVendas: false }), 'masculino');
 });
+
+test('cupom: com dois códigos e o 1º só para MELI+, vale o que serve para todo mundo', async () => {
+  const { dadosDoTexto } = await import('../src/amazon-espelho.js');
+  const d = dadosDoTexto('✨ Perfume Jean Paul Gaultier “La Belle” Paradise Garden Eau de Parfum 50 ml Feminino\n\nde R$ 829\n🔥 por R$ 368,00\n\n🏷️ Cupom: MELIMAISPREDD (Somente clientes MELI+) ou ULTIMASCHANCES\n\n🛒 https://meli.la/1hZGLwX');
+  assert.equal(d.cupom, 'ULTIMASCHANCES');
+  assert.equal(d.precoAtual, 368);
+  assert.equal(dadosDoTexto('Perfume Lattafa Yara 100ml\npor R$ 199\nCupom: ULTIMASCHANCES').cupom, 'ULTIMASCHANCES');
+});

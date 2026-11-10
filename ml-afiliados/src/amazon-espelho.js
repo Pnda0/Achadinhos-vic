@@ -119,7 +119,11 @@ export function dadosDoTexto(texto) {
   let descontoPct = original && atual ? Math.round((1 - atual / original) * 100) : pct ? Number(pct[1]) : null;
 
   const cupomM = String(texto).match(/cupom\s*:?\s*\*?([A-Z0-9]{4,20})\*?/i);
-  const cupom = cupomM && /\d|[A-Z]{4,}/.test(cupomM[1]) && !/^(de|off|amazon)$/i.test(cupomM[1]) ? cupomM[1].toUpperCase() : null;
+  let cupom = cupomM && /\d|[A-Z]{4,}/.test(cupomM[1]) && !/^(de|off|amazon)$/i.test(cupomM[1]) ? cupomM[1].toUpperCase() : null;
+  // Dois códigos e o 1º só para um tipo de cliente (10/11/2026, Luh: "MELIMAISPREDD (Somente clientes MELI+) ou
+  // ULTIMASCHANCES"): vale o que serve para todo mundo.
+  const outro = cupom && String(texto).match(new RegExp(`${cupomM[1]}\\s*\\((?:somente|s[oó]|apenas|exclusivo)[^)]*\\)\\s*ou\\s*\\*?([A-Z0-9]{4,20})`, 'i'));
+  if (outro) cupom = outro[1].toUpperCase();
 
   // Nome: a primeira linha "de produto" (tem minúsculas, não é preço, cupom, chamada ou frete).
   const candidatas = semLink
