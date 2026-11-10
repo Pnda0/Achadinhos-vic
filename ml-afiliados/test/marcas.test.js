@@ -21,7 +21,7 @@ test('marcas da lista (config/marcas.json): acha pelo nome do anúncio ou pelo t
   assert.equal(marcaDoProduto({ nome: 'Legging Live! Fit Feminina' }, lista), 'Live!');
   assert.equal(marcaDoProduto({ nome: 'Quem disse, Berenice? Batom' }, lista), 'Quem Disse, Berenice?');
   // sem marca da lista (e sem falso positivo em pedaço de palavra)
-  assert.equal(marcaDoProduto({ nome: 'Air Fryer Mondial 4L' }, lista), null);
+  assert.equal(marcaDoProduto({ nome: 'Air Fryer Genérica 4L' }, lista), null);
   assert.equal(marcaDoProduto({ nome: 'Óleo natural de coco' }, lista), null, '"natural" não é "Natura"');
   assert.equal(marcaDoProduto({ nome: 'Assista à live de hoje' }, lista), null, '"live" sozinho não é a Live!');
 });

@@ -93,6 +93,22 @@
         "body splash victoria's secret"
       ],
       "prefixo": "perfume"
+    },
+    "Casa": {
+      "marcas": [
+        "casa"
+      ],
+      "buscas": [
+        "air fryer",
+        "jogo de panelas",
+        "organizador de geladeira",
+        "potes herméticos",
+        "jogo de cama",
+        "toalha de banho",
+        "copo térmico",
+        "aspirador robô"
+      ],
+      "_comentario": "10/11/2026: grupo Casa. Uma busca por marca da lista \"casa\" de config/marcas.json + estas; só passa marca da lista."
     }
   },
   "maxPorBusca": 4,

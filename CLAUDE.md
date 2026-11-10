@@ -1,6 +1,8 @@
 # Achadinhos da Vic — contexto para o Claude
 
-Grupos de ofertas no Telegram por nicho (**Fitness**, **Beleza**, **Perfumes**) + o canal **Geral** (de tudo, não divulgado no site).
+Grupos de ofertas no Telegram por nicho (**Fitness**, **Beleza**, **Perfumes** e, desde 10/11/2026, **Casa**) + o canal **Geral** (de tudo, não divulgado no site).
+
+**Casa** (10/11/2026, o dono: "quero fazer o grupo de casa... priorizar as marcas boas"): nicho `casa` em `config/nichos.json`, marcas na lista `casa` de `config/marcas.json` (só marca da lista, não vira palavra do nicho), 8 categorias de mais vendidos + 48 buscas por marca do ML (`DOMINIOS_BUSCA_MARCA.Casa` em `src/ml/api.js`), Shopee, no máximo 40 por dia, até R$ 3.000. Só Telegram (canal https://t.me/+h_RsZNsKWa1jYzlh); WhatsApp só com um 2º chip (o espelho divide 1 mensagem a cada 4-6 min entre todos). O site ainda não mostra o Casa: pôr no `GRUPOS` de `Vic Site/index.html` e publicar quando o canal já tiver posts. **Masculino: nenhum** em Fitness, Beleza, Perfumes e Casa (`"semMasculino": true`, 10/11/2026, o dono: "pode tirar masculino 100%").
 O dono fala português e prefere que o Claude **faça tudo sozinho** (inclusive commit e push no `main`), deixando para ele só o que exige login nas contas dele. Respostas curtas, em português, sem jargão.
 
 ## Onde cada coisa roda (nov/2026)

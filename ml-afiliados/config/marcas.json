@@ -883,5 +883,97 @@
     "Fitbit"
   ],
   "_comentarioBebidas": "06/11/2026, o dono: 'whey, creatina, tênis, yopro, monster, coca zero, barrinha... tem que ser prioridade'. Monster (só o energético), Coca-Cola Zero / Sem Açúcar e Pepsi Black / Zero entram no Fitness; a Coca e a Pepsi normais não.",
-  "_comentarioPerfumes2": "06/11/2026, o dono: 'o de perfume não tem 1 post, só tem cupom... procure perfumes'. Grifes femininas (Hugo Boss, Chanel, Gucci, Nina Ricci, Mugler...), nacionais (Jequiti, Mahogany, Água de Cheiro; Eudora, Avon e Quem Disse Berenice já estavam na lista do Beleza e valem também aqui) e árabes conhecidas que faltavam: o canal @perfumepromo postava 'Boss The Scent For Her' e o bot recusava por 'sem marca da lista'. Entraram como secundárias (15 pontos na nota, nivel.secundarias) e com preço mínimo contra falsificação."
+  "_comentarioPerfumes2": "06/11/2026, o dono: 'o de perfume não tem 1 post, só tem cupom... procure perfumes'. Grifes femininas (Hugo Boss, Chanel, Gucci, Nina Ricci, Mugler...), nacionais (Jequiti, Mahogany, Água de Cheiro; Eudora, Avon e Quem Disse Berenice já estavam na lista do Beleza e valem também aqui) e árabes conhecidas que faltavam: o canal @perfumepromo postava 'Boss The Scent For Her' e o bot recusava por 'sem marca da lista'. Entraram como secundárias (15 pontos na nota, nivel.secundarias) e com preço mínimo contra falsificação.",
+  "casa": [
+    "Electrolux",
+    {
+      "marca": "Philips Walita",
+      "termos": [
+        "philips walita",
+        "walita",
+        "philips"
+      ]
+    },
+    "Mondial",
+    "Oster",
+    "Arno",
+    {
+      "marca": "Britânia",
+      "termos": [
+        "britania"
+      ]
+    },
+    "Philco",
+    "WAP",
+    {
+      "marca": "Black+Decker",
+      "termos": [
+        "black+decker",
+        "black decker",
+        "black & decker",
+        "blackdecker"
+      ]
+    },
+    "Cadence",
+    "Midea",
+    "Nespresso",
+    "Dolce Gusto",
+    "Tramontina",
+    "Brinox",
+    "Rochedo",
+    "Tefal",
+    {
+      "marca": "Oxford",
+      "termos": [
+        "re:\\boxford\\b.*(jantar|porcelana|prato|caneca|x[ií]cara|travessa)|(jantar|porcelana|prato|caneca|x[ií]cara|travessa).*\\boxford\\b"
+      ]
+    },
+    "Le Creuset",
+    {
+      "marca": "Stanley",
+      "termos": [
+        "re:\\bstanley\\b.*(copo|garrafa|caneca|t[eé]rmic|quencher|tumbler|jarra|marmita)|(copo|garrafa|caneca|t[eé]rmic|quencher|tumbler|jarra|marmita).*\\bstanley\\b"
+      ]
+    },
+    "Tupperware",
+    "iRobot",
+    {
+      "marca": "Kärcher",
+      "termos": [
+        "karcher"
+      ]
+    },
+    {
+      "marca": "Xiaomi",
+      "termos": [
+        "re:\\bxiaomi\\b.*(aspirador|rob[oô]|purificador|mop|umidificador)|(aspirador|rob[oô]|purificador|umidificador).*\\bxiaomi\\b"
+      ]
+    },
+    "Buddemeyer",
+    "Santista",
+    "Artex",
+    "Trussardi",
+    "Karsten",
+    "Teka",
+    "Altenburg",
+    "Camesa",
+    "Ordene",
+    "Coza",
+    {
+      "marca": "Plasútil",
+      "termos": [
+        "plasutil"
+      ]
+    },
+    "Sanremo",
+    "Brastemp",
+    "Consul",
+    "Fischer",
+    "Hamilton Beach",
+    "KitchenAid",
+    "Panasonic",
+    "LG",
+    "Samsung"
+  ],
+  "_comentarioCasa": "10/11/2026, o dono: 'priorizar as marcas boas também'. Lista do grupo Casa (Claude sugeriu, o dono aprovou). Não vira palavra do nicho (não está em \"nichos\"): o nome precisa dizer o tipo de produto (panela, air fryer, lençol...). Stanley só com copo/garrafa/caneca; Xiaomi só com aspirador/robô/purificador."
 }

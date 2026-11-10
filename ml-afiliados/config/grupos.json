@@ -270,6 +270,23 @@
       "soMarcas": true,
       "reservaDescontoMinimo": 10,
       "_comentarioReserva": "27/10/2026, o dono (só para perfume): mais vendido do Mercado Livre com desconto abaixo do mínimo (20%) pode entrar, mas só se não tiver as outras. Entre 10% e 20% entra na fila como reserva e só sai quando nenhuma outra oferta pode sair naquela hora (inclusive quando a Shopee está esperando a vez dela)."
+    },
+    {
+      "nome": "Casa",
+      "jid": "",
+      "ativo": true,
+      "mensagemAdicional": "",
+      "filtros": {
+        "precoMaximo": 3000
+      },
+      "nicho": "casa",
+      "telegram": "",
+      "preferirFeminino": 10,
+      "semMasculino": true,
+      "soMarcas": true,
+      "maxPorDia": 40,
+      "reservaDescontoMinimo": 10,
+      "_comentario": "10/11/2026, o dono criou o canal \"Achadinhos Vic - Casa\" (https://t.me/+h_RsZNsKWa1jYzlh). Sem \"telegram\" o grupo fica em espera; quando o bot vira administrador do canal ele se liga sozinho (ligarCanalNovo em src/index.js, pelo título \"Casa\"). Só Telegram por enquanto (o espelho do WhatsApp divide 1 mensagem a cada 4-6 min entre todos os grupos; com um 2º chip dá para pôr). Só marca da lista, no máximo 40 por dia, até R$ 3.000; de 10% a 20% de desconto entra como reserva."
     }
   ],
   "_comentarioMasculino": "10/11/2026, o dono: 'pode tirar masculino 100%' (depois de um 'Tênis Masculino Olympikus' no Fitness): \"semMasculino\": true em Fitness, Beleza e Perfumes = nenhum produto masculino (src/genero.js decide pelo nome; feminino/unissex passam; cupom e o que o dono manda no privado passam). Antes: Masculino no máximo 1 a cada 10 posts em Fitness, Beleza e Perfumes (o dono, 27/10/2026: 'tá postando coisa masculina demais'); antes era 1 a cada 4 (1 a cada 5 no Perfumes). O número é o 'preferirFeminino' de cada grupo.",

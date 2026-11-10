@@ -735,5 +735,390 @@
     "nome": "ML marca: perfume lacoste pour femme",
     "buscaML": "perfume lacoste pour femme",
     "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML mais vendidos: Cozinha",
+    "maisVendidos": "MLB1618",
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML mais vendidos: Pequenos Eletrodomésticos",
+    "maisVendidos": "MLB438284",
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML mais vendidos: Têxteis de Casa",
+    "maisVendidos": "MLB436246",
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML mais vendidos: Camas, Colchões e Acessórios",
+    "maisVendidos": "MLB438928",
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML mais vendidos: Organização para Casa",
+    "maisVendidos": "MLB436414",
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML mais vendidos: Banheiros",
+    "maisVendidos": "MLB1613",
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML mais vendidos: Cuidado da Casa e Lavanderia",
+    "maisVendidos": "MLB264051",
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML mais vendidos: Ar e Ventilação",
+    "maisVendidos": "MLB252358",
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: air fryer mondial",
+    "buscaML": "air fryer mondial",
+    "reservaDescontoMinimo": 10,
+    "ativo": true,
+    "_comentario": "10/11/2026: busca das marcas do Casa no catálogo do ML (API oficial; só loja oficial). 5 por coleta, revezando, com a vez própria (BUSCAS_MARCA_OUTROS_POR_COLETA). Só passam os tipos de produto de DOMINIOS_BUSCA_MARCA.Casa (src/ml/api.js)."
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: air fryer electrolux",
+    "buscaML": "air fryer electrolux",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: air fryer philips walita",
+    "buscaML": "air fryer philips walita",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: air fryer oster",
+    "buscaML": "air fryer oster",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: air fryer britania",
+    "buscaML": "air fryer britania",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: air fryer philco",
+    "buscaML": "air fryer philco",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: air fryer arno",
+    "buscaML": "air fryer arno",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: jogo de panelas tramontina",
+    "buscaML": "jogo de panelas tramontina",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: frigideira tramontina",
+    "buscaML": "frigideira tramontina",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: panela de pressao tramontina",
+    "buscaML": "panela de pressao tramontina",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: jogo de panelas brinox",
+    "buscaML": "jogo de panelas brinox",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: panela rochedo",
+    "buscaML": "panela rochedo",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: frigideira tefal",
+    "buscaML": "frigideira tefal",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: faqueiro tramontina",
+    "buscaML": "faqueiro tramontina",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: jogo de facas tramontina",
+    "buscaML": "jogo de facas tramontina",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: aparelho de jantar oxford",
+    "buscaML": "aparelho de jantar oxford",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: copo stanley",
+    "buscaML": "copo stanley",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: garrafa termica stanley",
+    "buscaML": "garrafa termica stanley",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: liquidificador oster",
+    "buscaML": "liquidificador oster",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: liquidificador philips walita",
+    "buscaML": "liquidificador philips walita",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: batedeira planetaria mondial",
+    "buscaML": "batedeira planetaria mondial",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: batedeira kitchenaid",
+    "buscaML": "batedeira kitchenaid",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: cafeteira nespresso",
+    "buscaML": "cafeteira nespresso",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: cafeteira dolce gusto",
+    "buscaML": "cafeteira dolce gusto",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: cafeteira oster",
+    "buscaML": "cafeteira oster",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: mixer philips walita",
+    "buscaML": "mixer philips walita",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: processador de alimentos philips walita",
+    "buscaML": "processador de alimentos philips walita",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: chaleira eletrica electrolux",
+    "buscaML": "chaleira eletrica electrolux",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: sanduicheira britania",
+    "buscaML": "sanduicheira britania",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: panela eletrica de arroz mondial",
+    "buscaML": "panela eletrica de arroz mondial",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: robo aspirador xiaomi",
+    "buscaML": "robo aspirador xiaomi",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: robo aspirador wap",
+    "buscaML": "robo aspirador wap",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: aspirador vertical electrolux",
+    "buscaML": "aspirador vertical electrolux",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: aspirador wap",
+    "buscaML": "aspirador wap",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: ferro de passar philips walita",
+    "buscaML": "ferro de passar philips walita",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: vaporizador de roupas philco",
+    "buscaML": "vaporizador de roupas philco",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: ventilador arno",
+    "buscaML": "ventilador arno",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: umidificador philco",
+    "buscaML": "umidificador philco",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: jogo de cama buddemeyer",
+    "buscaML": "jogo de cama buddemeyer",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: jogo de cama santista",
+    "buscaML": "jogo de cama santista",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: jogo de cama trussardi",
+    "buscaML": "jogo de cama trussardi",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: jogo de toalhas karsten",
+    "buscaML": "jogo de toalhas karsten",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: toalha de banho buddemeyer",
+    "buscaML": "toalha de banho buddemeyer",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: edredom altenburg",
+    "buscaML": "edredom altenburg",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: travesseiro altenburg",
+    "buscaML": "travesseiro altenburg",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: organizador ordene",
+    "buscaML": "organizador ordene",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: pote hermetico electrolux",
+    "buscaML": "pote hermetico electrolux",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: potes tupperware",
+    "buscaML": "potes tupperware",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
   }
 ]
