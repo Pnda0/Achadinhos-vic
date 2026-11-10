@@ -54,10 +54,8 @@ test('perfumes e beleza: cada oferta cai no grupo certo', () => {
   const grupos = loadGrupos().map(semFiltroDeMarca);
   const em = (grupo, nome) => motivoRecusa({ id: 'X', grupo, nome, precoAtual: 99, descontoPct: 30, nota: 4.6, vendidos: '+1000 vendidos' }, grupos.find((g) => g.nome === grupo).filtros);
   for (const nome of [
-    'Perfume Lattafa Asad Eau De Parfum 100ml Masculino',
-    'Club De Nuit Intense Man Armaf Edt 105ml',
     'Body Splash Victoria Secret Love Spell 250ml',
-    'Malbec Desodorante Colônia 100ml O Boticário',
+    'Body Splash Natura Ekos Maracujá 200ml',
     'Kit Perfume Feminino La Rive + Hidratante',
   ]) {
     assert.equal(em('Perfumes', nome), null, nome);
@@ -71,6 +69,8 @@ test('perfumes e beleza: cada oferta cai no grupo certo', () => {
   ]) {
     assert.equal(em('Perfumes', nome), 'palavra bloqueada', nome);
   }
+  // 10/11/2026, o dono: "pode tirar masculino 100%" ("semMasculino" no Perfumes).
+  for (const nome of ['Perfume Lattafa Asad Eau De Parfum 100ml Masculino', 'Club De Nuit Intense Man Armaf Edt 105ml']) assert.equal(em('Perfumes', nome), 'masculino', nome);
   assert.equal(em('Perfumes', 'Base Líquida Matte Ruby Rose'), 'fora do nicho');
   assert.equal(em('Perfumes', 'Perfume Importado 100ml', ), null);
   for (const nome of ['Base Líquida Matte Ruby Rose', 'Sérum Facial Vitamina C 30ml', 'Shampoo Reconstrução 300ml', 'Secador De Cabelo Taiff 2000w', 'Creme Hidratante Corporal 200 Gramas']) {

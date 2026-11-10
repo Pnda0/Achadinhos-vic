@@ -678,7 +678,7 @@ function abaRegras() {
   const R = D.regras;
   if (!R) return vazio('Sem as regras nesta versão do painel.');
   const sim = (b) => (b ? 'sim' : 'não');
-  const linhas = R.grupos.map((g) => '<tr><th scope="row">' + esc(g.nome) + '</th><td>' + (g.ativo ? '<span class="ok">ligado</span>' : 'pausado') + '</td><td>' + (g.descontoMinimo == null ? '—' : n(g.descontoMinimo) + '%') + '</td><td>' + brl(g.precoMinimo) + ' a ' + brl(g.precoMaximo) + '</td><td>' + (g.notaMinima == null ? '—' : n(g.notaMinima)) + '</td><td>' + sim(g.soMarcas) + '</td><td>' + (g.masculinoCada ? '1 a cada ' + n(g.masculinoCada) : 'sem limite') + '</td><td>' + (g.diasSemRepetir == null ? '—' : n(g.diasSemRepetir) + ' dias') + '</td><td>' + sim(g.whatsapp) + '</td></tr>').join('');
+  const linhas = R.grupos.map((g) => '<tr><th scope="row">' + esc(g.nome) + '</th><td>' + (g.ativo ? '<span class="ok">ligado</span>' : 'pausado') + '</td><td>' + (g.descontoMinimo == null ? '—' : n(g.descontoMinimo) + '%') + '</td><td>' + brl(g.precoMinimo) + ' a ' + brl(g.precoMaximo) + '</td><td>' + (g.notaMinima == null ? '—' : n(g.notaMinima)) + '</td><td>' + sim(g.soMarcas) + '</td><td>' + (g.semMasculino ? 'nenhum' : g.masculinoCada ? '1 a cada ' + n(g.masculinoCada) : 'sem limite') + '</td><td>' + (g.diasSemRepetir == null ? '—' : n(g.diasSemRepetir) + ' dias') + '</td><td>' + sim(g.whatsapp) + '</td></tr>').join('');
   const tab = '<div class="rolagem"><table><thead><tr>' + ['Grupo', 'Situação', 'Desconto mín.', 'Preço', 'Nota mín.', 'Só marcas', 'Masculino', 'Não repete por', 'WhatsApp'].map((h) => '<th scope="col">' + h + '</th>').join('') + '</tr></thead><tbody>' + linhas + '</tbody></table></div>';
   const gerais = [
     'Público principal: meninas. Produtos femininos saem primeiro, depois os neutros; masculino só de vez em quando (o limite de cada grupo está acima).',
@@ -698,7 +698,7 @@ function abaRegras() {
       g.descontoMinimo != null ? 'Desconto de pelo menos ' + n(g.descontoMinimo) + '%' : '',
       g.precoMinimo != null ? 'Preço a partir de ' + brl(g.precoMinimo) : '',
       g.notaMinima != null ? 'Nota mínima ' + n(g.notaMinima) + ' (de 5)' : '',
-      g.masculinoCada ? 'No máximo 1 produto masculino a cada ' + n(g.masculinoCada) + ' posts' : '',
+      g.semMasculino ? 'Nenhum produto masculino' : g.masculinoCada ? 'No máximo 1 produto masculino a cada ' + n(g.masculinoCada) + ' posts' : '',
       g.diasSemRepetir != null ? 'O mesmo produto não volta antes de ' + n(g.diasSemRepetir) + ' dias' : '',
       g.whatsapp ? 'Também vai para o WhatsApp' : 'Não vai para o WhatsApp',
     ].filter(Boolean).map((t) => '<li>' + esc(t) + '</li>').join('') + '</ul></div>';

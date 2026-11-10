@@ -145,3 +145,21 @@ test('envio: fila só com perfume masculino e o último masculino há 3 h — sa
   const p = await enviarProximo(sender, grupo, store);
   assert.equal(p?.id, 'MLB77');
 });
+
+// 10/11/2026, o dono: "pode tirar masculino 100%". Grupo "semMasculino": masculino da fila não sai nunca, nem pela folga.
+test('semMasculino: masculino da fila é barrado na hora de postar; o feminino sai', async () => {
+  const { enviarProximo, motivoPeloNome } = await import('../src/pipeline.js');
+  const store = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-masc3-')), 'db.json'));
+  const grupo = { nome: 'Fitness', jid: '-1', mensagemAdicional: '', preferirFeminino: 10, semMasculino: true, filtros: { diasSemRepetir: 5 } };
+  store.data.produtos['Fitness:E1'] = { id: 'E1', grupo: 'Fitness', nome: 'Whey Growth', status: 'ENVIADO', enviadoEm: new Date(Date.now() - 5 * 3_600_000).toISOString() };
+  const base = { grupo: 'Fitness', loja: 'ml', linkAfiliado: 'https://meli.la/abc', imagem: 'i', precoAtual: 178.99, precoOriginal: 210.58, descontoPct: 15, semRegraVendas: true };
+  store.upsert({ ...base, id: 'MLB1', nome: 'Tênis Masculino Olympikus Proof 3 Original', url: 'https://www.mercadolivre.com.br/p/MLB1', descontoPct: 40 });
+  const sender = { sendImage: async () => ({ comImagem: true }), sendText: async () => {} };
+  assert.equal(await enviarProximo(sender, grupo, store), null, 'só masculino na fila: nada sai');
+  assert.equal(store.data.produtos['Fitness:MLB1'].status, 'REJEITADO');
+  store.upsert({ ...base, id: 'MLB2', nome: 'Tênis Olympikus Corre 3 Feminino', url: 'https://www.mercadolivre.com.br/p/MLB2' });
+  assert.equal((await enviarProximo(sender, grupo, store))?.id, 'MLB2');
+  assert.equal(motivoPeloNome({ nome: 'Perfume Malbec Masculino' }, { semMasculino: true }), 'masculino');
+  assert.equal(motivoPeloNome({ nome: 'Perfume Malbec Masculino', tipo: 'cupom' }, { semMasculino: true }), null);
+  assert.equal(motivoPeloNome({ nome: 'Perfume Malbec Masculino' }, {}), null);
+});

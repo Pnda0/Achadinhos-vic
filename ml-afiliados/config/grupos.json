@@ -188,6 +188,7 @@
       "_comentarioPrecoBom": "06/11/2026, o dono: 'tô achando os produtos da Nike muito caros, tem como dar uma variada nas marcas'. Na nota da oferta (src/ranking.js), acima de R$ 250 perde 1 ponto a cada R$ 15 (R$ 400 = -10, R$ 625 ou mais = -25); e marca que já saiu nas últimas 24 h perde 8 pontos por post dela.",
       "telegram": "-1004454980210",
       "preferirFeminino": 10,
+      "semMasculino": true,
       "whatsapp": "Achadinhos Vic - Fitness",
       "soMarcas": true,
       "prioridade": [
@@ -247,6 +248,7 @@
       "nicho": "beleza",
       "telegram": "-1004455813335",
       "preferirFeminino": 10,
+      "semMasculino": true,
       "whatsapp": "Achadinhos Vic - Beleza",
       "soMarcas": true,
       "maxPorDia": 40,
@@ -263,13 +265,14 @@
       "nicho": "perfumes",
       "telegram": "-1004316376505",
       "preferirFeminino": 10,
+      "semMasculino": true,
       "whatsapp": "Achadinhos Vic - Perfumes",
       "soMarcas": true,
       "reservaDescontoMinimo": 10,
       "_comentarioReserva": "27/10/2026, o dono (só para perfume): mais vendido do Mercado Livre com desconto abaixo do mínimo (20%) pode entrar, mas só se não tiver as outras. Entre 10% e 20% entra na fila como reserva e só sai quando nenhuma outra oferta pode sair naquela hora (inclusive quando a Shopee está esperando a vez dela)."
     }
   ],
-  "_comentarioMasculino": "Masculino no máximo 1 a cada 10 posts em Fitness, Beleza e Perfumes (o dono, 27/10/2026: 'tá postando coisa masculina demais'); antes era 1 a cada 4 (1 a cada 5 no Perfumes). O número é o 'preferirFeminino' de cada grupo.",
+  "_comentarioMasculino": "10/11/2026, o dono: 'pode tirar masculino 100%' (depois de um 'Tênis Masculino Olympikus' no Fitness): \"semMasculino\": true em Fitness, Beleza e Perfumes = nenhum produto masculino (src/genero.js decide pelo nome; feminino/unissex passam; cupom e o que o dono manda no privado passam). Antes: Masculino no máximo 1 a cada 10 posts em Fitness, Beleza e Perfumes (o dono, 27/10/2026: 'tá postando coisa masculina demais'); antes era 1 a cada 4 (1 a cada 5 no Perfumes). O número é o 'preferirFeminino' de cada grupo.",
   "_comentarioCapinha": "Capinha, capa e película de celular bloqueadas em todos os grupos (pedido do dono, 21/10/2026): a busca da Shopee por marca (\"Nike\") trazia capinha falsificada com o logo.",
   "_comentarioCarregador": "06/11/2026, o dono: 'caiu fonte de carregador de celular no grupo fitness, tá certo isso?'. Em todos os grupos: carregador de celular, fonte e adaptador de tomada, cabo USB e power bank ficam de fora (palavrasBloqueadas do filtrosPadrao; o Fitness bloqueia também 'fonte' sozinha e 'carregador' sozinho, em config/nichos.json)."
 }

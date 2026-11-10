@@ -39,7 +39,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { VENDAS_MINIMAS, motivoVendas } from './ml/vendas.js';
 import { evento, origemDe } from './eventos.js';
-import { preferenciaFeminina } from './genero.js';
+import { generoDoProduto, preferenciaFeminina } from './genero.js';
 import { marcaDoProduto, motivoPrecoDaMarca } from './marcas.js';
 import { notaDaOferta, posicaoDaMarca } from './ranking.js';
 import { BrowserSession, sessaoNavegador } from './browser.js';
@@ -56,6 +56,8 @@ export function motivoPeloNome(p, f) {
   if ((f.palavrasBloqueadas || []).some((w) => casaTermo(nome, w))) return 'palavra bloqueada';
   // Grupo "soMarcas" (grupos.json): só produto de uma marca de config/marcas.json. Cupom de loja passa.
   if (f.soMarcas && p.tipo !== 'cupom' && !marcaDoProduto(p)) return 'sem marca da lista';
+  // Grupo "semMasculino" (10/11/2026, o dono: "pode tirar masculino 100%"): nada masculino. Cupom passa.
+  if (f.semMasculino && p.tipo !== 'cupom' && !p.manual && generoDoProduto(p) === 'm') return 'masculino';
   return null;
 }
 
@@ -509,6 +511,12 @@ function publicoNoEnvio(p, grupo) {
   return motivoPrecoDaMarca(p) || (doCatalogoAwin(p) ? motivoForaDoPublico(p, grupo, loadAwin().produtos || {}) : null);
 }
 
+/** Grupo "semMasculino": o masculino que entrou na fila antes da regra não sai. Cupom e caixa de entrada passam. */
+function masculinoNoEnvio(p, grupo) {
+  if (!grupo.semMasculino || p.manual || p.tipo === 'cupom' || origemDe(p) === 'caixa') return null;
+  return generoDoProduto(p) === 'm' ? 'masculino' : null;
+}
+
 /** Grupo "soMarcas": o que entrou na fila antes do filtro (ou sem marca) não sai. Cupom e caixa de entrada passam. */
 function marcaNoEnvio(p, grupo) {
   if (!grupo.soMarcas || p.manual || p.tipo === 'cupom' || origemDe(p) === 'caixa') return null;
@@ -647,7 +655,7 @@ export async function enviarProximo(sender, grupo, store = new Store(), { fotoDo
     nota: notaDaOferta({ prioridade, precoBom: grupo.precoBom }),
   };
   // Nada mais pode sair e o último masculino foi há 2 h ou mais (src/genero.js, "folga"): um masculino pode sair.
-  const comFolga = feminina.folga ? { ...preferencia, aceitar: lojaOk } : null;
+  const comFolga = feminina.folga && !grupo.semMasculino ? { ...preferencia, aceitar: lojaOk } : null;
   let p = null;
   // Cada candidato barrado sai da fila (muda de status), então o laço termina; null = fila realmente vazia.
   while (!p) {
@@ -655,7 +663,7 @@ export async function enviarProximo(sender, grupo, store = new Store(), { fotoDo
     if (!candidato) break;
     const repetido = store.jaPublicado(candidato, dias);
     const linkRuim = !repetido && motivoLinkInvalido(candidato);
-    const vendas = !repetido && !linkRuim && (copiadaVencida(candidato, grupo) || vendasNoEnvio(candidato, grupo) || marcaNoEnvio(candidato, grupo) || nichoNoEnvio(candidato, grupo) || publicoNoEnvio(candidato, grupo));
+    const vendas = !repetido && !linkRuim && (copiadaVencida(candidato, grupo) || vendasNoEnvio(candidato, grupo) || marcaNoEnvio(candidato, grupo) || masculinoNoEnvio(candidato, grupo) || nichoNoEnvio(candidato, grupo) || publicoNoEnvio(candidato, grupo));
     if (!repetido && !linkRuim && !vendas) p = candidato;
     else {
       const motivo = repetido || linkRuim || vendas;

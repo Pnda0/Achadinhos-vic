@@ -218,7 +218,7 @@ export class Espelho {
   filtros(fonte, destino) {
     const f = destino.filtros || {};
     if (fonte.manual) return { diasSemRepetir: f.diasSemRepetir };
-    if (fonte.copiarTexto) return { palavrasObrigatorias: f.palavrasObrigatorias, palavrasBloqueadas: f.palavrasBloqueadas, diasSemRepetir: f.diasSemRepetir, soMarcas: f.soMarcas };
+    if (fonte.copiarTexto) return { palavrasObrigatorias: f.palavrasObrigatorias, palavrasBloqueadas: f.palavrasBloqueadas, diasSemRepetir: f.diasSemRepetir, soMarcas: f.soMarcas, semMasculino: f.semMasculino };
     if (fonte.semDescontoMinimo) return { ...f, descontoMinimo: 0 }; // achado de outra loja já mais barato no ML
     return f;
   }

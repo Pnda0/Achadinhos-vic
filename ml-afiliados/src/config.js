@@ -89,6 +89,7 @@ export function loadGrupos() {
       filtros.palavrasBloqueadas = [...(filtros.palavrasBloqueadas || []), ...(nicho.bloqueadas || [])];
     }
     if (g.soMarcas) filtros.soMarcas = true; // só marcas de config/marcas.json (pedido do dono, 15/10/2026)
+    if (g.semMasculino) filtros.semMasculino = true; // nenhum produto masculino (o dono, 10/11/2026: "pode tirar masculino 100%")
     return {
       ...g,
       // No Telegram o destino é o chat id do campo "telegram"; o JID do WhatsApp fica guardado em jidWhats.
