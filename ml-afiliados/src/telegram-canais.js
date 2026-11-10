@@ -76,6 +76,9 @@ export function fonteDoGrupoTelegram(c, { jid, titulo }, { nichos = {}, lojasPar
     apenasAmazon: !!o.apenasAmazon, soAmazon: !!o.apenasAmazon, mlPeloNome: !!o.mlPeloNome,
     exigirVendas: o.exigirVendas !== false, fotoDoCanal: !!o.fotoDoCanal, copiarTexto: !!o.copiarTexto,
     ...(Number.isInteger(o.maxPorHora) && { maxPorHora: o.maxPorHora }),
+    // "confiar" (10/11/2026, o dono sobre o grupo de perfumes da Luh: "pegue tudo"): a curadoria é da fonte; valem só o
+    // nicho, as bloqueadas, o público e o não repetir (src/espelho.js, filtros).
+    ...(o.confiar && { confiar: true }),
   };
 }
 

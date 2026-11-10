@@ -519,7 +519,7 @@ function masculinoNoEnvio(p, grupo) {
 
 /** Grupo "soMarcas": o que entrou na fila antes do filtro (ou sem marca) não sai. Cupom e caixa de entrada passam. */
 function marcaNoEnvio(p, grupo) {
-  if (!grupo.soMarcas || p.manual || p.tipo === 'cupom' || origemDe(p) === 'caixa') return null;
+  if (!grupo.soMarcas || p.manual || p.confiavel || p.tipo === 'cupom' || origemDe(p) === 'caixa') return null;
   // Nada sem marca da lista, de loja nenhuma (04/11/2026, o dono: "remove esses itens sem marca da shopee ou de qualquer
   // outra loja, do grupo fitness... são itens horríveis"): vale também para o que entrou na fila marcado como sem marca.
   return marcaDoProduto(p) ? null : 'sem marca da lista';

@@ -102,7 +102,16 @@
       },
       {
         "titulo": "Apromodaluh_perf",
-        "_comentario": "06/11/2026, o dono: 'procure no grupo da luh... os grupos são todos organizados'. O grupo de perfumes da comunidade da Luh (o de fitness é '05 - Apromodaluh_fitness'). O chip entra só se o dono puser (como no fitness); enquanto não estiver, o log mostra os grupos do chip com nome parecido."
+        "_comentario": "06/11/2026, o dono: 'procure no grupo da luh... os grupos são todos organizados'. O grupo de perfumes da comunidade da Luh (o de fitness é '05 - Apromodaluh_fitness'). O chip entra só se o dono puser (como no fitness); enquanto não estiver, o log mostra os grupos do chip com nome parecido.",
+        "confiar": true,
+        "maxPorHora": 10,
+        "destinos": [
+          {
+            "grupo": "Perfumes",
+            "nicho": "perfumes"
+          }
+        ],
+        "_comentarioConfiar": "10/11/2026, o dono: 'não tem como o perfume ter tão poucos, pegue tudo do grupo da luh'. Fonte de confiança: tudo de perfume que ela posta (Amazon, ML e o que estiver no ML de lojas sem programa) entra no Perfumes sem 'só marcas', desconto mínimo nem faixa de preço; valem o nicho, as bloqueadas, sem masculino e o não repetir. Até 10 por hora."
       }
     ],
     "destinos": [

@@ -218,6 +218,8 @@ export class Espelho {
   filtros(fonte, destino) {
     const f = destino.filtros || {};
     if (fonte.manual) return { diasSemRepetir: f.diasSemRepetir };
+    // Fonte de confiança ("confiar" em config/fontes.json): sem "só marcas", desconto mínimo nem faixa de preço.
+    if (fonte.confiar) return { palavrasObrigatorias: f.palavrasObrigatorias, palavrasBloqueadas: f.palavrasBloqueadas, diasSemRepetir: f.diasSemRepetir, semMasculino: f.semMasculino };
     if (fonte.copiarTexto) return { palavrasObrigatorias: f.palavrasObrigatorias, palavrasBloqueadas: f.palavrasBloqueadas, diasSemRepetir: f.diasSemRepetir, soMarcas: f.soMarcas, semMasculino: f.semMasculino };
     if (fonte.semDescontoMinimo) return { ...f, descontoMinimo: 0 }; // achado de outra loja já mais barato no ML
     return f;
@@ -294,6 +296,7 @@ export class Espelho {
         descontoPct: d.descontoPct,
         cupom: d.cupom,
         ...(d.precoComCupom > 0 && { precoComCupom: d.precoComCupom }),
+        ...(fonte.confiar && { confiavel: true }), // a marca não é conferida de novo na hora de postar
         nota: null,
         precoConsultadoEm: new Date((m.t || this.agora() / 1000) * 1000).toISOString(),
       };
