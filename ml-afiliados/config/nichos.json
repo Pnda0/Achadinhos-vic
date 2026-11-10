@@ -890,7 +890,47 @@
       "peça de reposição",
       "peca de reposicao",
       "peça para",
-      "peca para"
+      "peca para",
+      "tenis",
+      "sapato",
+      "sapatos",
+      "sapatilha",
+      "sandalia",
+      "rasteirinha",
+      "chinelo",
+      "bota",
+      "botas",
+      "calcado",
+      "calçado",
+      "tamanco",
+      "mule",
+      "scarpin",
+      "camiseta",
+      "camisa",
+      "blusa",
+      "cropped",
+      "calca",
+      "calça",
+      "bermuda",
+      "short",
+      "legging",
+      "vestido",
+      "saia",
+      "macacao",
+      "macacão",
+      "jaqueta",
+      "moletom",
+      "lingerie",
+      "pijama",
+      "sutia",
+      "calcinha",
+      "cueca",
+      "bolsa",
+      "mochila",
+      "carteira",
+      "relogio de pulso",
+      "smartwatch",
+      "oculos"
     ],
     "titulos": {
       "alto": [
@@ -912,6 +952,7 @@
         "ACHADO DO DIA 🛒"
       ]
     },
-    "_comentario": "10/11/2026, o dono: 'estou querendo fazer o grupo de casa também... eu gostaria de priorizar as marcas boas'. Casa, cozinha, eletroportáteis, cama/mesa/banho, organização e decoração. Só marca da lista \"casa\" de config/marcas.json (\"soMarcas\"); peça avulsa, ferramenta/obra, pet, carro e infantil ficam de fora (o público é feminino)."
+    "_comentario": "10/11/2026, o dono: 'estou querendo fazer o grupo de casa também... eu gostaria de priorizar as marcas boas'. Casa, cozinha, eletroportáteis, cama/mesa/banho, organização e decoração. Só marca da lista \"casa\" de config/marcas.json (\"soMarcas\"); peça avulsa, ferramenta/obra, pet, carro e infantil ficam de fora (o público é feminino).",
+    "_comentarioRoupa": "10/11/2026, o dono: 'esses tênis que aparecem no de casa pode tirar' (e antes, um cupom da C&A de lingerie e pijama). Calçado, roupa, lingerie, bolsa e acessório de moda ficam de fora do Casa, também o que já está na fila."
   }
 }
