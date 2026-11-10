@@ -171,7 +171,7 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
   for (const c of ativas.filter((x) => x.buscaML && !temOrdem(x))) (outrosPorGrupo[c.grupo] ??= []).push(c);
   for (const [nome, lista] of Object.entries(outrosPorGrupo)) {
     const vez = store.data.vezBuscaMLGrupo?.[nome] || 0;
-    const rodada = Array.from({ length: Math.min(lista.length, BUSCAS_MARCA_OUTROS_POR_COLETA) }, (_, i) => lista[(vez + i) % lista.length]);
+    const rodada = Array.from({ length: Math.min(lista.length, Number(grupos[nome]?.buscasMLPorColeta) || BUSCAS_MARCA_OUTROS_POR_COLETA) }, (_, i) => lista[(vez + i) % lista.length]);
     rodadaOutros.push(...rodada);
     if (!soCupons) store.data.vezBuscaMLGrupo = { ...store.data.vezBuscaMLGrupo, [nome]: (vez + rodada.length) % lista.length };
   }
@@ -185,7 +185,7 @@ export async function coletar(store = new Store(), { amazon = buscarOfertasAmazo
   const ehMenor = new Set(rodadaMenores);
   let novosDasGrandes = 0;
   let menoresFeitas = 0;
-  const catsApi = soCupons ? [] : [...ativas.filter((c) => c.maisVendidos), ...rodadaGrandes, ...rodadaMenores, ...rodadaOutros];
+  const catsApi = soCupons ? [] : [...ativas.filter((c) => c.maisVendidos), ...rodadaGrandes, ...rodadaOutros, ...rodadaMenores]; // 10/11/2026: as do Perfumes antes das marcas menores do Fitness (um erro da API para o resto da lista)
   if (catsApi.length) log(`🔎 Mercado Livre (API oficial): mais vendidos de ${catsApi.length} categoria(s)...`);
   for (const cat of catsApi) {
     const grupo = grupos[cat.grupo];
