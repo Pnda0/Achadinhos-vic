@@ -94,11 +94,8 @@ test('fitness: o que ENTRA (suplementos, roupa e tênis de treino, relógios e e
     'Calça Legging Feminina Academia Cintura Alta',
     'Kit 3 Leggings Suplex Lisa',
     'Top Fitness Feminino Com Bojo Removível',
-    'Kit 3 Bermudas Dry Fit Masculina Treino',
-    'Camiseta Dry Fit Masculina Kit 5',
     'Tênis Kappa Pulse Unissex Academia Caminhada',
-    'Tênis Olympikus Corre 3 Masculino',
-    'Tênis Masculino Esportivo Leve Para Corrida',
+    'Tênis Olympikus Corre 3 Feminino',
     'Smartwatch Xiaomi Redmi Watch 5 Active',
     'Fone De Ouvido Esportivo Bluetooth Jbl Endurance',
     'Balança Digital Corporal Bioimpedância Bluetooth',
@@ -137,6 +134,14 @@ test('fitness: extras (tênis casual, fone) entram com títulos gerais; beleza, 
   }
   assert.deepEqual(estiloDoProduto(prod('Whey Protein 900g'), fitness).titulos, fitness.titulos);
   assert.deepEqual(estiloDoProduto(prod('Qualquer'), { titulos: ['X'] }).titulos, ['X']); // grupo sem nicho
+});
+
+// 10/11/2026, o dono: "pq enviou tenis masculino?" (Tênis Masculino Olympikus Proof 3). Masculino fica de fora do Fitness.
+test('fitness: masculino fica de fora; feminino e unissex passam', () => {
+  for (const nome of ['Kit 3 Bermudas Dry Fit Masculina Treino', 'Camiseta Dry Fit Masculina Kit 5', 'Tênis Olympikus Corre 3 Masculino', 'Tênis Masculino Esportivo Leve Para Corrida', 'Tênis Masculino Olympikus Proof 3 Original']) {
+    assert.equal(motivo(nome), 'palavra bloqueada', nome);
+  }
+  for (const nome of ['Tênis Olympikus Corre 3 Feminino', 'Tênis Unissex Masculino e Feminino Nike Revolution']) assert.equal(motivo(nome), null, nome);
 });
 
 test('fitness: o que FICA DE FORA', () => {
