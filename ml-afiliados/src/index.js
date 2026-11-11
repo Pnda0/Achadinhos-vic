@@ -327,8 +327,10 @@ function iniciarCaixaDeEntrada(cfg) {
  * se o WhatsApp não conectar, o Telegram segue normal.
  */
 let espelhoWhats = null;
-async function iniciarWhatsApp() {
+const TENTATIVAS_WHATSAPP = 4;
+async function iniciarWhatsApp(tentativa = 1) {
   if (!settings.whatsappEspelho) return;
+  let conectou = false;
   try {
     const whats = createSender('wwebjs');
     whatsSender = whats;
@@ -337,6 +339,7 @@ async function iniciarWhatsApp() {
       avisos.avisar('whatsapp-codigo', `*Conectar o WhatsApp do bot* 📲\nNo celular do chip: WhatsApp → Aparelhos conectados → Conectar um aparelho → *Conectar com número de telefone* e digite:\n\n*${codigo}*\n\n(o código muda a cada 3 minutos)`, { sempre: true }).catch(() => {});
     log(`📲 WhatsApp: conectando o número do bot (na 1ª vez, ${settings.whatsappNumero ? 'o código para conectar chega no Telegram do dono' : 'escaneie o QR code na janela do WhatsApp Web que abrir'})...`);
     await whats.init();
+    conectou = true;
     espelhoWhats = new EspelhoWhatsApp({ sender: whats, store, carregarGrupos: loadGrupos, avisos, intervaloMin: settings.whatsappIntervaloMin, urlDaFoto: sender.urlDaFoto ? (id) => sender.urlDaFoto(id) : null });
     const { ligados, problemas } = await espelhoWhats.ligarGrupos();
     log(`📲 WhatsApp ligado: ${ligados.map((n) => `${n} → "${loadGrupos().find((g) => g.nome === n)?.whatsapp}"`).join(', ') || 'nenhum grupo'} — 1 mensagem a cada ${settings.whatsappIntervaloMin} min.`);
@@ -353,7 +356,19 @@ async function iniciarWhatsApp() {
     });
   } catch (e) {
     registrarErro('whatsapp', e);
-    log(`⚠️  WhatsApp não conectou: ${String(e.message).split('\n')[0]} — o Telegram segue normal.`);
+    const motivo = String(e.message).split('\n')[0];
+    // Internet lenta na hora de ligar (11/11/2026: "Runtime.callFunctionOn timed out" junto com "fetch failed" no
+    // Telegram e na Shopee): o WhatsApp Web não abre a tempo. Tenta de novo sozinho em 5, 10 e 15 min, sem precisar
+    // reiniciar. Código não digitado ou falha de autenticação esperam o dono (ele recebe o aviso na hora). Se já tinha
+    // conectado (o erro veio depois), não tenta: abriria um segundo WhatsApp Web no mesmo perfil.
+    const passageiro = !conectou && !/autentica|não conectou em \d+ minutos/i.test(motivo);
+    if (passageiro && tentativa < TENTATIVAS_WHATSAPP) {
+      const min = 5 * tentativa;
+      log(`⚠️  WhatsApp não conectou (${motivo}) — tento de novo em ${min} min (${tentativa + 1}ª tentativa). O Telegram segue normal.`);
+      setTimeout(() => iniciarWhatsApp(tentativa + 1), min * 60_000).unref();
+      return;
+    }
+    log(`⚠️  WhatsApp não conectou: ${motivo} — o Telegram segue normal.`);
     const comoConectar = settings.whatsappNumero ? 'Para receber um código novo, reinicie o bot.' : 'Reinicie o bot e escaneie o QR code com o chip do bot (WhatsApp > Aparelhos conectados).';
     await avisos.avisar('whatsapp', `*WhatsApp não conectou* ⚠️\n${String(e.message).split('\n')[0]}\n${comoConectar}`).catch(() => {});
   }
