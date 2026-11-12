@@ -137,7 +137,22 @@ class WWebJsSender {
    * último, manda só o texto com o link (ENVIAR_SEM_IMAGEM=false desliga esse último recurso).
    */
   async sendImage(jid, imageUrl, legenda, { esperas = [0, 10, 25] } = {}) {
-    const img = await downloadImage(imageUrl);
+    // Foto que não baixa ("fetch failed", 12/11/2026: o WhatsApp avisava problema e a oferta se perdia): tenta de novo
+    // em 5 s e, se ainda falhar, vai só o texto com o link (o WhatsApp mostra a prévia).
+    let img;
+    for (const espera of [0, 5]) {
+      if (espera) await sleep(espera * 1000);
+      try {
+        img = await downloadImage(imageUrl);
+        break;
+      } catch (e) {
+        if (espera) {
+          log(`  ↪ a foto não baixou (${primeiraLinha(e)}). Enviando só o texto com o link.`);
+          await this.client.sendMessage(jid, legenda, { sendSeen: false });
+          return { comImagem: false };
+        }
+      }
+    }
     const media = new this.MessageMedia(img.tipo.mimetype, img.toString('base64'), `oferta.${img.tipo.ext}`);
     // sendSeen:false = não marca as mensagens do grupo como lidas (e evita um erro comum do whatsapp-web.js)
     let erro;
