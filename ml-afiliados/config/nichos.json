@@ -574,7 +574,37 @@
       "camiseta",
       "xadrez",
       "papel de parede",
-      "body+manga"
+      "body+manga",
+      "saia",
+      "vestido",
+      "blusa",
+      "camisa",
+      "camisete",
+      "calca",
+      "short",
+      "bermuda",
+      "macacao",
+      "macaquinho",
+      "jardineira",
+      "cropped",
+      "regata",
+      "blazer",
+      "casaco",
+      "jaqueta",
+      "moletom",
+      "cardigan",
+      "biquini",
+      "maio",
+      "saida de praia",
+      "pijama",
+      "lingerie",
+      "sutia",
+      "calcinha",
+      "sapato",
+      "sandalia",
+      "tenis",
+      "chinelo",
+      "bota"
     ],
     "_comentarioXadrez": "04/11/2026 (o dono: 'seja criterioso'): 'Xadrez Vichy' é estampa, não a marca Vichy — papel de parede e roupa de bebê estavam na fila do Beleza.",
     "titulos": {
@@ -596,7 +626,8 @@
         "PRA SE CUIDAR 🧴",
         "ACHADO DO DIA 🛒"
       ]
-    }
+    },
+    "_comentarioRoupa": "12/11/2026, o dono: 'roupa não era pra sair no beleza' (uma saia 'Vichy' entrou pela marca). Roupa, moda praia, lingerie e calçado ficam de fora do Beleza."
   },
   "perfumes": {
     "tema": "perfumes e fragrâncias (importados, árabes e nacionais)",
