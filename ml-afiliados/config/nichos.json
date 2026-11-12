@@ -845,7 +845,12 @@
       "abajur",
       "quadro decorativo",
       "relogio de parede",
-      "porta retrato"
+      "porta retrato",
+      "ar condicionado",
+      "ar-condicionado",
+      "split+btu",
+      "split+inverter",
+      "condicionador de ar"
     ],
     "bloqueadas": [
       "reposição",
@@ -961,7 +966,28 @@
       "carteira",
       "relogio de pulso",
       "smartwatch",
-      "oculos"
+      "oculos",
+      "controle remoto",
+      "controle+ar condicionado",
+      "suporte+ar condicionado",
+      "suporte+split",
+      "capa+ar condicionado",
+      "capa+split",
+      "kit instalacao",
+      "kit de instalacao",
+      "tubulacao",
+      "dreno",
+      "bomba de dreno",
+      "mangueira+ar condicionado",
+      "filtro+ar condicionado",
+      "limpeza+ar condicionado",
+      "higienizador",
+      "gas refrigerante",
+      "capacitor",
+      "placa+ar condicionado",
+      "compressor+ar condicionado",
+      "evaporadora",
+      "condensadora"
     ],
     "titulos": {
       "alto": [
@@ -984,6 +1010,7 @@
       ]
     },
     "_comentario": "10/11/2026, o dono: 'estou querendo fazer o grupo de casa também... eu gostaria de priorizar as marcas boas'. Casa, cozinha, eletroportáteis, cama/mesa/banho, organização e decoração. Só marca da lista \"casa\" de config/marcas.json (\"soMarcas\"); peça avulsa, ferramenta/obra, pet, carro e infantil ficam de fora (o público é feminino).",
-    "_comentarioRoupa": "10/11/2026, o dono: 'esses tênis que aparecem no de casa pode tirar' (e antes, um cupom da C&A de lingerie e pijama). Calçado, roupa, lingerie, bolsa e acessório de moda ficam de fora do Casa, também o que já está na fila."
+    "_comentarioRoupa": "10/11/2026, o dono: 'esses tênis que aparecem no de casa pode tirar' (e antes, um cupom da C&A de lingerie e pijama). Calçado, roupa, lingerie, bolsa e acessório de moda ficam de fora do Casa, também o que já está na fila.",
+    "_comentarioAr": "12/11/2026, o dono: 'coloque ar condicionado'. Ar-condicionado (split, janela, portátil) entra no Casa, só de marca da lista e até R$ 3.000; peça, controle, suporte, capa, kit de instalação e limpeza ficam de fora. TV continua fora (o dono só perguntou)."
   }
 }

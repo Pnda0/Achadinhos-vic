@@ -1120,5 +1120,75 @@
     "buscaML": "potes tupperware",
     "reservaDescontoMinimo": 10,
     "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: ar condicionado lg",
+    "buscaML": "ar condicionado lg",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: ar condicionado samsung",
+    "buscaML": "ar condicionado samsung",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: ar condicionado midea",
+    "buscaML": "ar condicionado midea",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: ar condicionado electrolux",
+    "buscaML": "ar condicionado electrolux",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: ar condicionado philco",
+    "buscaML": "ar condicionado philco",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: ar condicionado gree",
+    "buscaML": "ar condicionado gree",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: ar condicionado elgin",
+    "buscaML": "ar condicionado elgin",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: ar condicionado consul",
+    "buscaML": "ar condicionado consul",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: ar condicionado daikin",
+    "buscaML": "ar condicionado daikin",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: ar condicionado fujitsu",
+    "buscaML": "ar condicionado fujitsu",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
   }
 ]
