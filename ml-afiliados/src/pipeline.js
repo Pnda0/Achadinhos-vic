@@ -40,7 +40,7 @@ import path from 'node:path';
 import { VENDAS_MINIMAS, motivoVendas } from './ml/vendas.js';
 import { evento, origemDe } from './eventos.js';
 import { generoDoProduto, preferenciaFeminina } from './genero.js';
-import { marcaDoProduto, motivoPrecoDaMarca } from './marcas.js';
+import { marcaDoProduto, marcaOuLiberado, motivoPrecoDaMarca } from './marcas.js';
 import { notaDaOferta, posicaoDaMarca } from './ranking.js';
 import { BrowserSession, sessaoNavegador } from './browser.js';
 import { montarLegenda, tituloCupom } from './caption.js';
@@ -55,7 +55,7 @@ export function motivoPeloNome(p, f) {
   if (f.palavrasObrigatorias?.length && !f.palavrasObrigatorias.some((t) => casaTermo(nome, t))) return 'fora do nicho';
   if ((f.palavrasBloqueadas || []).some((w) => casaTermo(nome, w))) return 'palavra bloqueada';
   // Grupo "soMarcas" (grupos.json): só produto de uma marca de config/marcas.json. Cupom de loja passa.
-  if (f.soMarcas && p.tipo !== 'cupom' && !marcaDoProduto(p)) return 'sem marca da lista';
+  if (f.soMarcas && p.tipo !== 'cupom' && !marcaOuLiberado(p, f.semMarcaOk)) return 'sem marca da lista';
   // Grupo "semMasculino" (10/11/2026, o dono: "pode tirar masculino 100%"): nada masculino. Cupom passa.
   if (f.semMasculino && p.tipo !== 'cupom' && !p.manual && generoDoProduto(p) === 'm') return 'masculino';
   return null;
@@ -522,7 +522,7 @@ function marcaNoEnvio(p, grupo) {
   if (!grupo.soMarcas || p.manual || p.confiavel || p.tipo === 'cupom' || origemDe(p) === 'caixa') return null;
   // Nada sem marca da lista, de loja nenhuma (04/11/2026, o dono: "remove esses itens sem marca da shopee ou de qualquer
   // outra loja, do grupo fitness... são itens horríveis"): vale também para o que entrou na fila marcado como sem marca.
-  return marcaDoProduto(p) ? null : 'sem marca da lista';
+  return marcaOuLiberado(p, grupo.semMarcaOk) ? null : 'sem marca da lista';
 }
 
 /**

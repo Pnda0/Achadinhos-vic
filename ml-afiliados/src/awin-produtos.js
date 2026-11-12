@@ -15,7 +15,7 @@ import { Readable } from 'node:stream';
 import zlib from 'node:zlib';
 import { DATA_DIR } from './config.js';
 import { generoDoProduto } from './genero.js';
-import { marcaDoProduto } from './marcas.js';
+import { marcaDoProduto, marcaOuLiberado } from './marcas.js';
 import { casaTermo, log, normalizar } from './util.js';
 
 const BASE = 'https://productdata.awin.com/datafeed';
@@ -187,7 +187,7 @@ export async function buscarProdutosAwin({ grupos, api, cfg = {}, chave = chaveD
   for (const g of grupos.filter((x) => x.ativo)) {
     const termos = g.filtros?.palavrasObrigatorias || [];
     const doGrupo = candidatos
-      .filter((p) => (!termos.length || termos.some((t) => casaTermo(normalizar(p.nome), t))) && (!g.filtros?.soMarcas || marcaDoProduto(p)) && !motivoForaDoPublico(p, g, cfg))
+      .filter((p) => (!termos.length || termos.some((t) => casaTermo(normalizar(p.nome), t))) && (!g.filtros?.soMarcas || marcaOuLiberado(p, g.semMarcaOk)) && !motivoForaDoPublico(p, g, cfg))
       .sort((a, b) => (generoDoProduto(b) === 'f') - (generoDoProduto(a) === 'f'));
     if (!doGrupo.length) continue;
     const inicio = (vez[g.nome] || 0) % doGrupo.length;

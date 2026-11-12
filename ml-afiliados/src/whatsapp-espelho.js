@@ -17,7 +17,7 @@ import path from 'node:path';
 import { DATA_DIR, settings } from './config.js';
 import { evento } from './eventos.js';
 import { generoDoProduto } from './genero.js';
-import { marcaDoProduto, preferenciaDeMarca } from './marcas.js';
+import { marcaDoProduto, marcaOuLiberado, preferenciaDeMarca } from './marcas.js';
 import { paraWhatsApp } from './rastreio.js';
 import { casaTermo, log, normalizar, sleep } from './util.js';
 
@@ -60,7 +60,7 @@ export function ligarPorNome(gruposBot, gruposWhats) {
  */
 export function valeNoGrupo(p, g) {
   if (p.manual) return true; // escolha do dono (caixa de entrada): sai igual no Telegram e no WhatsApp
-  if (g.soMarcas && p.tipo !== 'cupom' && !marcaDoProduto(p)) return false;
+  if (g.soMarcas && p.tipo !== 'cupom' && !marcaOuLiberado(p, g.semMarcaOk)) return false;
   const nome = normalizar(p.nome);
   return !(g.filtros?.palavrasBloqueadas || []).some((w) => casaTermo(nome, w));
 }

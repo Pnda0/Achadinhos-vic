@@ -88,7 +88,8 @@ export function loadGrupos() {
       ];
       filtros.palavrasBloqueadas = [...(filtros.palavrasBloqueadas || []), ...(nicho.bloqueadas || [])];
     }
-    if (g.soMarcas) filtros.soMarcas = true; // só marcas de config/marcas.json (pedido do dono, 15/10/2026)
+    if (g.soMarcas) filtros.soMarcas = true;
+    if (g.semMarcaOk?.length) filtros.semMarcaOk = g.semMarcaOk; // tipos que entram sem marca (Casa, 12/11/2026) // só marcas de config/marcas.json (pedido do dono, 15/10/2026)
     if (g.semMasculino) filtros.semMasculino = true; // nenhum produto masculino (o dono, 10/11/2026: "pode tirar masculino 100%")
     return {
       ...g,

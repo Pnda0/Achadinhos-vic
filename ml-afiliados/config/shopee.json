@@ -114,7 +114,15 @@
         "travesseiro",
         "jogo de toalhas",
         "jogo de panelas",
-        "copo termico"
+        "copo termico",
+        "kit potes hermeticos",
+        "porta pao bambu",
+        "organizador de armario",
+        "organizador de geladeira",
+        "porta mantimentos",
+        "lixeira inox",
+        "sapateira",
+        "luminaria de mesa"
       ],
       "_comentario": "10/11/2026: grupo Casa. Uma busca por marca da lista \"casa\" de config/marcas.json + estas; só passa marca da lista.",
       "_comentarioBuscas": "12/11/2026, o dono: foque nos eletro, cama, máquina de lavar (pano de prato horroroso). As buscas da Shopee viraram eletro e cama e banho; também rodam na busca de reposição (a cada 30 min com a fila vazia), que não vai ao Mercado Livre."

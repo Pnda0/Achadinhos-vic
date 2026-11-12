@@ -28,6 +28,19 @@ export function listaDeMarcas(cfg) {
   return lista;
 }
 
+/**
+ * Produto sem marca liberado no grupo ("semMarcaOk" em config/grupos.json, 12/11/2026, Casa: o dono gostou de "Kit 20 Potes
+ * Herméticos" e "Porta Pão Bambu" sem marca). Só os tipos da lista; o resto do grupo continua só com marca da lista.
+ */
+export function semMarcaLiberado(p, termos) {
+  if (!termos?.length) return false;
+  const nome = normalizar(p.nome);
+  return termos.some((t) => casaTermo(nome, t));
+}
+
+/** Tem marca da lista ou é de um tipo que o grupo aceita sem marca. */
+export const marcaOuLiberado = (p, termos) => Boolean(marcaDoProduto(p)) || semMarcaLiberado(p, termos);
+
 /** A marca da oferta (a primeira da lista que aparece no nome ou no texto do post), ou null. */
 export function marcaDoProduto(p, lista = listaDeMarcas()) {
   const bruto = `${p.nome || ''} ${p.textoPronto || ''}`;
