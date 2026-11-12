@@ -117,6 +117,17 @@
           }
         ],
         "_comentarioConfiar": "10/11/2026, o dono: 'não tem como o perfume ter tão poucos, pegue tudo do grupo da luh'. Fonte de confiança: tudo de perfume que ela posta (Amazon, ML e o que estiver no ML de lojas sem programa) entra no Perfumes sem 'só marcas', desconto mínimo nem faixa de preço; valem o nicho, as bloqueadas, sem masculino e o não repetir. Até 10 por hora."
+      },
+      {
+        "titulo": "Apromodaluh_casa",
+        "destinos": [
+          {
+            "grupo": "Casa",
+            "nicho": "casa"
+          }
+        ],
+        "maxPorHora": 6,
+        "_comentario": "12/11/2026, o dono: 'pegue referência no promo da luh casa'. O grupo de casa da comunidade da Luh (como o de fitness e o de perfumes): Amazon e ML pelo nome, só para o Casa, com todas as regras dele (marca da lista, preço mínimo, sem miudeza). O chip só lê se o dono puser no grupo; se o nome não casar, o log mostra os grupos do chip com nome parecido."
       }
     ],
     "destinos": [

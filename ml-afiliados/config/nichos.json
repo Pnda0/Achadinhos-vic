@@ -850,7 +850,18 @@
       "ar-condicionado",
       "split+btu",
       "split+inverter",
-      "condicionador de ar"
+      "condicionador de ar",
+      "maquina de lavar",
+      "lavadora de roupas",
+      "secadora",
+      "lava loucas",
+      "lava-loucas",
+      "purificador de agua",
+      "aspirador de po",
+      "aspirador vertical",
+      "fritadeira eletrica",
+      "panela de pressao eletrica",
+      "duvet"
     ],
     "bloqueadas": [
       "reposição",
@@ -987,7 +998,39 @@
       "placa+ar condicionado",
       "compressor+ar condicionado",
       "evaporadora",
-      "condensadora"
+      "condensadora",
+      "pano de prato",
+      "panos de prato",
+      "pano de copa",
+      "pano multiuso",
+      "pano de chao",
+      "pano de limpeza",
+      "pano+atoalhado",
+      "flanela",
+      "esponja",
+      "palha de aco",
+      "guardanapo",
+      "prendedor de roupa",
+      "pregador",
+      "saco de lixo",
+      "rodo",
+      "vassoura",
+      "pa de lixo",
+      "balde",
+      "luva+limpeza",
+      "avental",
+      "luva termica",
+      "pegador de panela",
+      "porta copos",
+      "descanso de panela",
+      "tapete de pia",
+      "pano de pia",
+      "escorredor de talheres",
+      "pote de tempero",
+      "porta tempero",
+      "etiqueta",
+      "cabide",
+      "cabides"
     ],
     "titulos": {
       "alto": [
@@ -1011,6 +1054,7 @@
     },
     "_comentario": "10/11/2026, o dono: 'estou querendo fazer o grupo de casa também... eu gostaria de priorizar as marcas boas'. Casa, cozinha, eletroportáteis, cama/mesa/banho, organização e decoração. Só marca da lista \"casa\" de config/marcas.json (\"soMarcas\"); peça avulsa, ferramenta/obra, pet, carro e infantil ficam de fora (o público é feminino).",
     "_comentarioRoupa": "10/11/2026, o dono: 'esses tênis que aparecem no de casa pode tirar' (e antes, um cupom da C&A de lingerie e pijama). Calçado, roupa, lingerie, bolsa e acessório de moda ficam de fora do Casa, também o que já está na fila.",
-    "_comentarioAr": "12/11/2026, o dono: 'coloque ar condicionado'. Ar-condicionado (split, janela, portátil) entra no Casa, só de marca da lista e até R$ 3.000; peça, controle, suporte, capa, kit de instalação e limpeza ficam de fora. TV continua fora (o dono só perguntou)."
+    "_comentarioAr": "12/11/2026, o dono: 'coloque ar condicionado'. Ar-condicionado (split, janela, portátil) entra no Casa, só de marca da lista e até R$ 3.000; peça, controle, suporte, capa, kit de instalação e limpeza ficam de fora. TV continua fora (o dono só perguntou).",
+    "_comentarioQualidade": "12/11/2026, o dono (sobre 'Pano De Prato Atoalhado 15un Camesa'): 'esse post tá horroroso... não poste mais isso, foque nos eletro, cama, essas coisas, máquina de lavar'. Miudeza de cozinha e limpeza (pano de prato, flanela, esponja, guardanapo, cabide...) fica de fora; o Casa tem preço mínimo de R$ 70 e eletro e cama e banho passam na frente (prioridade em config/grupos.json)."
   }
 }

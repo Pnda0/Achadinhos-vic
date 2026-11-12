@@ -1190,5 +1190,131 @@
     "buscaML": "ar condicionado fujitsu",
     "reservaDescontoMinimo": 10,
     "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: maquina de lavar brastemp",
+    "buscaML": "maquina de lavar brastemp",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: maquina de lavar electrolux",
+    "buscaML": "maquina de lavar electrolux",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: lava e seca samsung",
+    "buscaML": "lava e seca samsung",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: lava e seca lg",
+    "buscaML": "lava e seca lg",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: maquina de lavar consul",
+    "buscaML": "maquina de lavar consul",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: maquina de lavar midea",
+    "buscaML": "maquina de lavar midea",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: lava loucas brastemp",
+    "buscaML": "lava loucas brastemp",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: lava loucas electrolux",
+    "buscaML": "lava loucas electrolux",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: geladeira brastemp",
+    "buscaML": "geladeira brastemp",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: geladeira electrolux",
+    "buscaML": "geladeira electrolux",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: geladeira consul",
+    "buscaML": "geladeira consul",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: fogao brastemp",
+    "buscaML": "fogao brastemp",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: fogao electrolux",
+    "buscaML": "fogao electrolux",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: cooktop electrolux",
+    "buscaML": "cooktop electrolux",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: forno eletrico mondial",
+    "buscaML": "forno eletrico mondial",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: purificador de agua electrolux",
+    "buscaML": "purificador de agua electrolux",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: aspirador electrolux",
+    "buscaML": "aspirador electrolux",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: jogo de toalhas buddemeyer",
+    "buscaML": "jogo de toalhas buddemeyer",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
   }
 ]

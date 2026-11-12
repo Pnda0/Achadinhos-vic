@@ -281,7 +281,8 @@
       "ativo": true,
       "mensagemAdicional": "",
       "filtros": {
-        "precoMaximo": 3000
+        "precoMaximo": 3000,
+        "precoMinimo": 70
       },
       "nicho": "casa",
       "telegram": "",
@@ -295,7 +296,66 @@
       "_comentario": "10/11/2026, o dono criou o canal \"Achadinhos Vic - Casa\" (https://t.me/+h_RsZNsKWa1jYzlh). Sem \"telegram\" o grupo fica em espera; quando o bot vira administrador do canal ele se liga sozinho (ligarCanalNovo em src/index.js, pelo título \"Casa\"). Só Telegram por enquanto (o espelho do WhatsApp divide 1 mensagem a cada 4-6 min entre todos os grupos; com um 2º chip dá para pôr). Só marca da lista, no máximo 40 por dia, até R$ 3.000; de 10% a 20% de desconto entra como reserva.",
       "whatsapp": "Achadinhos Vic - Casa",
       "_comentarioWhatsApp": "12/11/2026, o dono (bravo): \"não era pra subir as coisas de casa pro WhatsApp ainda, só Telegram\". O Casa fica só no Telegram (whatsappPausado: true) até o dono pedir; o nome do grupo do WhatsApp (\"Achadinhos Vic - Casa\") fica guardado para quando ele liberar.",
-      "whatsappPausado": true
+      "whatsappPausado": true,
+      "prioridade": [
+        {
+          "termos": [
+            "maquina de lavar",
+            "lava e seca",
+            "lavadora",
+            "secadora",
+            "lava loucas",
+            "lava-loucas",
+            "geladeira",
+            "refrigerador",
+            "frigobar",
+            "fogao",
+            "cooktop",
+            "forno eletrico",
+            "micro-ondas",
+            "microondas",
+            "ar condicionado",
+            "ar-condicionado",
+            "air fryer",
+            "fritadeira",
+            "aspirador",
+            "robo aspirador",
+            "cafeteira",
+            "liquidificador",
+            "batedeira",
+            "processador",
+            "purificador",
+            "climatizador",
+            "ventilador",
+            "panela eletrica",
+            "panela de pressao eletrica",
+            "ferro de passar",
+            "vaporizador"
+          ],
+          "peso": 4,
+          "soComMarca": true
+        },
+        {
+          "termos": [
+            "jogo de cama",
+            "lencol",
+            "edredom",
+            "cobertor",
+            "colcha",
+            "cobre leito",
+            "travesseiro",
+            "duvet",
+            "jogo de toalhas",
+            "toalha de banho",
+            "kit toalha",
+            "roupao"
+          ],
+          "peso": 3,
+          "soComMarca": true
+        }
+      ],
+      "_comentarioPrioridade": "12/11/2026, o dono (sobre 'Pano De Prato Atoalhado 15un Camesa'): 'esse post tá horroroso... não poste mais isso, foque nos eletro, cama, essas coisas, máquina de lavar'. Eletro (peso 4: máquina de lavar, geladeira, fogão, ar-condicionado, air fryer, aspirador...) e cama e banho (peso 3) passam na frente na nota da oferta (src/ranking.js). Preço mínimo R$ 70.",
+      "buscasMLPorColeta": 10
     }
   ],
   "_comentarioMasculino": "10/11/2026, o dono: 'pode tirar masculino 100%' (depois de um 'Tênis Masculino Olympikus' no Fitness): \"semMasculino\": true em Fitness, Beleza e Perfumes = nenhum produto masculino (src/genero.js decide pelo nome; feminino/unissex passam; cupom e o que o dono manda no privado passam). Antes: Masculino no máximo 1 a cada 10 posts em Fitness, Beleza e Perfumes (o dono, 27/10/2026: 'tá postando coisa masculina demais'); antes era 1 a cada 4 (1 a cada 5 no Perfumes). O número é o 'preferirFeminino' de cada grupo.",
