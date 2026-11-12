@@ -729,14 +729,18 @@ export async function enviarProximo(sender, grupo, store = new Store(), { fotoDo
 }
 
 export async function enviarParaTodos(sender, store = new Store(), avisos = null, ativos = loadGrupos().filter((g) => g.ativo)) {
+  // Dois grupos no mesmo canal (12/11/2026: o Perfumes posta no canal do Beleza): só um posta por envio.
+  const canaisUsados = new Set();
   for (const [i, g] of ativos.entries()) {
     if (!g.jid || g.jid.startsWith('COLE_AQUI')) {
       log(`⚠️  Grupo "${g.nome}" sem JID configurado (rode: npm run grupos)`);
       continue;
     }
+    if (canaisUsados.has(g.jid)) continue;
     // Entre um grupo e outro: 1-2 min no WhatsApp (como no curso, contra banimento); no Telegram não precisa.
     if (i > 0) await (settings.sender === 'telegram' ? randomDelay(3, 8) : randomDelay(60, 120));
     const p = await enviarProximo(sender, g, store);
+    if (p?.status === 'ENVIADO' || p?.status === 'INCERTO') canaisUsados.add(g.jid);
     if (!avisos) continue;
     if (!p) await avisos.filaVazia(g.nome);
     else if (p.status === 'ERRO') await avisos.falhaEnvio(g.nome, p);
