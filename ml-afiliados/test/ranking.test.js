@@ -163,3 +163,23 @@ test('semMasculino: masculino da fila é barrado na hora de postar; o feminino s
   assert.equal(motivoPeloNome({ nome: 'Perfume Malbec Masculino', tipo: 'cupom' }, { semMasculino: true }), null);
   assert.equal(motivoPeloNome({ nome: 'Perfume Malbec Masculino' }, {}), null);
 });
+
+test('fila: marca de um dos 2 últimos posts não sai enquanto houver outra; 4 no dia vai para o fim (13/11/2026, "sequência de Nike")', () => {
+  const store = new Store(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mla-rank-')), 'db.json'));
+  const add = (p, extra = {}) => (store.data.produtos[`Fitness:${p.id}`] = { ...p, status: 'PRONTO', linkAfiliado: 'https://x', ...extra });
+  const antes = (min) => new Date(Date.now() - min * 60_000).toISOString();
+  add(o('Tênis Nike Revolution 7 Feminino', { id: 'N1' }), { status: 'ENVIADO', enviadoEm: antes(10) });
+  add(o('Tênis Nike Air Max Feminino', { id: 'N2', descontoPct: 60 }));
+  add(o('Creatina 300g Growth Supplements', { id: 'G1', descontoPct: 20 }));
+  assert.equal(store.proximo('Fitness', { nota }).id, 'G1');
+  // Só Nike na fila: sai Nike (o grupo não trava).
+  delete store.data.produtos['Fitness:G1'];
+  assert.equal(store.proximo('Fitness', { nota }).id, 'N2');
+  // 4 Nike nas últimas 24 h (nenhuma entre as 2 últimas): outra marca sai antes, mesmo com nota menor.
+  for (let i = 0; i < 4; i++) add(o(`Tênis Nike Pegasus ${i} Feminino`, { id: `NP${i}` }), { status: 'ENVIADO', enviadoEm: antes(300 + i) });
+  add(o('Legging Lupo Feminina', { id: 'L1' }), { status: 'ENVIADO', enviadoEm: antes(5) });
+  add(o('Top Lupo Feminino', { id: 'L2' }), { status: 'ENVIADO', enviadoEm: antes(2) });
+  delete store.data.produtos['Fitness:N1'];
+  add(o('Whey Max Titanium 900g', { id: 'M1', descontoPct: 5 }));
+  assert.equal(store.proximo('Fitness', { nota }).id, 'M1');
+});

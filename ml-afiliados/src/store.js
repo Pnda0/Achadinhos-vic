@@ -256,7 +256,22 @@ export class Store {
       const recentes = enviados.slice(-3);
       const desde = Date.now() - 24 * 3_600_000;
       const doDia = enviados.filter((p) => Date.parse(p.enviadoEm) > desde); // marca que já saiu hoje perde pontos
-      const comNota = prontos.map((p) => [p, nota(p, { ultimo, recentes, doDia }).bruta]).sort((a, b) => b[1] - a[1]);
+      let comNota = prontos.map((p) => [p, nota(p, { ultimo, recentes, doDia })]).sort((a, b) => b[1].bruta - a[1].bruta);
+      // Marca repetida em sequência (13/11/2026, o dono: "tem uma sequência gigante de coisa da Nike, é assim mesmo?"):
+      // os -15/-8 da nota não bastavam com a fila cheia de Nike. Agora é regra: a marca de um dos 2 últimos posts não
+      // sai, e marca com 4 posts nas últimas 24 h só sai depois das outras — enquanto houver outra oferta para sair.
+      const marcaDe = (p) => nota(p, {}).marca;
+      const ultimas = new Set(enviados.slice(-2).map(marcaDe).filter(Boolean));
+      const contagem = {};
+      for (const p of doDia) {
+        const m = marcaDe(p);
+        if (m) contagem[m] = (contagem[m] || 0) + 1;
+      }
+      for (const fora of [([, n]) => n.marca && ultimas.has(n.marca), ([, n]) => n.marca && contagem[n.marca] >= 4]) {
+        const resto = comNota.filter((x) => !fora(x));
+        if (resto.length) comNota = resto;
+      }
+      comNota = comNota.map(([p, n]) => [p, n.bruta]);
       const empatadas = comNota.filter(([, n]) => n >= comNota[0][1] - 2);
       return empatadas[Math.floor(Math.random() * empatadas.length)][0];
     }
