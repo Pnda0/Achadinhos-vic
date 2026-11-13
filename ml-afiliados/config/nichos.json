@@ -604,7 +604,8 @@
       "sandalia",
       "tenis",
       "chinelo",
-      "bota"
+      "bota",
+      "re:^(?!.*\\b(?:feminin[oa]s?|lady|venus|satinelle|depilador[a]?|depilacao|bikini|intima|sobrancelhas?)\\b).*\\b(?:aparador(?:es)?|barbeador(?:es)?|barbear|barba|groom|multigroom|trimmer|oneblade|clipper|maquina de (?:cortar|corte)|cortador de cabelo|maquina de cabelo)\\b"
     ],
     "_comentarioXadrez": "04/11/2026 (o dono: 'seja criterioso'): 'Xadrez Vichy' é estampa, não a marca Vichy — papel de parede e roupa de bebê estavam na fila do Beleza.",
     "titulos": {
@@ -627,7 +628,8 @@
         "ACHADO DO DIA 🛒"
       ]
     },
-    "_comentarioRoupa": "12/11/2026, o dono: 'roupa não era pra sair no beleza' (uma saia 'Vichy' entrou pela marca). Roupa, moda praia, lingerie e calçado ficam de fora do Beleza."
+    "_comentarioRoupa": "12/11/2026, o dono: 'roupa não era pra sair no beleza' (uma saia 'Vichy' entrou pela marca). Roupa, moda praia, lingerie e calçado ficam de fora do Beleza.",
+    "_comentarioBarbear": "13/11/2026, o dono sobre \"Aparador de Pelos Super Groom 06 Mondial\" (Amazon) no Beleza: \"máquina de barbear não faz sentido para as mulheres\". Aparador, barbeador, máquina de cortar cabelo e coisa de barba ficam de fora, menos os femininos (depilador, Satinelle, Venus, aparador de sobrancelha, íntimo/biquíni)."
   },
   "perfumes": {
     "tema": "perfumes e fragrâncias (importados, árabes e nacionais)",
