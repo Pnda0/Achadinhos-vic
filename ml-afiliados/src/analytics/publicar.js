@@ -164,7 +164,10 @@ export async function publicarPainel({ hash, base = PASTA_ANALYTICS, env = proce
   if (trava === 'aberto' || trava === 'erro') {
     const motivo = trava === 'aberto' ? 'o painel está ABERTO (sem o Cloudflare Access)' : `não consegui conferir a proteção do painel (${detalhe})`;
     log(`📊 Painel NÃO publicado: ${motivo}.`);
-    await avisarDono(
+    // Falha de rede uma vez só, com o painel protegido da última vez (13/11/2026: "fetch failed" num soluço da internet
+    // do servidor virou aviso ao dono): não avisa; a próxima publicação confere de novo. Duas seguidas, avisa.
+    const soluco = trava === 'erro' && estado.trava === 'protegido';
+    if (!soluco) await avisarDono(
       trava,
       trava === 'aberto'
         ? `*Painel sem proteção* 🔓\nO painel (${URL_PAINEL}) ainda não está protegido pelo Cloudflare Access, então não publiquei os números. Siga o passo a passo do README (seção 3.15) para liberar só o seu e-mail.`
