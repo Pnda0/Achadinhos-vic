@@ -36,7 +36,7 @@ const duracao = (ms) => {
 };
 
 /** O texto do /status: ligado desde quando, pausa, posts de hoje, WhatsApp, fila e o último post. */
-export function textoDoStatus({ store, grupos, agora = Date.now(), ligadoDesde, whatsapp, tz = 'America/Sao_Paulo' }) {
+export function textoDoStatus({ store, grupos, agora = Date.now(), ligadoDesde, whatsapp, whatsLigados = null, tz = 'America/Sao_Paulo' }) {
   const hoje = diaLocal(new Date(agora), tz);
   const ativos = grupos.filter((g) => g.ativo);
   const deHoje = (iso) => iso && diaLocal(new Date(iso), tz) === hoje;
@@ -51,6 +51,20 @@ export function textoDoStatus({ store, grupos, agora = Date.now(), ligadoDesde, 
     ...(store.data.pausado ? [`⏸️ *Posts pausados* desde as ${hhmm(store.data.pausado, tz)} — /voltar para retomar`] : []),
     `📤 Postados hoje: ${porGrupo(enviados, true)}`,
     `📲 WhatsApp: ${whatsapp === 'ligado' ? `conectado — ${noWhats} mensagem(ns) hoje` : whatsapp === 'desligado' ? 'desligado no .env' : 'não conectado (/reiniciar manda um código novo)'}`,
+    // WhatsApp de cada grupo (16/11/2026, o dono: "por que o de beleza não tá indo pro WhatsApp?"): quantas hoje e
+    // quais grupos ficaram sem grupo do WhatsApp ligado (nome diferente do campo "whatsapp" de config/grupos.json).
+    ...(whatsapp === 'ligado' && whatsLigados
+      ? (() => {
+          const comWhats = ativos.filter((g) => g.whatsapp && !g.whatsappPausado);
+          const hojeNo = (n) => Object.entries(store.data.whatsapp || {}).filter(([k, t]) => k.startsWith(`${n}:`) && deHoje(t)).length;
+          const ligados = comWhats.filter((g) => whatsLigados.includes(g.nome));
+          const soltos = comWhats.filter((g) => !whatsLigados.includes(g.nome));
+          return [
+            `📲 No WhatsApp hoje: ${ligados.map((g) => `${g.nome} ${hojeNo(g.nome)}`).join(' · ') || 'nenhum grupo ligado'}`,
+            ...soltos.map((g) => `⚠️ ${g.nome}: não achei o grupo "${g.whatsapp}" no WhatsApp do chip (o nome tem que ser igual)`),
+          ];
+        })()
+      : []),
     `📦 Na fila: ${porGrupo(naFila)}`,
     ...(ultimo ? [`🕒 Último post: ${hhmm(ultimo.enviadoEm, tz)} (${ultimo.grupo}) ${String(ultimo.nome).slice(0, 50)}`] : []),
   ].join('\n');

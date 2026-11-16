@@ -225,7 +225,7 @@ function iniciarCaixaDeEntrada(cfg) {
     '/atualizar': atualizar,
     '/reiniciar': atualizar,
     '/status': (m) =>
-      responder(m, textoDoStatus({ store, grupos: loadGrupos(), ligadoDesde: LIGADO_EM, whatsapp: espelhoWhats ? 'ligado' : settings.whatsappEspelho ? 'nao' : 'desligado', tz: settings.tz })),
+      responder(m, textoDoStatus({ store, grupos: loadGrupos(), ligadoDesde: LIGADO_EM, whatsapp: espelhoWhats ? 'ligado' : settings.whatsappEspelho ? 'nao' : 'desligado', whatsLigados: espelhoWhats ? Object.keys(espelhoWhats.jids || {}) : null, tz: settings.tz })),
     '/pausar': async (m) => {
       if (!store.data.pausado) {
         store.data.pausado = new Date().toISOString();
