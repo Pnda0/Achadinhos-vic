@@ -92,7 +92,7 @@ const limpar = (l) =>
     .trim();
 
 // Chamadas de canal que vêm antes do produto e não são o nome.
-const CHAMADA = /^(caiu de pre[cç]o|alerta de pre[cç]o|pre[cç]o imperd[ií]vel|olha o que eu achei|achadinho do dia|oportunidade de ouro|aproveite|imperd[ií]vel|baixou|menor pre[cç]o|corre que|s[oó] hoje)\b/i;
+const CHAMADA = /^(caiu de pre[cç]o|pre[cç][aã]o|alerta de pre[cç]o|pre[cç]o imperd[ií]vel|olha o que eu achei|achadinho do dia|oportunidade de ouro|aproveite|imperd[ií]vel|baixou|menor pre[cç]o|corre que|s[oó] hoje)\b/i;
 
 /** Nome, preços, desconto e cupom a partir do texto da mensagem. */
 export function dadosDoTexto(texto) {

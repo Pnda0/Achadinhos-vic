@@ -89,7 +89,24 @@
       "power bank",
       "powerbank",
       "bateria externa",
-      "bateria portatil"
+      "bateria portatil",
+      "lembra a",
+      "lembra o",
+      "lembra muito",
+      "fechar o olho",
+      "fechar os olhos",
+      "inspirado",
+      "inspirada",
+      "inspirados",
+      "similar ao",
+      "similar a",
+      "parecido com",
+      "parecida com",
+      "igualzinho",
+      "igualzinha",
+      "replica",
+      "primeira linha",
+      "contratipo"
     ],
     "diasSemRepetir": 5
   },
@@ -409,5 +426,6 @@
   ],
   "_comentarioMasculino": "10/11/2026, o dono: 'pode tirar masculino 100%' (depois de um 'Tênis Masculino Olympikus' no Fitness): \"semMasculino\": true em Fitness, Beleza e Perfumes = nenhum produto masculino (src/genero.js decide pelo nome; feminino/unissex passam; cupom e o que o dono manda no privado passam). Antes: Masculino no máximo 1 a cada 10 posts em Fitness, Beleza e Perfumes (o dono, 27/10/2026: 'tá postando coisa masculina demais'); antes era 1 a cada 4 (1 a cada 5 no Perfumes). O número é o 'preferirFeminino' de cada grupo.",
   "_comentarioCapinha": "Capinha, capa e película de celular bloqueadas em todos os grupos (pedido do dono, 21/10/2026): a busca da Shopee por marca (\"Nike\") trazia capinha falsificada com o logo.",
-  "_comentarioCarregador": "06/11/2026, o dono: 'caiu fonte de carregador de celular no grupo fitness, tá certo isso?'. Em todos os grupos: carregador de celular, fonte e adaptador de tomada, cabo USB e power bank ficam de fora (palavrasBloqueadas do filtrosPadrao; o Fitness bloqueia também 'fonte' sozinha e 'carregador' sozinho, em config/nichos.json)."
+  "_comentarioCarregador": "06/11/2026, o dono: 'caiu fonte de carregador de celular no grupo fitness, tá certo isso?'. Em todos os grupos: carregador de celular, fonte e adaptador de tomada, cabo USB e power bank ficam de fora (palavrasBloqueadas do filtrosPadrao; o Fitness bloqueia também 'fonte' sozinha e 'carregador' sozinho, em config/nichos.json).",
+  "_comentarioImitacao": "16/11/2026: saiu na fila do Casa \"PREÇÃO NESSE BATEDEIRA, se fechar o olho lembra a kitchenAid\" (imitação que passou pela marca citada). Em todos os grupos fica de fora o que se vende como parecido com uma marca: lembra a, inspirado, similar, igualzinho, réplica, primeira linha, contratipo."
 }
