@@ -786,6 +786,104 @@
   },
   {
     "grupo": "Casa",
+    "nome": "ML marca: jogo de talheres tramontina",
+    "buscaML": "jogo de talheres tramontina",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: jogo americano lyor",
+    "buscaML": "jogo americano lyor",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: jogo americano wolff",
+    "buscaML": "jogo americano wolff",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: toalha de rosto karsten",
+    "buscaML": "toalha de rosto karsten",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: toalha de rosto buddemeyer",
+    "buscaML": "toalha de rosto buddemeyer",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: toalha de rosto santista",
+    "buscaML": "toalha de rosto santista",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: protetor de colchao altenburg",
+    "buscaML": "protetor de colchao altenburg",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: protetor de colchao fibrasca",
+    "buscaML": "protetor de colchao fibrasca",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: saia de cama buddemeyer",
+    "buscaML": "saia de cama buddemeyer",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: jogo de lencol santista",
+    "buscaML": "jogo de lencol santista",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: kit cabides ordene",
+    "buscaML": "kit cabides ordene",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: jogo de copos nadir",
+    "buscaML": "jogo de copos nadir",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: jogo de pratos tramontina",
+    "buscaML": "jogo de pratos tramontina",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
+    "nome": "ML marca: potes hermeticos electrolux",
+    "buscaML": "potes hermeticos electrolux",
+    "reservaDescontoMinimo": 10,
+    "ativo": true
+  },
+  {
+    "grupo": "Casa",
     "nome": "ML marca: air fryer mondial",
     "buscaML": "air fryer mondial",
     "reservaDescontoMinimo": 10,

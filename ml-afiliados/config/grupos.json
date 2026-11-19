@@ -299,7 +299,7 @@
       "mensagemAdicional": "",
       "filtros": {
         "precoMaximo": 3000,
-        "precoMinimo": 70
+        "precoMinimo": 35
       },
       "nicho": "casa",
       "telegram": "",
@@ -314,6 +314,62 @@
       "whatsapp": "Achadinhos Vic - Casa",
       "_comentarioWhatsApp": "16/11/2026, o dono: \"pode colocar as promoções de casa lá no WhatsApp também\". O Casa vai para o grupo do chip com o nome exato \"Achadinhos Vic - Casa\" (era o antigo grupo de Perfumes). Antes (12/11) ficou só no Telegram a pedido dele.",
       "prioridade": [
+        {
+          "termos": [
+            "jogo americano",
+            "jogos americanos",
+            "sousplat",
+            "faqueiro",
+            "talheres",
+            "jogo de talheres",
+            "kit talheres",
+            "kit toalhas",
+            "protetor de travesseiro",
+            "saia para cama",
+            "cabide",
+            "cabides",
+            "kit cabides",
+            "jogo de copos",
+            "jogo de xicaras",
+            "jogo de pratos",
+            "aparelho de jantar",
+            "tacas",
+            "porta guardanapo",
+            "tapete de banheiro",
+            "pote hermetico",
+            "potes hermeticos",
+            "organizador"
+          ],
+          "peso": 3,
+          "soComMarca": true
+        },
+        {
+          "termos": [
+            "jogo de cama",
+            "lencol",
+            "edredom",
+            "cobertor",
+            "colcha",
+            "cobre leito",
+            "travesseiro",
+            "duvet",
+            "jogo de toalhas",
+            "toalha de banho",
+            "kit toalha",
+            "roupao",
+            "protetor de colchao",
+            "capa de colchao",
+            "forro de cama",
+            "saia de cama",
+            "lencol com elastico",
+            "jogo de lencol",
+            "toalha de rosto",
+            "toalhas de rosto",
+            "toalha de lavabo"
+          ],
+          "peso": 3,
+          "soComMarca": true
+        },
         {
           "termos": [
             "maquina de lavar",
@@ -348,29 +404,11 @@
             "ferro de passar",
             "vaporizador"
           ],
-          "peso": 4,
-          "soComMarca": true
-        },
-        {
-          "termos": [
-            "jogo de cama",
-            "lencol",
-            "edredom",
-            "cobertor",
-            "colcha",
-            "cobre leito",
-            "travesseiro",
-            "duvet",
-            "jogo de toalhas",
-            "toalha de banho",
-            "kit toalha",
-            "roupao"
-          ],
-          "peso": 3,
+          "peso": 2,
           "soComMarca": true
         }
       ],
-      "_comentarioPrioridade": "12/11/2026, o dono (sobre 'Pano De Prato Atoalhado 15un Camesa'): 'esse post tá horroroso... não poste mais isso, foque nos eletro, cama, essas coisas, máquina de lavar'. Eletro (peso 4: máquina de lavar, geladeira, fogão, ar-condicionado, air fryer, aspirador...) e cama e banho (peso 3) passam na frente na nota da oferta (src/ranking.js). Preço mínimo R$ 70.",
+      "_comentarioPrioridade": "19/11/2026, o dono: 'tem muito eletrodoméstico... vamos dar uma equilibrada, colocar mais coisas úteis e com ticket menor, por exemplo forro de cama, jogo americano, talher, toalhinha de rosto, cabide, claro mantendo o padrão de marcas boas'. Agora: utilidades (jogo americano, talheres, cabide, louça, potes, organizadores) peso 3, cama e banho (com marca) peso 3, eletro (com marca) peso 2 — antes eletro 4 e cama 3. Preço mínimo R$ 35 (era 70, que barrava toalhinha, cabide e jogo americano). Eletro de marca com bom desconto ainda sai, mas não domina.",
       "buscasMLPorColeta": 10,
       "semMarcaOk": [
         "pote hermetico",
